@@ -35,13 +35,20 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/node_contract_test.go` | `"UsageMultiplierApplied"` in `remoteMethodsOutsideContract` | accessor reads caps already received, no node call |
 | `tools/openapigen/main.go` | `UsageMultiplierStatus`, `UsageMultiplierNodeStatus` in the service `StructAllow` | schemas/examples for the new endpoint |
 | `frontend/src/pages/api-docs/endpoints.ts` | entry for `POST /panel/api/setting/usageMultiplierStatus` | route registry (pinned by `TestRouteRegistryContract`) |
-| `README.md` | fork note crediting MHSanaei/3x-ui, links to `docs/MULTIPLIER.md` | attribution (LICENSE unchanged) |
+| `README.md` | fork note crediting MHSanaei/3x-ui with the install command and stock-installer warning; Quick Start, platforms and Docker sections point at this fork | attribution (LICENSE unchanged), safe install |
 | `internal/web/runtime/local.go` | `AddInbound` marshals `xrayInbound(ib)`; `AddUser` passes `xrayUser(ib, userMap)`; `RemoveUser` passes `xrayUserEmail(ib, email)` | hot add/remove/update reach Xray under the stat email |
+| `internal/config/version` | `3.11.0-netron.1` | panel version = release tag without `v`; `release.yml` refuses a mismatching tag |
+| `internal/util/version/version.go` | `parse` returns 4 parts; base/revision via `splitNetronRevision` (new `netron.go`) | `-netron.N` tags compare correctly in the update notifier and node version gates |
+| `internal/web/service/panel/panel.go` | updater script and release API URLs built from `panelRepo` (new `netron_repo.go`) | the panel's update check and Update button install this fork, never stock 3x-ui |
+| `install.sh`, `update.sh`, `x-ui.sh` | `xui_repo="mahdizo3181/netron-panel"` after the colour block; every `MHSanaei/3x-ui` URL uses `${xui_repo}`; amd64/arm64 guard in `install_x-ui` / `update_x-ui`; `x-ui.sh`: version regex accepts `-netron.N`, legacy-version prompt, uninstall hint uses `main` | one-command install/update from this fork |
+| `deploy/cloud-init/cloud-init.yaml` | installer URL | cloud-init installs this fork |
+| `.github/workflows/release.yml` | tags `v*.*.*-netron.*` + dispatch only; matrix amd64/arm64; tag-vs-version check; `npm run gen:zod` before the frontend build; per-platform upload replaced by one `publish` job (`gh release`, latest vs pre-release); Windows and dev-channel jobs guarded upstream-only | fork releases |
+| `.github/workflows/docker.yml`, `docs-deploy.yml`, `mutation.yml`, `cleanup_caches.yml`, `claude-issue-analyst.yml`, `claude-pr-review.yml` | job `if: github.repository == 'MHSanaei/3x-ui'` | upstream-only jobs (image push, Pages deploy, nightly jobs, Claude bots) never run on the fork |
 
 ## New files (no rebase conflict expected)
 
 - `docs/MULTIPLIER.md`, `docs/NETRON_UPSTREAM_CHANGES.md`
-
+- `internal/util/version/netron.go` (+ test), `internal/web/service/panel/netron_repo.go`, `netron_update_test.go`
 - `internal/database/model/usage_multiplier.go` (+ test)
 - `internal/database/usage_multiplier_migration_test.go`, `usage_multiplier_postgres_test.go`
 - `internal/web/service/usage_multiplier_postgres_test.go` (run: `XUI_DB_TYPE=postgres XUI_DB_DSN=... go test ./internal/web/service -run ^TestUsageMultiplierPostgres$`)
@@ -65,3 +72,15 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
   (SQLite AUTOINCREMENT, Postgres serial). A client reset or delete clears them.
 - `inbound_node.go` central `client_traffics` deletes for node inbounds: per-inbound
   rows exist only for local inbounds; the client's own delete path clears them.
+
+## After every rebase
+
+No upstream download URL may come back (the Go module path `.../3x-ui/v3` is excluded). This must print nothing:
+
+```
+grep -rniP '(github\.com|githubusercontent\.com|api\.github\.com/repos)/mhsanaei/3x-ui(?!/v3)' \
+  install.sh update.sh x-ui.sh deploy/ internal/web/service/panel/ .github/workflows/release.yml
+```
+
+Then `go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -shellcheck=` and
+`shellcheck --severity=error install.sh update.sh x-ui.sh`.

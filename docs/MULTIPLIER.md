@@ -12,6 +12,87 @@ number.
 Example: 10 GB on a x1 inbound + 5 GB on a x1.2 inbound = 10 + 6 = **16 GB**
 used. A client with a 16 GB quota is disabled at exactly that point.
 
+## Install (netron-panel, not stock 3x-ui)
+
+On a fresh Ubuntu/Debian server (linux amd64 or arm64), as root:
+
+```
+bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh)
+```
+
+This installs the latest netron-panel release. To pin a version, pass its tag:
+
+```
+bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh) v3.11.0-netron.1
+```
+
+> [!WARNING]
+> **Never run the stock upstream installer or updater on a netron server**
+> (`raw.githubusercontent.com/MHSanaei/3x-ui/.../install.sh` or `update.sh`). It
+> would replace the binary with stock 3x-ui, which ignores the multiplier and
+> bills every inbound at x1. Use the `x-ui` menu installed by netron-panel, the
+> panel's own Update button, or the commands above. All of them fetch from
+> `mahdizo3181/netron-panel`.
+
+- The `x-ui` menu's install, update and menu-refresh commands, the release
+  tarball with its `.sha256`, `x-ui.sh`, `x-ui.rc` and the service units all
+  come from this repository (one `xui_repo=` variable at the top of
+  `install.sh`, `update.sh` and `x-ui.sh`).
+- The panel's built-in update check and Update button use this repository's
+  releases too. A panel reports its version as `3.11.0-netron.1`; a newer
+  `-netron.N` tag (or a newer upstream base) shows as an update.
+- The **dev update channel** (`dev-latest`) is not published by this fork.
+  Selecting it, or "update to dev" in the menu, fails at download and leaves
+  the installation untouched.
+- Only `amd64` and `arm64` are published; other architectures stop with a clear message.
+
+## Cutting a release
+
+1. Set the version in `internal/config/version`, e.g. `3.11.0-netron.2`, and
+   commit it on `main`. The release workflow refuses a tag that does not match.
+2. Tag and push:
+
+   ```
+   git tag v3.11.0-netron.2
+   git push origin v3.11.0-netron.2
+   ```
+
+3. `.github/workflows/release.yml` builds the frontend and the Go binary
+   (linux amd64 and arm64, with Xray, geo files and mtg-multi), packages
+   `x-ui-linux-<arch>.tar.gz` plus `.sha256`, and publishes the GitHub release.
+   A plain `v<base>-netron.<N>` tag becomes the **latest** release, which is what
+   the installer and the panel's update check pick.
+
+Naming: `v<upstream base>-netron.<N>`. Start `N` at 1 for each new upstream
+base (`v3.12.0-netron.1` after rebasing on upstream `v3.12.0`).
+
+### Release dry run (do this first)
+
+1. **Build only, no release.** GitHub → Actions → "Release netron-panel" → *Run
+   workflow* on `main`. This builds both tarballs as run artifacts and publishes
+   nothing. Download `x-ui-linux-amd64` from the run page and check:
+   - `sha256sum -c x-ui-linux-amd64.tar.gz.sha256` says `OK`;
+   - `tar -tzf x-ui-linux-amd64.tar.gz` lists `x-ui/x-ui`, `x-ui/x-ui.sh`,
+     `x-ui/x-ui.service.debian|arch|rhel`, `x-ui/bin/xray-linux-amd64`,
+     `x-ui/bin/mtg-linux-amd64` and the `geo*.dat` files;
+   - `./x-ui/x-ui -v` prints `dev+<sha>` (dispatch builds are commit-stamped;
+     tagged builds print the version).
+2. **Pre-release.** Push a tag with an extra suffix, e.g.
+   `git tag v3.11.0-netron.1-rc.1 && git push origin v3.11.0-netron.1-rc.1`. It
+   is published as a **pre-release**, which `releases/latest` and therefore the
+   installer and the update check ignore. Check on the release page:
+   - exactly four assets: `x-ui-linux-amd64.tar.gz`, `x-ui-linux-arm64.tar.gz`
+     and their `.sha256` files;
+   - the release is marked *Pre-release*, not *Latest*.
+
+   Install it on a **throwaway** VM only, by naming the tag:
+   `bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh) v3.11.0-netron.1-rc.1`.
+   Then delete the pre-release and its tag (`gh release delete v3.11.0-netron.1-rc.1 --cleanup-tag`).
+3. **Real release.** Push `v3.11.0-netron.1`. Confirm the release page shows
+   *Latest* and the same four assets, and that
+   `curl -sI https://github.com/mahdizo3181/netron-panel/releases/latest`
+   redirects to `.../tag/v3.11.0-netron.1`.
+
 ## How it works
 
 Xray keeps one traffic counter per user email, whatever the inbound. To weight
