@@ -3,10 +3,13 @@ package runtime
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
@@ -72,4 +75,35 @@ func TestLocalAddInboundUsesStatEmail(t *testing.T) {
 	if !json.Valid([]byte(ib.Settings)) || !strings.Contains(ib.Settings, `"bob@x"`) {
 		t.Fatalf("AddInbound mutated the caller's stored settings: %s", ib.Settings)
 	}
+}
+
+// The node binds the master's push with gin's form binding: x0 must arrive as
+// free (not dropped as a zero value) and an unset multiplier as "not sent".
+func TestWireInboundCarriesUsageMultiplierToNode(t *testing.T) {
+	zero, tunnel := 0.0, 1.2
+	for _, tc := range []struct {
+		name string
+		in   *float64
+		want *float64
+	}{{"unset stays unset", nil, nil}, {"free survives the wire", &zero, &zero}, {"x1.2", &tunnel, &tunnel}} {
+		t.Run(tc.name, func(t *testing.T) {
+			form := wireInbound(&model.Inbound{Protocol: model.VLESS, UsageMultiplier: tc.in}, 0)
+			req := httptest.NewRequest(http.MethodPost, "/add", strings.NewReader(form.Encode()))
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			var got model.Inbound
+			if err := binding.Form.Bind(req, &got); err != nil {
+				t.Fatalf("node-side bind: %v", err)
+			}
+			if (got.UsageMultiplier == nil) != (tc.want == nil) || (got.UsageMultiplier != nil && *got.UsageMultiplier != *tc.want) {
+				t.Fatalf("node received %v, want %v", deref(got.UsageMultiplier), deref(tc.want))
+			}
+		})
+	}
+}
+
+func deref(p *float64) any {
+	if p == nil {
+		return nil
+	}
+	return *p
 }

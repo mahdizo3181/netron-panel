@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"maps"
+	"net/url"
+	"strconv"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
@@ -30,4 +32,12 @@ func xrayUser(ib *model.Inbound, user map[string]any) map[string]any {
 		user["email"] = xe
 	}
 	return user
+}
+
+// setWireUsageMultiplier sends the multiplier only when set, so an unset one
+// reaches the node as "not sent" (keep) instead of an explicit x1.
+func setWireUsageMultiplier(v url.Values, ib *model.Inbound) {
+	if ib.UsageMultiplier != nil {
+		v.Set("usageMultiplier", strconv.FormatFloat(*ib.UsageMultiplier, 'f', -1, 64))
+	}
 }

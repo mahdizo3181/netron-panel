@@ -17,6 +17,7 @@ func seedResetFixture(t *testing.T) resetFixture {
 	t.Helper()
 	initUsageMultTestDB(t)
 	usagemult.SetActive(true)
+	t.Cleanup(func() { withdrawClientTombstones("alice@x", "bob@x") })
 	f := resetFixture{
 		a: mkMultInbound(t, 23001, model.VLESS, nil),
 		b: mkMultInbound(t, 23002, model.VLESS, f64(1.5)),

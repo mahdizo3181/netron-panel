@@ -913,6 +913,7 @@ func wireInbound(ib *model.Inbound, remoteNodeID int) url.Values {
 	if ib.TrafficResetDay > 0 {
 		v.Set("trafficResetDay", strconv.Itoa(ib.TrafficResetDay))
 	}
+	setWireUsageMultiplier(v, ib)
 	return v
 }
 
