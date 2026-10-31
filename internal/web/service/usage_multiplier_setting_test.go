@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/dbtest"
+	"github.com/mhsanaei/3x-ui/v3/internal/testpg"
 	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
 )
 
@@ -12,6 +13,12 @@ func initUsageMultTestDB(t *testing.T) {
 	t.Helper()
 	dir := t.TempDir()
 	t.Setenv("XUI_DB_FOLDER", dir)
+	// A fresh schema per init on Postgres; a no-op on SQLite.
+	cleanup, err := testpg.IsolatePackage("usage_mult")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cleanup)
 	dbtest.InitDB(t, filepath.Join(dir, "x-ui.db"))
 	t.Cleanup(func() { usagemult.SetActive(false) })
 }

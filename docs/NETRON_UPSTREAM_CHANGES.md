@@ -40,7 +40,8 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 ## New files (no rebase conflict expected)
 
 - `internal/database/model/usage_multiplier.go` (+ test)
-- `internal/database/usage_multiplier_migration_test.go`
+- `internal/database/usage_multiplier_migration_test.go`, `usage_multiplier_postgres_test.go`
+- `internal/web/service/usage_multiplier_postgres_test.go` (run: `XUI_DB_TYPE=postgres XUI_DB_DSN=... go test ./internal/web/service -run ^TestUsageMultiplierPostgres$`)
 - `internal/usagemult/` (stat email, protocol support, mode latch)
 - `internal/web/service/usage_multiplier_setting.go`, `usage_multiplier_config.go`, `usage_multiplier_traffic.go` (+ tests)
 - `internal/web/runtime/usage_multiplier.go` (+ in-process Xray test)
