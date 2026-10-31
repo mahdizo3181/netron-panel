@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/wirecodec"
 )
 
@@ -22,7 +23,7 @@ const maxDecodedConfigBytes = 8 << 20
 // panels and plain calls keep working (mixed-version safe).
 func ConfigEnvelopeMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header(wirecodec.CapsHeader, wirecodec.NodeCaps)
+		c.Header(wirecodec.CapsHeader, usagemult.NodeCaps(wirecodec.NodeCaps))
 
 		enc := c.GetHeader("Content-Encoding")
 		sum := c.GetHeader(wirecodec.HashHeader)

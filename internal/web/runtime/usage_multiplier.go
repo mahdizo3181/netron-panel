@@ -41,3 +41,11 @@ func setWireUsageMultiplier(v url.Values, ib *model.Inbound) {
 		v.Set("usageMultiplier", strconv.FormatFloat(*ib.UsageMultiplier, 'f', -1, 64))
 	}
 }
+
+// UsageMultiplierApplied reports whether the node's last response said it bills
+// per inbound; known is false until the node has answered once.
+func (r *Remote) UsageMultiplierApplied() (known, applied bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.capsSeen, r.appliesUsageMult
+}

@@ -28,6 +28,13 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/service/inbound.go` | `AddInbound`: `validateUsageMultiplier(...)` after the finalmask checks; `UpdateInbound`: `applyUsageMultiplierUpdate(oldInbound, inbound)` after `oldInbound.DisableFlow = ...` | 0..10 and protocol support on every write (REST, UI, import, node push); an update without the field keeps the stored value |
 | `internal/web/service/inbound_node.go` | new central inbound: `UsageMultiplier: adoptedUsageMultiplier(snapIb)`; adopt `updates["usage_multiplier"]` only when non-nil | an old node's snapshot (no field) never zeroes or resets the master's multiplier |
 | `internal/web/runtime/remote.go` | `wireInbound`: `setWireUsageMultiplier(v, ib)` before `return v` | master sends the multiplier with the other inbound fields |
+| `internal/web/runtime/remote.go` (2) | `Remote` field `appliesUsageMult`; `recordCaps`: `r.appliesUsageMult = slices.Contains(caps, usagemult.NodeCap)` | master learns whether a node bills per inbound |
+| `internal/web/middleware/config_envelope.go` | caps header value `usagemult.NodeCaps(wirecodec.NodeCaps)` | a node advertises `usage-mult` only while its running mode is ON |
+| `internal/web/job/node_traffic_sync_job.go` | `syncOne`: `j.inboundService.WarnUsageMultiplierNode(n, rt)` after a successful snapshot | log warning (once per change) for a node counting weighted inbounds at x1 |
+| `internal/web/controller/setting.go` | `g.POST("/usageMultiplierStatus", a.usageMultiplierStatus)` | status endpoint for the UI |
+| `internal/web/node_contract_test.go` | `"UsageMultiplierApplied"` in `remoteMethodsOutsideContract` | accessor reads caps already received, no node call |
+| `tools/openapigen/main.go` | `UsageMultiplierStatus`, `UsageMultiplierNodeStatus` in the service `StructAllow` | schemas/examples for the new endpoint |
+| `frontend/src/pages/api-docs/endpoints.ts` | entry for `POST /panel/api/setting/usageMultiplierStatus` | route registry (pinned by `TestRouteRegistryContract`) |
 | `internal/web/runtime/local.go` | `AddInbound` marshals `xrayInbound(ib)`; `AddUser` passes `xrayUser(ib, userMap)`; `RemoveUser` passes `xrayUserEmail(ib, email)` | hot add/remove/update reach Xray under the stat email |
 
 ## New files (no rebase conflict expected)
@@ -40,7 +47,9 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 - `internal/web/service/usage_multiplier_fold.go` (+ test)
 - `internal/web/service/usage_multiplier_reset_test.go`
 - `internal/web/service/usage_multiplier_inbound.go`, `usage_multiplier_node_test.go`
-- `internal/web/controller/usage_multiplier_test.go`
+- `internal/web/controller/usage_multiplier.go` (+ test)
+- `internal/web/service/usage_multiplier_status.go` (+ test)
+- `internal/web/runtime/usage_multiplier_caps_test.go`
 - `internal/web/job/usage_multiplier_disconnect_test.go`
 - `internal/xray/xraytest/` (in-process Xray core for tests)
 

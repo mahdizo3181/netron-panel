@@ -357,13 +357,14 @@ func TestMasterNodeContract(t *testing.T) {
 
 // Remote methods that never reach the node, or that this table must not run.
 var remoteMethodsOutsideContract = map[string]string{
-	"Name":                  "local label",
-	"RecordAdoptedInbound":  "local fingerprint bookkeeping",
-	"AdoptInboundAlias":     "local alias bookkeeping",
-	"AdoptedInboundAliases": "local alias bookkeeping",
-	"AdvancePushedInbound":  "local fingerprint bookkeeping",
-	"ForgetPushedInbound":   "local fingerprint bookkeeping",
-	"UpdatePanel":           "replaces the node binary; node-sync is denied it on purpose (#6201)",
+	"Name":                   "local label",
+	"RecordAdoptedInbound":   "local fingerprint bookkeeping",
+	"AdoptInboundAlias":      "local alias bookkeeping",
+	"AdoptedInboundAliases":  "local alias bookkeeping",
+	"AdvancePushedInbound":   "local fingerprint bookkeeping",
+	"ForgetPushedInbound":    "local fingerprint bookkeeping",
+	"UpdatePanel":            "replaces the node binary; node-sync is denied it on purpose (#6201)",
+	"UsageMultiplierApplied": "reads caps the node already sent",
 }
 
 // A Remote method with no cell is how activeInbounds and bulkResetTraffic

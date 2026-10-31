@@ -115,3 +115,15 @@ func RewriteSettingsEmails(inboundID int, protocol, settings string) string {
 	}
 	return string(out)
 }
+
+// NodeCap is advertised in the node caps header while this panel's running core
+// bills per inbound; an old build or the OFF mode leaves it out.
+const NodeCap = "usage-mult"
+
+// NodeCaps appends NodeCap to a node's base caps header value when active.
+func NodeCaps(base string) string {
+	if !Active() {
+		return base
+	}
+	return base + "," + NodeCap
+}

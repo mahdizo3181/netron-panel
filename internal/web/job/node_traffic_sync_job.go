@@ -403,6 +403,7 @@ func (j *NodeTrafficSyncJob) syncOne(mgr *runtime.Manager, n *model.Node, doIpSy
 		j.inboundService.ClearNodeOnlineClients(n.Id)
 		return nil
 	}
+	j.inboundService.WarnUsageMultiplierNode(n, rt)
 	snap.ManagedAliases = rt.AdoptedInboundAliases()
 	syncCanAdopt := syncCanAdoptInbounds(n, snap.ManagedAliases)
 	service.FilterNodeSnapshot(n, snap)

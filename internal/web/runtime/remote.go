@@ -22,6 +22,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/crypto/nodetoken"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
+	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/netsafe"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/wirecodec"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/entity"
@@ -96,6 +97,7 @@ type Remote struct {
 	// from one this Remote has not heard from yet.
 	capsSeen          bool
 	supportsAWGKernel bool
+	appliesUsageMult  bool
 
 	// Per-node client honoring the TLS verify mode, built once and reused; a
 	// node config change drops the cached Remote so the next one rebuilds it.
@@ -141,6 +143,7 @@ func (r *Remote) recordCaps(h http.Header) {
 	defer r.mu.Unlock()
 	r.capsSeen = true
 	r.supportsAWGKernel = slices.Contains(caps, wirecodec.CapAmneziaWGKernel)
+	r.appliesUsageMult = slices.Contains(caps, usagemult.NodeCap)
 	if slices.Contains(caps, wirecodec.CapZstd) {
 		r.supportsZstd = true
 	}

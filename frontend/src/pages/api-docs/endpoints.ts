@@ -2032,6 +2032,13 @@ export const sections: readonly Section[] = [
       },
       {
         method: 'POST',
+        path: '/panel/api/setting/usageMultiplierStatus',
+        summary:
+          'Report the saved and running per-inbound usage multiplier mode, and the nodes that would count weighted inbounds at x1 (old version or mode off on the node).',
+        responseSchema: 'UsageMultiplierStatus',
+      },
+      {
+        method: 'POST',
         path: '/panel/api/setting/testDiscord',
         summary: 'Test Discord bot connection by sending a test embed to the configured channel.',
         response: '{\n  "success": true,\n  "msg": "Test notification sent successfully"\n}',
