@@ -24,4 +24,10 @@ describe('subInfoNode settings', () => {
   it('rejects invalid types', () => {
     expect(AllSettingSchema.safeParse({ subInfoNodeEnable: 'true' }).success).toBe(false);
   });
+
+  it('defaults the info link to vless and accepts only vless or socks', () => {
+    expect(new AllSetting().subInfoNodeLinkType).toBe('vless');
+    expect(AllSettingSchema.safeParse({ subInfoNodeLinkType: 'socks' }).success).toBe(true);
+    expect(AllSettingSchema.safeParse({ subInfoNodeLinkType: 'http' }).success).toBe(false);
+  });
 });

@@ -9,6 +9,8 @@ export type SubProfileMode = z.infer<typeof SubProfileModeSchema>;
 
 export const SubHostSortModeSchema = z.enum(['inbound-first', 'hosts-first']);
 export type SubHostSortMode = z.infer<typeof SubHostSortModeSchema>;
+export const SubInfoNodeLinkTypeSchema = z.enum(['vless', 'socks']);
+export type SubInfoNodeLinkType = z.infer<typeof SubInfoNodeLinkTypeSchema>;
 
 export const AllSettingSchema = z
   .object({
@@ -29,6 +31,7 @@ export const AllSettingSchema = z
     remarkTemplate: z.string().optional(),
     subShowIdentityOnAllLinks: z.boolean().optional(),
     subInfoNodeEnable: z.boolean().optional(),
+    subInfoNodeLinkType: SubInfoNodeLinkTypeSchema.optional(),
     subHostSortMode: SubHostSortModeSchema.optional(),
     subCalendarExpireInclusive: z.boolean().optional(),
     subExpiredTemplate: z.string().optional(),

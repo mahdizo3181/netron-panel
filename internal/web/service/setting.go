@@ -83,6 +83,7 @@ var defaultValueMap = map[string]string{
 	"remarkTemplate":              DefaultRemarkTemplate,
 	"subShowIdentityOnAllLinks":   "false",
 	"subInfoNodeEnable":           "false",
+	"subInfoNodeLinkType":         SubInfoNodeLinkVless,
 	"subHostSortMode":             "inbound-first",
 	"subCalendarExpireInclusive":  "false",
 	"subExpiredTemplate":          DefaultSubExpiredTemplate,
@@ -1675,6 +1676,11 @@ func (s *SettingService) UpdateAllSetting(allSetting *entity.AllSetting, clears 
 	default:
 		return errors.New("subscription host sort mode must be inbound-first or hosts-first")
 	}
+	linkType, err := normalizeSubInfoNodeLinkType(allSetting.SubInfoNodeLinkType)
+	if err != nil {
+		return err
+	}
+	allSetting.SubInfoNodeLinkType = linkType
 	switch allSetting.SubProfileMode {
 	case "", SubProfileModeNone, SubProfileModeBuiltin, SubProfileModeCustom:
 		allSetting.SubProfileMode = effectiveSubProfileMode(allSetting.SubProfileMode, allSetting.SubProfileUrl)
