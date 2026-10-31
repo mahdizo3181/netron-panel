@@ -287,7 +287,7 @@ func (s *SubJsonService) GetJson(subId string, host string, alwaysReturnArray bo
 	header = subReq.subscriptionUserinfo(traffic)
 
 	if mode, remark := subReq.resolveInfoNodeRemark(subId, emails, traffic, len(configArray) > 0); mode != infoNodeNone {
-		dummyConfig := s.genDummySocksConfig(remark)
+		dummyConfig := s.genDummyInfoConfig(infoNodeOutbound(subReq.subInfoNodeLinkType), remark)
 		if mode == infoNodeExpired || mode == infoNodeDepleted {
 			configArray = []json_util.RawMessage{dummyConfig}
 		} else {
@@ -1160,19 +1160,7 @@ func (s *SubJsonService) genWireguard(inbound *model.Inbound, client model.Clien
 	return result
 }
 
-func (s *SubJsonService) genDummySocksConfig(remark string) json_util.RawMessage {
-	outbound := map[string]any{
-		"protocol": "socks",
-		"tag":      "proxy",
-		"settings": map[string]any{
-			"servers": []any{
-				map[string]any{
-					"address": "127.0.0.1",
-					"port":    1080,
-				},
-			},
-		},
-	}
+func (s *SubJsonService) genDummyInfoConfig(outbound map[string]any, remark string) json_util.RawMessage {
 	rawOutbound, _ := json.Marshal(outbound)
 	newOutbounds := []json_util.RawMessage{rawOutbound}
 	newOutbounds = append(newOutbounds, s.defaultOutbounds...)

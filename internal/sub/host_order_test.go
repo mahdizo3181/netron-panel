@@ -162,7 +162,7 @@ func TestSub_HostOrderBase64AndInfoNode(t *testing.T) {
 		t.Fatalf("base64 subscription: %v: %s", err, response.Body.String())
 	}
 	lines := strings.Split(strings.TrimSpace(string(decoded)), "\n")
-	if len(lines) != 3 || !strings.HasPrefix(lines[0], "socks://127.0.0.1") || !strings.Contains(lines[1], "b.example.com") || !strings.Contains(lines[2], "a.example.com") {
+	if len(lines) != 3 || !strings.HasPrefix(lines[0], "vless://"+infoNodeUUID+"@127.0.0.1:1?") || !strings.Contains(lines[1], "b.example.com") || !strings.Contains(lines[2], "a.example.com") {
 		t.Fatalf("encoded order/info node: %q", lines)
 	}
 }

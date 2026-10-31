@@ -2,7 +2,6 @@ package sub
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -92,11 +91,7 @@ func TestSubService_InfoNode_Active(t *testing.T) {
 		t.Fatalf("traffic should be enabled")
 	}
 
-	// First link must be the dummy socks node
-	if !strings.HasPrefix(links[0], "socks://127.0.0.1:1080#") {
-		t.Fatalf("first link must be dummy socks node, got: %q", links[0])
-	}
-	decodedRemark, _ := url.QueryUnescape(strings.TrimPrefix(links[0], "socks://127.0.0.1:1080#"))
+	decodedRemark := assertInfoVlessLink(t, links[0])
 	if !strings.Contains(decodedRemark, "user1@test.com") || !strings.Contains(decodedRemark, "8.00GB") {
 		t.Fatalf("expected dummy remark to contain user1@test.com and 8.00GB, got: %q", decodedRemark)
 	}
@@ -163,10 +158,7 @@ func TestSubService_InfoNode_Expired(t *testing.T) {
 	if len(links) != 1 {
 		t.Fatalf("expected ONLY 1 link (dummy expired node), got %d: %v", len(links), links)
 	}
-	if !strings.HasPrefix(links[0], "socks://127.0.0.1:1080#") {
-		t.Fatalf("expired link must be dummy socks node, got: %q", links[0])
-	}
-	decodedRemark, _ := url.QueryUnescape(strings.TrimPrefix(links[0], "socks://127.0.0.1:1080#"))
+	decodedRemark := assertInfoVlessLink(t, links[0])
 	if !strings.Contains(decodedRemark, "Expired") || !strings.Contains(decodedRemark, "exp@test.com") {
 		t.Fatalf("expected expired remark, got: %q", decodedRemark)
 	}
@@ -226,10 +218,7 @@ func TestSubService_InfoNode_TrafficDepleted(t *testing.T) {
 	if len(links) != 1 {
 		t.Fatalf("expected ONLY 1 link (dummy depleted node), got %d: %v", len(links), links)
 	}
-	if !strings.HasPrefix(links[0], "socks://127.0.0.1:1080#") {
-		t.Fatalf("depleted link must be dummy socks node, got: %q", links[0])
-	}
-	decodedRemark, _ := url.QueryUnescape(strings.TrimPrefix(links[0], "socks://127.0.0.1:1080#"))
+	decodedRemark := assertInfoVlessLink(t, links[0])
 	if !strings.Contains(decodedRemark, "Traffic Depleted") || !strings.Contains(decodedRemark, "dep@test.com") {
 		t.Fatalf("expected depleted remark, got: %q", decodedRemark)
 	}
@@ -289,8 +278,8 @@ func TestSubService_GetSubs_NonSubscriptionBody_NoInfoNode(t *testing.T) {
 	if len(links) != 1 {
 		t.Fatalf("expected 1 clean link, got %d: %v", len(links), links)
 	}
-	if strings.HasPrefix(links[0], "socks://127.0.0.1:1080#") {
-		t.Fatalf("GetSubs must NOT return dummy socks node when subscriptionBody is false: %v", links[0])
+	if strings.Contains(links[0], infoNodeUUID) {
+		t.Fatalf("GetSubs must NOT return the info node when subscriptionBody is false: %v", links[0])
 	}
 	if strings.Contains(links[0], "8.00GB") {
 		t.Fatalf("GetSubs must NOT contain snapshot usage stats in non-subscriptionBody context: %v", links[0])
@@ -350,10 +339,10 @@ func TestSubService_InfoNode_MultiClient_DeterministicPrimaryEmail(t *testing.T)
 		if err != nil {
 			t.Fatalf("GetSubs error: %v", err)
 		}
-		if len(links) < 1 || !strings.HasPrefix(links[0], "socks://127.0.0.1:1080#") {
-			t.Fatalf("expected dummy socks node, got: %v", links)
+		if len(links) < 1 {
+			t.Fatalf("expected the info node, got: %v", links)
 		}
-		decodedRemark, _ := url.QueryUnescape(strings.TrimPrefix(links[0], "socks://127.0.0.1:1080#"))
+		decodedRemark := assertInfoVlessLink(t, links[0])
 		if decodedRemark != "alpha@test.com" {
 			t.Fatalf("expected primaryEmail 'alpha@test.com' (sorted alphabetically), got %q", decodedRemark)
 		}

@@ -49,6 +49,7 @@ type SubService struct {
 	usageShown                 map[string]bool
 	showIdentityOnAllLinks     bool
 	subInfoNodeEnable          bool
+	subInfoNodeLinkType        string
 	subCalendarExpireInclusive bool
 	calendarExpireLocation     *time.Location
 	subExpiredTemplate         string
@@ -271,6 +272,7 @@ func (s *SubService) loadRemarkSettings() {
 	if enabled, err := s.settingService.GetSubInfoNodeEnable(); err == nil && enabled {
 		s.subInfoNodeEnable = enabled
 	}
+	s.subInfoNodeLinkType, _ = s.settingService.GetSubInfoNodeLinkType()
 	if tmpl, err := s.settingService.GetSubExpiredTemplate(); err == nil && tmpl != "" {
 		s.subExpiredTemplate = tmpl
 	}
@@ -591,7 +593,7 @@ func (s *SubService) getSubs(subId string) ([]string, []string, int64, xray.Clie
 	traffic.Enable = hasEnabledClient
 
 	if mode, remark := s.resolveInfoNodeRemark(subId, uniqueEmails, traffic, len(result) > 0); mode != infoNodeNone {
-		dummyLink := fmt.Sprintf("socks://127.0.0.1:1080#%s", strings.ReplaceAll(url.QueryEscape(remark), "+", "%20"))
+		dummyLink := infoNodeLink(s.subInfoNodeLinkType, remark)
 		if mode == infoNodeExpired || mode == infoNodeDepleted {
 			return []string{dummyLink}, emails, lastOnline, traffic, nil
 		}

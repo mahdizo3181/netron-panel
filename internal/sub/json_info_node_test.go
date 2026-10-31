@@ -63,11 +63,12 @@ func TestSubJson_InfoNode_Active(t *testing.T) {
 		t.Fatalf("GetJson: %v", err)
 	}
 
-	if !strings.Contains(out, "user1@test.com|📊8.00GB") {
+	docs := parseSubJsonDocs(t, out)
+	if docs[0]["remarks"] != "user1@test.com|📊8.00GB" {
 		t.Fatalf("expected dummy remark in JSON remarks, got:\n%s", out)
 	}
-	if !strings.Contains(out, `"protocol": "socks"`) && !strings.Contains(out, `"protocol":"socks"`) {
-		t.Fatalf("expected socks outbound in JSON, got:\n%s", out)
+	if ob := firstOutbound(t, docs[0]); ob["protocol"] != "vless" {
+		t.Fatalf("expected vless info outbound in JSON, got:\n%s", out)
 	}
 }
 
