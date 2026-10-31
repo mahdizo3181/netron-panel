@@ -1299,6 +1299,9 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	if err := validateFinalMaskSalamander(inbound.StreamSettings); err != nil {
 		return inbound, false, err
 	}
+	if err := validateUsageMultiplier(inbound.Protocol, inbound.UsageMultiplier); err != nil {
+		return inbound, false, err
+	}
 	if err := validateXDriveStorage(inbound.StreamSettings); err != nil {
 		return inbound, false, err
 	}
@@ -2166,6 +2169,9 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		oldInbound.Port = inbound.Port
 		oldInbound.Protocol = inbound.Protocol
 		oldInbound.DisableFlow = inbound.DisableFlow
+		if err := applyUsageMultiplierUpdate(oldInbound, inbound); err != nil {
+			return err
+		}
 		oldInbound.Settings = inbound.Settings
 		oldInbound.StreamSettings = inbound.StreamSettings
 		oldInbound.Sniffing = inbound.Sniffing

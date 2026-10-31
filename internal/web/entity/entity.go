@@ -115,6 +115,7 @@ type AllSetting struct {
 	ExternalTrafficInformEnable bool   `json:"externalTrafficInformEnable" form:"externalTrafficInformEnable"`
 	ExternalTrafficInformURI    string `json:"externalTrafficInformURI" form:"externalTrafficInformURI"`
 	RestartXrayOnClientDisable  bool   `json:"restartXrayOnClientDisable" form:"restartXrayOnClientDisable"`
+	UsageMultiplierEnable       bool   `json:"usageMultiplierEnable" form:"usageMultiplierEnable"` // netron: applies on the next forced Xray restart
 	SubEncrypt                  bool   `json:"subEncrypt" form:"subEncrypt"`
 	SubURI                      string `json:"subURI" form:"subURI"`
 	SubJsonPath                 string `json:"subJsonPath" form:"subJsonPath"`

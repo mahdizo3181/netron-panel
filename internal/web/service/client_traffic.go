@@ -247,6 +247,9 @@ func (s *ClientService) ResetAllTraffics() (bool, error) {
 			if err := tx.Where("1 = 1").Delete(&model.NodeClientTraffic{}).Error; err != nil {
 				return err
 			}
+			if err := tx.Where("1 = 1").Delete(&model.ClientInboundTraffic{}).Error; err != nil {
+				return err
+			}
 			resetNodes, qErr = queueNodeResets(tx, nil)
 			return qErr
 		})

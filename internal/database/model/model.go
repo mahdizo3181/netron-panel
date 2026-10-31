@@ -79,6 +79,8 @@ type Inbound struct {
 
 	DisableFlow bool `json:"disableFlow" form:"disableFlow" gorm:"column:disable_flow;default:false" example:"false"`
 
+	UsageMultiplier *float64 `json:"usageMultiplier,omitempty" form:"usageMultiplier" gorm:"column:usage_multiplier;default:1" validate:"omitempty,gte=0,lte=10" example:"1"` // netron: traffic weight; nil = x1
+
 	// OriginNodeGuid is the panelGuid of the node that physically hosts this
 	// inbound, propagated up across hops (#4983). Empty for an inbound that
 	// lives on this panel's own xray; set to the originating node's GUID when

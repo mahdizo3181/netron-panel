@@ -81,6 +81,7 @@ func (a *SettingController) initRouter(g *gin.RouterGroup) {
 	g.POST("/testSmtp", a.testSmtp)
 	g.POST("/testTgBot", a.testTgBot)
 	g.POST("/tgBotCapabilities", a.tgBotCapabilities)
+	g.POST("/usageMultiplierStatus", a.usageMultiplierStatus)
 	g.POST("/testDiscord", a.testDiscord)
 }
 

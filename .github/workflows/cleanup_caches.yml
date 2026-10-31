@@ -6,6 +6,8 @@ on:
 
 jobs:
   cleanup:
+    # netron-panel: upstream-only job (pushes/deploys/bots under MHSanaei's accounts).
+    if: github.repository == 'MHSanaei/3x-ui'
     runs-on: ubuntu-latest
     permissions:
       actions: write

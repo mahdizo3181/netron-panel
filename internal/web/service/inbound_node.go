@@ -824,6 +824,7 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 				Down:                 snapIb.Down,
 				ShareAddrStrategy:    "node",
 				DisableFlow:          snapIb.DisableFlow,
+				UsageMultiplier:      adoptedUsageMultiplier(snapIb),
 			}
 			if err := tx.Create(&newIb).Error; err != nil {
 				logger.Warningf("setRemoteTraffic: create central inbound for tag %q failed: %v", snapIb.Tag, err)
@@ -877,6 +878,9 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 			updates["traffic_reset"] = snapIb.TrafficReset
 			updates["traffic_reset_day"] = normalizeTrafficResetDay(snapIb.TrafficResetDay)
 			updates["last_traffic_reset_time"] = snapIb.LastTrafficResetTime
+			if m := adoptedUsageMultiplier(snapIb); m != nil {
+				updates["usage_multiplier"] = *m
+			}
 		}
 		if !inGrace || (snapIb.Up+snapIb.Down) <= (c.Up+c.Down) {
 			updates["up"] = snapIb.Up

@@ -1008,6 +1008,9 @@ func (s *ClientService) BulkDelete(inboundSvc *InboundService, emails []string, 
 						return e
 					}
 				}
+				if e := dropClientInboundTraffic(tx, successEmails...); e != nil {
+					return e
+				}
 			}
 			for _, batch := range chunkInts(successIds, sqlInChunk) {
 				if e := tx.Where("id IN ?", batch).Delete(&model.ClientRecord{}).Error; e != nil {

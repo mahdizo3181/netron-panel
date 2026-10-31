@@ -13,7 +13,9 @@ jobs:
   # Everything that writes to the pull request lives outside the job that runs
   # the model: `prepare` before it, `post` after it.
   prepare:
+    # netron-panel: upstream-only job (pushes/deploys/bots under MHSanaei's accounts).
     if: >-
+      github.repository == 'MHSanaei/3x-ui' && (
       (github.event_name == 'pull_request_target'
        && github.event.pull_request.user.type != 'Bot'
        && !github.event.pull_request.draft)
@@ -21,7 +23,7 @@ jobs:
           && github.event.issue.pull_request
           && github.event.issue.state == 'open'
           && startsWith(github.event.comment.body, '@claude review')
-          && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+          && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

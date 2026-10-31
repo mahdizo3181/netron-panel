@@ -17,6 +17,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
+	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
 
@@ -747,9 +748,12 @@ func (j *CheckClientIpJob) disconnectClientTemporarily(inbound *model.Inbound, c
 		}
 	}
 
+	xrayEmail := usagemult.XrayEmail(inbound.Id, protocol, clientEmail)
+	clientConfig["email"] = xrayEmail
+
 	// The core's RemoveUser clears its validator: a session already up keeps
 	// running, except a reverse vless client, which is skipped above.
-	err = xrayAPI.RemoveUser(inbound.Tag, clientEmail)
+	err = xrayAPI.RemoveUser(inbound.Tag, xrayEmail)
 	if err != nil {
 		logger.Warningf("[LIMIT_IP] Failed to remove user %s: %v", clientEmail, err)
 		return

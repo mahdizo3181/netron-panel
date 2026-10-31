@@ -17,6 +17,14 @@
   <a href="https://docs.sanaei.dev"><img src="https://img.shields.io/badge/docs-docs.sanaei.dev-22d3ee" alt="Documentation"></a>
 </p>
 
+> [!NOTE]
+> **netron-panel** is a fork of [MHSanaei/3x-ui](https://github.com/MHSanaei/3x-ui) (base: `v3.11.0`), released under the same [GPL-3.0](LICENSE) license. All credit for 3X-UI goes to MHSanaei and its contributors. This fork adds a per-inbound usage multiplier with one shared quota per client, see [docs/MULTIPLIER.md](docs/MULTIPLIER.md). Upstream files it touches are listed in [docs/NETRON_UPSTREAM_CHANGES.md](docs/NETRON_UPSTREAM_CHANGES.md).
+>
+> Install netron-panel (Ubuntu/Debian, amd64/arm64, as root):
+> `bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh)`
+>
+> **Never run the stock upstream installer/updater on a netron server: it would replace the binary with stock 3x-ui.** Releases: see "Cutting a release" in [docs/MULTIPLIER.md](docs/MULTIPLIER.md).
+
 **3X-UI** is an advanced, open-source web control panel for managing [Xray-core](https://github.com/XTLS/Xray-core) servers. It provides a clean, multi-language interface for deploying, configuring, and monitoring a wide range of proxy and VPN protocols — from a single VPS to multi-node deployments.
 
 Built as an enhanced fork of the original X-UI project, 3X-UI adds broader protocol support, improved stability, per-client traffic accounting, and many quality-of-life features.
@@ -74,20 +82,16 @@ Built as an enhanced fork of the original X-UI project, 3X-UI adds broader proto
 ## Quick Start
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh)
 ```
 
-To install a specific version, append its tag (e.g. `v3.7.0`):
+To install a specific netron-panel release, append its tag (e.g. `v3.11.0-netron.1`):
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v3.7.0
+bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh) v3.11.0-netron.1
 ```
 
-To install the rolling **dev** build (latest per-commit pre-release from `main`, not a stable release), pass `dev-latest`:
-
-```bash
-bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) dev-latest
-```
+netron-panel publishes linux amd64 and arm64 releases only and has no rolling dev build.
 
 During installation a random username, password, and access path are generated. After installation, run `x-ui` to open the management menu, where you can start/stop the service, view or reset your login credentials, manage SSL certificates, and more.
 
@@ -109,7 +113,7 @@ zero prompts, generating random credentials and writing them to
 
 **Operating systems:** Ubuntu, Debian, Armbian, Fedora, CentOS, RHEL, AlmaLinux, Rocky Linux, Oracle Linux, Amazon Linux, Virtuozzo, Arch, Manjaro, Parch, openSUSE (Tumbleweed / Leap), Alpine, and Windows.
 
-**Architectures:** `amd64` · `386` · `arm64` (aarch64) · `armv7` · `armv6` · `armv5` · `s390x`.
+**Architectures:** `amd64` · `386` · `arm64` (aarch64) · `armv7` · `armv6` · `armv5` · `s390x`. netron-panel releases are published for Linux `amd64` and `arm64` only.
 
 ## Database Options
 
@@ -136,6 +140,8 @@ systemctl restart x-ui
 The source SQLite file is left untouched; remove it manually once you have verified the new backend.
 
 ### Docker
+
+netron-panel publishes no Docker image: `ghcr.io/mhsanaei/3x-ui` below is **stock** 3x-ui. Build this fork's image locally with `docker compose build` (the bundled `docker-compose.yml` builds from this checkout).
 
 The default `docker compose up -d` keeps using SQLite. To run with the bundled PostgreSQL service, uncomment the two `XUI_DB_*` env lines in `docker-compose.yml` and start with the profile:
 

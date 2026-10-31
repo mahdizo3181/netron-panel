@@ -1,45 +1,38 @@
-name: Release 3X-UI
+name: Release netron-panel
 
+# netron-panel: a v<base>-netron.<N> tag publishes a release; workflow_dispatch is
+# a dry run that only builds the tarballs as run artifacts.
 on:
   workflow_dispatch:
-  # Only main (dev channel) and version tags ship binaries; build any other
-  # branch on demand via workflow_dispatch.
   push:
-    branches:
-      - main
     tags:
-      - "v*.*.*"
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "**.sh"
-      - "frontend/**"
-      - "x-ui.service.debian"
-      - "x-ui.service.arch"
-      - "x-ui.service.rhel"
-      - ".github/workflows/release.yml"
+      - "v*.*.*-netron.*"
 
 jobs:
   build:
     permissions:
-      contents: write
+      contents: read
     strategy:
-      # One platform hitting a transient outage must not cancel the other six.
       fail-fast: false
       matrix:
         platform:
           - amd64
           - arm64
-          - armv7
-          - armv6
-          - 386
-          - armv5
-          - s390x
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+
+      - name: Check tag matches internal/config/version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(tr -d '[:space:]' < internal/config/version)
+          tag="${GITHUB_REF_NAME}"
+          # v<version> is a release; v<version>-<anything> (e.g. -rc.1) is a pre-release of it.
+          if [[ "$tag" != "v${version}" && "$tag" != "v${version}-"* ]]; then
+            echo "tag ${tag} does not match internal/config/version (${version}); bump the file or fix the tag" >&2
+            exit 1
+          fi
 
       - name: Setup Go
         uses: actions/setup-go@v7
@@ -58,9 +51,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
+      # gen:zod regenerates the Go-derived schemas first, so a release never
+      # depends on someone having run `make gen` by hand.
       - name: Build frontend bundle
         run: |
           npm ci
+          npm run gen:zod
           npm run build
         working-directory: frontend
 
@@ -186,22 +182,52 @@ jobs:
             ./x-ui-linux-${{ matrix.platform }}.tar.gz
             ./x-ui-linux-${{ matrix.platform }}.tar.gz.sha256
 
-      - name: Upload files to GH release
-        uses: svenstaro/upload-release-action@v2
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+  # One job publishes after every platform built, so a release never appears
+  # half-uploaded. A plain v<base>-netron.<N> tag becomes the latest release
+  # the installer picks; any longer tag (e.g. -rc.1) is a pre-release it skips.
+  publish:
+    name: Publish GitHub release
+    needs: [build]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
-          file: x-ui-linux-${{ matrix.platform }}.tar.gz*
-          file_glob: true
-          overwrite: true
-          prerelease: true
+          path: dist
+          merge-multiple: true
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          ls -l dist
+          (cd dist && sha256sum -c ./*.sha256)
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-netron\.[0-9]+$ ]]; then
+            kind=(--latest)
+          else
+            kind=(--prerelease --latest=false)
+          fi
+          notes="netron-panel ${TAG} (fork of MHSanaei/3x-ui). Install: bash <(curl -Ls https://raw.githubusercontent.com/${GH_REPO}/main/install.sh) ${TAG}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --verify-tag --title "netron-panel ${TAG}" --notes "$notes" "${kind[@]}"
+          fi
 
   # =================================
   #  Windows Build
   # =================================
+  # netron-panel ships Linux amd64/arm64 only; the Windows and dev-channel jobs
+  # run upstream alone.
   build-windows:
     name: Build for Windows
+    if: github.repository == 'MHSanaei/3x-ui'
     permissions:
       contents: write
     strategy:
@@ -349,7 +375,7 @@ jobs:
   publish-dev:
     name: Publish rolling dev release
     needs: [build, build-windows]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.repository == 'MHSanaei/3x-ui' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write

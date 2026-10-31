@@ -218,5 +218,5 @@ func clearGlobalTraffic(tx *gorm.DB, emails ...string) error {
 			return err
 		}
 	}
-	return nil
+	return dropClientInboundTraffic(tx, emails...)
 }

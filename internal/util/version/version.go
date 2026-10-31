@@ -30,9 +30,14 @@ func Normalize(v string) string {
 	return strings.TrimPrefix(strings.TrimSpace(v), "v")
 }
 
-func parse(v string) ([3]int, bool) {
-	var result [3]int
-	parts := strings.Split(Normalize(v), ".")
+func parse(v string) ([4]int, bool) {
+	var result [4]int
+	base, revision, ok := splitNetronRevision(Normalize(v))
+	if !ok {
+		return result, false
+	}
+	result[3] = revision
+	parts := strings.Split(base, ".")
 	if len(parts) != 3 {
 		return result, false
 	}

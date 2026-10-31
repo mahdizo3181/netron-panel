@@ -132,6 +132,9 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 	if len(traffics) == 0 {
 		return nil
 	}
+	if traffics, err = resolveStatEmailTraffic(tx, traffics); err != nil {
+		return fmt.Errorf("resolve usage multiplier stat emails: %w", err)
+	}
 	traffics, err = canonicalizeClientTraffic(tx, traffics)
 	if err != nil {
 		return fmt.Errorf("resolve client traffic identities: %w", err)
@@ -665,6 +668,9 @@ func (s *InboundService) delClientStatsByEmails(tx *gorm.DB, emails []string) er
 		if err := tx.Where("email IN ?", batch).Delete(&model.NodeClientTraffic{}).Error; err != nil {
 			return err
 		}
+		if err := dropClientInboundTraffic(tx, batch...); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -1003,6 +1009,9 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 		// Drop now-orphaned rows. With id >= 0, a row is safe to drop only when
 		// no out-of-scope inbound still references the email.
 		if id < 0 {
+			if err := dropClientInboundTraffic(tx, slices.Collect(maps.Keys(depletedEmails))...); err != nil {
+				return err
+			}
 			return tx.Where(depletedClause, now).Delete(xray.ClientTraffic{}).Error
 		}
 		emails := make([]string, 0, len(depletedEmails))
@@ -1032,6 +1041,9 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 		}
 		if len(toDelete) > 0 {
 			if err := tx.Where("LOWER(email) IN ?", toDelete).Delete(xray.ClientTraffic{}).Error; err != nil {
+				return err
+			}
+			if err := dropClientInboundTraffic(tx, toDelete...); err != nil {
 				return err
 			}
 		}
