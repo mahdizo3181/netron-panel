@@ -53,6 +53,7 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 - `internal/web/runtime/usage_multiplier_caps_test.go`
 - `internal/web/job/usage_multiplier_disconnect_test.go`
 - `internal/xray/xraytest/` (in-process Xray core for tests)
+- `internal/nodee2e/usage_multiplier_test.go` (real master + node; `XUI_NODE_E2E_OLD_BINARY` = a stock v3.11.0 build for the old-node case)
 
 ## Deliberately not hooked
 
