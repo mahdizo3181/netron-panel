@@ -1396,7 +1396,7 @@ func (s *XrayService) GetOnlineUsers() ([]xray.OnlineUser, bool, error) {
 		process.SetOnlineAPISupport(xray.OnlineAPISupported)
 		logger.Info("xray core supports the online-stats API; using connection-based onlines and access-log-free IP limit")
 	}
-	return users, true, nil
+	return foldStatEmailOnlineUsers(users), true, nil
 }
 
 // BalancerStatus is the live view of one balancer for the panel UI. Running

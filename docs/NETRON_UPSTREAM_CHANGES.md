@@ -17,6 +17,9 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/entity/entity.go` | `AllSetting.UsageMultiplierEnable` | kill switch in the settings API |
 | `internal/web/service/xray.go` | `RestartXray`: `s.latchUsageMultiplierMode(isForce)`; `GetXrayConfig`: client `entry` email via `usagemult.XrayEmail`, `RouterConfig = s.expandRoutingUserStatEmails(...)` after the inbound loop | stat emails in the generated config; template `user` rules keep matching |
 | `internal/web/service/inbound_traffic.go` | `addClientTraffic`: `resolveStatEmailTraffic(tx, traffics)` just before `canonicalizeClientTraffic` | stat-email deltas become the client's weighted delta; quota/disable/expiry run unchanged |
+| `internal/web/service/xray.go` (2) | `GetOnlineUsers` returns `foldStatEmailOnlineUsers(users)` | onlines, last-online bump and IP-limit see client emails; IPs merged across inbounds |
+| `internal/web/job/xray_traffic_job.go` | `clientTraffics = j.inboundService.FoldStatEmailTraffic(clientTraffics)` right after `AddTraffic` | websocket speed, onlines and external traffic inform get client emails with real bytes |
+| `internal/web/job/check_client_ip_job.go` | `disconnectClientTemporarily`: `xrayEmail := usagemult.XrayEmail(...)`, used for `RemoveUser` and the re-added user | the over-limit disconnect targets the identity the core holds |
 | `internal/web/runtime/local.go` | `AddInbound` marshals `xrayInbound(ib)`; `AddUser` passes `xrayUser(ib, userMap)`; `RemoveUser` passes `xrayUserEmail(ib, email)` | hot add/remove/update reach Xray under the stat email |
 
 ## New files (no rebase conflict expected)
@@ -26,3 +29,6 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 - `internal/usagemult/` (stat email, protocol support, mode latch)
 - `internal/web/service/usage_multiplier_setting.go`, `usage_multiplier_config.go`, `usage_multiplier_traffic.go` (+ tests)
 - `internal/web/runtime/usage_multiplier.go` (+ in-process Xray test)
+- `internal/web/service/usage_multiplier_fold.go` (+ test)
+- `internal/web/job/usage_multiplier_disconnect_test.go`
+- `internal/xray/xraytest/` (in-process Xray core for tests)

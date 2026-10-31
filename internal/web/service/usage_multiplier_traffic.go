@@ -66,17 +66,25 @@ func resolveStatEmailTraffic(tx *gorm.DB, traffics []*xray.ClientTraffic) ([]*xr
 	return out, nil
 }
 
-// loadStatEmailOwners resolves the moving stat-email-shaped entries against the
-// clients really attached to the inbound each one names.
+// loadStatEmailOwners resolves the stat-email-shaped entries that moved bytes.
 func loadStatEmailOwners(tx *gorm.DB, traffics []*xray.ClientTraffic) (map[string]statEmailOwner, error) {
+	var candidates []string
+	for _, tr := range traffics {
+		if tr != nil && tr.Up+tr.Down != 0 {
+			candidates = append(candidates, tr.Email)
+		}
+	}
+	return resolveStatEmailOwners(tx, candidates)
+}
+
+// resolveStatEmailOwners maps each stat-email-shaped string to its client, verified
+// against the clients really attached to the inbound the string names.
+func resolveStatEmailOwners(tx *gorm.DB, emails []string) (map[string]statEmailOwner, error) {
 	candidates := map[string]struct{}{}
 	inboundSet := map[int]struct{}{}
-	for _, tr := range traffics {
-		if tr == nil || tr.Up+tr.Down == 0 {
-			continue
-		}
-		if id, ok := usagemult.ParseStatEmail(tr.Email); ok {
-			candidates[tr.Email] = struct{}{}
+	for _, e := range emails {
+		if id, ok := usagemult.ParseStatEmail(e); ok {
+			candidates[e] = struct{}{}
 			inboundSet[id] = struct{}{}
 		}
 	}
@@ -115,7 +123,7 @@ func loadStatEmailOwners(tx *gorm.DB, traffics []*xray.ClientTraffic) (map[strin
 	for _, l := range links {
 		stat := usagemult.StatEmail(l.InboundId, l.Email)
 		m, known := multiplier[l.InboundId]
-		if _, moving := candidates[stat]; moving && known {
+		if _, wanted := candidates[stat]; wanted && known {
 			owners[stat] = statEmailOwner{clientID: l.ClientId, inboundID: l.InboundId, email: l.Email, multiplier: m}
 		}
 	}
