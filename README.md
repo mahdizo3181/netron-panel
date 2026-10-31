@@ -17,6 +17,9 @@
   <a href="https://docs.sanaei.dev"><img src="https://img.shields.io/badge/docs-docs.sanaei.dev-22d3ee" alt="Documentation"></a>
 </p>
 
+> [!NOTE]
+> **netron-panel** is a fork of [MHSanaei/3x-ui](https://github.com/MHSanaei/3x-ui) (base: `v3.11.0`), released under the same [GPL-3.0](LICENSE) license. All credit for 3X-UI goes to MHSanaei and its contributors. This fork adds a per-inbound usage multiplier with one shared quota per client, see [docs/MULTIPLIER.md](docs/MULTIPLIER.md). Upstream files it touches are listed in [docs/NETRON_UPSTREAM_CHANGES.md](docs/NETRON_UPSTREAM_CHANGES.md).
+
 **3X-UI** is an advanced, open-source web control panel for managing [Xray-core](https://github.com/XTLS/Xray-core) servers. It provides a clean, multi-language interface for deploying, configuring, and monitoring a wide range of proxy and VPN protocols — from a single VPS to multi-node deployments.
 
 Built as an enhanced fork of the original X-UI project, 3X-UI adds broader protocol support, improved stability, per-client traffic accounting, and many quality-of-life features.

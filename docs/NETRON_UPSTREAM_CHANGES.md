@@ -35,9 +35,12 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/node_contract_test.go` | `"UsageMultiplierApplied"` in `remoteMethodsOutsideContract` | accessor reads caps already received, no node call |
 | `tools/openapigen/main.go` | `UsageMultiplierStatus`, `UsageMultiplierNodeStatus` in the service `StructAllow` | schemas/examples for the new endpoint |
 | `frontend/src/pages/api-docs/endpoints.ts` | entry for `POST /panel/api/setting/usageMultiplierStatus` | route registry (pinned by `TestRouteRegistryContract`) |
+| `README.md` | fork note crediting MHSanaei/3x-ui, links to `docs/MULTIPLIER.md` | attribution (LICENSE unchanged) |
 | `internal/web/runtime/local.go` | `AddInbound` marshals `xrayInbound(ib)`; `AddUser` passes `xrayUser(ib, userMap)`; `RemoveUser` passes `xrayUserEmail(ib, email)` | hot add/remove/update reach Xray under the stat email |
 
 ## New files (no rebase conflict expected)
+
+- `docs/MULTIPLIER.md`, `docs/NETRON_UPSTREAM_CHANGES.md`
 
 - `internal/database/model/usage_multiplier.go` (+ test)
 - `internal/database/usage_multiplier_migration_test.go`, `usage_multiplier_postgres_test.go`
