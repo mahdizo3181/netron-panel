@@ -74,6 +74,9 @@ func (s *ClientService) ReapSyncOrphans() (int, error) {
 			if err := tx.Where("email IN ?", batch).Delete(&model.NodeClientTraffic{}).Error; err != nil {
 				return err
 			}
+			if err := dropClientInboundTraffic(tx, batch...); err != nil {
+				return err
+			}
 			return tx.Where("client_email IN ?", batch).Delete(&model.InboundClientIps{}).Error
 		}); err != nil {
 			return reaped, err

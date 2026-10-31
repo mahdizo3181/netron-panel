@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -165,4 +166,19 @@ func upsertClientInboundTraffic(tx *gorm.DB, o statEmailOwner, tr *xray.ClientTr
 			"updated_at":    now,
 		}),
 	}).Create(&row).Error
+}
+
+// dropClientInboundTraffic clears the per-inbound breakdown of clients whose
+// counter was reset or removed, so it restarts together with the counter.
+func dropClientInboundTraffic(tx *gorm.DB, emails ...string) error {
+	lower := make([]string, 0, len(emails))
+	for _, e := range emails {
+		lower = append(lower, strings.ToLower(e))
+	}
+	for _, batch := range chunkStrings(lower, sqlInChunk) {
+		if err := tx.Where("LOWER(email) IN ?", batch).Delete(&model.ClientInboundTraffic{}).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -20,6 +20,11 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/service/xray.go` (2) | `GetOnlineUsers` returns `foldStatEmailOnlineUsers(users)` | onlines, last-online bump and IP-limit see client emails; IPs merged across inbounds |
 | `internal/web/job/xray_traffic_job.go` | `clientTraffics = j.inboundService.FoldStatEmailTraffic(clientTraffics)` right after `AddTraffic` | websocket speed, onlines and external traffic inform get client emails with real bytes |
 | `internal/web/job/check_client_ip_job.go` | `disconnectClientTemporarily`: `xrayEmail := usagemult.XrayEmail(...)`, used for `RemoveUser` and the re-added user | the over-limit disconnect targets the identity the core holds |
+| `internal/web/service/inbound_traffic_global.go` | `clearGlobalTraffic` ends with `return dropClientInboundTraffic(tx, emails...)` | the reset/delete chokepoint (single reset, bulk/periodic reset, auto-renew, client delete, node-side reset) also clears the per-inbound breakdown |
+| `internal/web/service/inbound_traffic.go` (2) | `delClientStatsByEmails` and both branches of `DelDepletedClients` call `dropClientInboundTraffic` | delete paths that bypass `clearGlobalTraffic` |
+| `internal/web/service/client_traffic.go` | `ResetAllTraffics`: delete all `ClientInboundTraffic` rows | reset-all bypasses the chokepoint |
+| `internal/web/service/client_bulk.go` | `BulkDelete` (`!keepTraffic`): `dropClientInboundTraffic(tx, successEmails...)` | bulk delete bypasses the chokepoint |
+| `internal/web/service/client_sync_orphan.go` | `ReapSyncOrphans`: `dropClientInboundTraffic(tx, batch...)` | orphan reaper bypasses the chokepoint |
 | `internal/web/runtime/local.go` | `AddInbound` marshals `xrayInbound(ib)`; `AddUser` passes `xrayUser(ib, userMap)`; `RemoveUser` passes `xrayUserEmail(ib, email)` | hot add/remove/update reach Xray under the stat email |
 
 ## New files (no rebase conflict expected)
@@ -30,5 +35,14 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 - `internal/web/service/usage_multiplier_setting.go`, `usage_multiplier_config.go`, `usage_multiplier_traffic.go` (+ tests)
 - `internal/web/runtime/usage_multiplier.go` (+ in-process Xray test)
 - `internal/web/service/usage_multiplier_fold.go` (+ test)
+- `internal/web/service/usage_multiplier_reset_test.go`
 - `internal/web/job/usage_multiplier_disconnect_test.go`
 - `internal/xray/xraytest/` (in-process Xray core for tests)
+
+## Deliberately not hooked
+
+- Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes
+  are already in the client's total, and inbound ids are never reused
+  (SQLite AUTOINCREMENT, Postgres serial). A client reset or delete clears them.
+- `inbound_node.go` central `client_traffics` deletes for node inbounds: per-inbound
+  rows exist only for local inbounds; the client's own delete path clears them.
