@@ -99,7 +99,7 @@ func (l *Local) AddInbound(_ context.Context, ib *model.Inbound) error {
 		}
 		return err
 	}
-	body, err := json.MarshalIndent(ib.GenXrayInboundConfig(), "", "  ")
+	body, err := json.MarshalIndent(xrayInbound(ib).GenXrayInboundConfig(), "", "  ")
 	if err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (l *Local) AddUser(_ context.Context, ib *model.Inbound, userMap map[string
 		return nil
 	}
 	return l.withAPI(func(api *xray.XrayAPI) error {
-		return api.AddUser(string(ib.Protocol), ib.Tag, userMap)
+		return api.AddUser(string(ib.Protocol), ib.Tag, xrayUser(ib, userMap))
 	})
 }
 
@@ -299,7 +299,7 @@ func (l *Local) RemoveUser(_ context.Context, ib *model.Inbound, email string) e
 		return nil
 	}
 	return l.withAPI(func(api *xray.XrayAPI) error {
-		return api.RemoveUser(ib.Tag, email)
+		return api.RemoveUser(ib.Tag, xrayUserEmail(ib, email))
 	})
 }
 

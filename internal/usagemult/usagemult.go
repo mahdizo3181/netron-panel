@@ -5,6 +5,7 @@ package usagemult
 import (
 	"crypto/sha256"
 	"encoding/base32"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -78,3 +79,39 @@ func Active() bool { return active.Load() }
 
 // SetActive latches the mode for the Xray process about to start.
 func SetActive(on bool) { active.Store(on) }
+
+// XrayEmail is the email to hand Xray for email on an inbound of protocol.
+func XrayEmail(inboundID int, protocol, email string) string {
+	if email == "" || !Active() || !SupportsProtocol(protocol) {
+		return email
+	}
+	return StatEmail(inboundID, email)
+}
+
+// RewriteSettingsEmails swaps every settings.clients[].email for its XrayEmail;
+// input it cannot parse is returned unchanged for Xray to judge.
+func RewriteSettingsEmails(inboundID int, protocol, settings string) string {
+	if !Active() || !SupportsProtocol(protocol) {
+		return settings
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(settings), &parsed); err != nil {
+		return settings
+	}
+	clients, ok := parsed["clients"].([]any)
+	if !ok {
+		return settings
+	}
+	for _, c := range clients {
+		if client, ok := c.(map[string]any); ok {
+			if email, ok := client["email"].(string); ok {
+				client["email"] = XrayEmail(inboundID, protocol, email)
+			}
+		}
+	}
+	out, err := json.Marshal(parsed)
+	if err != nil {
+		return settings
+	}
+	return string(out)
+}

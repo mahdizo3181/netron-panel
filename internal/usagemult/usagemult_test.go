@@ -2,6 +2,7 @@ package usagemult
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -93,5 +94,46 @@ func TestActiveLatch(t *testing.T) {
 	SetActive(true)
 	if !Active() {
 		t.Fatal("SetActive(true) not observed")
+	}
+}
+
+func TestXrayEmail(t *testing.T) {
+	t.Cleanup(func() { SetActive(false) })
+	if got := XrayEmail(3, "vless", "a@x"); got != "a@x" {
+		t.Fatalf("inactive mode rewrote the email: %q", got)
+	}
+	SetActive(true)
+	if got := XrayEmail(3, "vless", "a@x"); got != StatEmail(3, "a@x") {
+		t.Fatalf("active mode on vless: got %q", got)
+	}
+	if got := XrayEmail(3, "wireguard", "a@x"); got != "a@x" {
+		t.Fatalf("unsupported protocol rewritten: %q", got)
+	}
+	if got := XrayEmail(3, "vless", ""); got != "" {
+		t.Fatalf("empty email must stay empty, got %q", got)
+	}
+}
+
+func TestRewriteSettingsEmails(t *testing.T) {
+	t.Cleanup(func() { SetActive(false) })
+	in := `{"clients":[{"email":"a@x","id":"u1"},{"email":"b@x","id":"u2"},{"id":"no-email"}],"decryption":"none"}`
+	if got := RewriteSettingsEmails(9, "vless", in); got != in {
+		t.Fatalf("inactive mode changed settings: %s", got)
+	}
+	SetActive(true)
+	got := RewriteSettingsEmails(9, "vless", in)
+	for _, want := range []string{StatEmail(9, "a@x"), StatEmail(9, "b@x"), `"decryption":"none"`, `"id":"no-email"`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("rewritten settings %s missing %s", got, want)
+		}
+	}
+	if strings.Contains(got, `"a@x"`) {
+		t.Fatalf("logical email leaked into Xray settings: %s", got)
+	}
+	if got := RewriteSettingsEmails(9, "wireguard", in); got != in {
+		t.Fatalf("unsupported protocol settings changed: %s", got)
+	}
+	if got := RewriteSettingsEmails(9, "vless", "not json"); got != "not json" {
+		t.Fatalf("unparsable settings must pass through, got %s", got)
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/tuic"
+	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/json_util"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/maskcompat"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
@@ -258,7 +259,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			if !flowAllowed {
 				flow = ""
 			}
-			entry := map[string]any{"email": c.Email}
+			entry := map[string]any{"email": usagemult.XrayEmail(inbound.Id, string(inbound.Protocol), c.Email)}
 			switch inbound.Protocol {
 			case model.VLESS:
 				if c.ID != "" {
@@ -416,6 +417,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
 	}
 	xrayConfig.InboundConfigs = dropInboundsRefusedByXDrive(xrayConfig.InboundConfigs)
+	xrayConfig.RouterConfig = s.expandRoutingUserStatEmails(xrayConfig.RouterConfig, inbounds)
 
 	// Merge subscription-derived outbounds (if any) into the final outbounds array.
 	// These are additive: each subscription is placed before or after the template
