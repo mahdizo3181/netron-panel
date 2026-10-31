@@ -1486,6 +1486,7 @@ func (s *XrayService) RestartXray(isForce bool) error {
 		return nil
 	}
 	isManuallyStopped.Store(false)
+	s.latchUsageMultiplierMode(isForce)
 
 	xrayConfig, err := s.GetXrayConfig()
 	if err != nil {
