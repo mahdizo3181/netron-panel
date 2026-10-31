@@ -132,6 +132,9 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 	if len(traffics) == 0 {
 		return nil
 	}
+	if traffics, err = resolveStatEmailTraffic(tx, traffics); err != nil {
+		return fmt.Errorf("resolve usage multiplier stat emails: %w", err)
+	}
 	traffics, err = canonicalizeClientTraffic(tx, traffics)
 	if err != nil {
 		return fmt.Errorf("resolve client traffic identities: %w", err)

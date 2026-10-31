@@ -16,6 +16,7 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/service/setting.go` | `"usageMultiplierEnable": "false"` in `defaultValueMap` | kill switch, default OFF |
 | `internal/web/entity/entity.go` | `AllSetting.UsageMultiplierEnable` | kill switch in the settings API |
 | `internal/web/service/xray.go` | `RestartXray`: `s.latchUsageMultiplierMode(isForce)`; `GetXrayConfig`: client `entry` email via `usagemult.XrayEmail`, `RouterConfig = s.expandRoutingUserStatEmails(...)` after the inbound loop | stat emails in the generated config; template `user` rules keep matching |
+| `internal/web/service/inbound_traffic.go` | `addClientTraffic`: `resolveStatEmailTraffic(tx, traffics)` just before `canonicalizeClientTraffic` | stat-email deltas become the client's weighted delta; quota/disable/expiry run unchanged |
 | `internal/web/runtime/local.go` | `AddInbound` marshals `xrayInbound(ib)`; `AddUser` passes `xrayUser(ib, userMap)`; `RemoveUser` passes `xrayUserEmail(ib, email)` | hot add/remove/update reach Xray under the stat email |
 
 ## New files (no rebase conflict expected)
@@ -23,5 +24,5 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 - `internal/database/model/usage_multiplier.go` (+ test)
 - `internal/database/usage_multiplier_migration_test.go`
 - `internal/usagemult/` (stat email, protocol support, mode latch)
-- `internal/web/service/usage_multiplier_setting.go`, `usage_multiplier_config.go` (+ tests)
+- `internal/web/service/usage_multiplier_setting.go`, `usage_multiplier_config.go`, `usage_multiplier_traffic.go` (+ tests)
 - `internal/web/runtime/usage_multiplier.go` (+ in-process Xray test)
