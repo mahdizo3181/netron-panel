@@ -78,6 +78,7 @@ export const AllSettingSchema = z
     externalTrafficInformEnable: z.boolean().optional(),
     externalTrafficInformURI: z.string().optional(),
     restartXrayOnClientDisable: z.boolean().optional(),
+    usageMultiplierEnable: z.boolean().optional(),
     subCertFile: z.string().optional(),
     subKeyFile: z.string().optional(),
     externalSubUserAgent: z.string().max(512).optional(),

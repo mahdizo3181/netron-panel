@@ -184,6 +184,7 @@ export interface AllSetting {
   trustedProxyCIDRs: string;
   twoFactorEnable: boolean;
   twoFactorToken: string;
+  usageMultiplierEnable: boolean;
   warpUpdateInterval: number;
   webBasePath: string;
   webCertFile: string;
@@ -376,6 +377,7 @@ export interface AllSettingView {
   trustedProxyCIDRs: string;
   twoFactorEnable: boolean;
   twoFactorToken: string;
+  usageMultiplierEnable: boolean;
   warpUpdateInterval: number;
   webBasePath: string;
   webCertFile: string;
@@ -749,6 +751,7 @@ export interface Inbound {
   trafficReset: string;
   trafficResetDay: number;
   up: number;
+  usageMultiplier?: number | null;
 }
 
 export interface InboundClientIps {
@@ -1121,6 +1124,20 @@ export interface TuicServerSettings {
   sni?: string;
   udp_relay_mode: string;
   zero_rtt_handshake: boolean;
+}
+
+export interface UsageMultiplierNodeStatus {
+  applies: boolean;
+  inboundIds: number[];
+  known: boolean;
+  name: string;
+  nodeId: number;
+}
+
+export interface UsageMultiplierStatus {
+  active: boolean;
+  configured: boolean;
+  nodes: UsageMultiplierNodeStatus[];
 }
 
 export interface User {

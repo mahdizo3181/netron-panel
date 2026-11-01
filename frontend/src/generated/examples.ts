@@ -175,6 +175,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "trustedProxyCIDRs": "",
     "twoFactorEnable": false,
     "twoFactorToken": "",
+    "usageMultiplierEnable": false,
     "warpUpdateInterval": 0,
     "webBasePath": "",
     "webCertFile": "",
@@ -366,6 +367,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "trustedProxyCIDRs": "",
     "twoFactorEnable": false,
     "twoFactorToken": "",
+    "usageMultiplierEnable": false,
     "warpUpdateInterval": 0,
     "webBasePath": "",
     "webCertFile": "",
@@ -847,7 +849,8 @@ export const EXAMPLES: Record<string, unknown> = {
     "total": 0,
     "trafficReset": "never",
     "trafficResetDay": 1,
-    "up": 0
+    "up": 0,
+    "usageMultiplier": 1
   },
   "InboundClientIps": {
     "clientEmail": "",
@@ -1234,6 +1237,32 @@ export const EXAMPLES: Record<string, unknown> = {
     "sni": "",
     "udp_relay_mode": "",
     "zero_rtt_handshake": false
+  },
+  "UsageMultiplierNodeStatus": {
+    "applies": false,
+    "inboundIds": [
+      5,
+      7
+    ],
+    "known": true,
+    "name": "de-1",
+    "nodeId": 2
+  },
+  "UsageMultiplierStatus": {
+    "active": false,
+    "configured": true,
+    "nodes": [
+      {
+        "applies": false,
+        "inboundIds": [
+          5,
+          7
+        ],
+        "known": true,
+        "name": "de-1",
+        "nodeId": 2
+      }
+    ]
   },
   "User": {
     "id": 0,

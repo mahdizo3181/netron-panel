@@ -24,6 +24,7 @@ export const keys = {
     all: () => ['settings', 'all'] as const,
     defaults: () => ['settings', 'defaults'] as const,
     factoryDefaults: () => ['settings', 'factoryDefaults'] as const,
+    usageMultiplierStatus: () => ['settings', 'usageMultiplierStatus'] as const,
   },
   inbounds: {
     root: () => ['inbounds'] as const,

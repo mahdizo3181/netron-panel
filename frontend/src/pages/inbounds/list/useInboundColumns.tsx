@@ -8,6 +8,7 @@ import { InfinityIcon } from '@/components/ui';
 import { useDatepicker } from '@/hooks/useDatepicker';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
 import { coerceInboundJsonField } from '@/models/dbinbound';
+import { effectiveUsageMultiplier, formatUsageMultiplier } from '@/lib/xray/usage-multiplier';
 
 import { RowActionsCell } from './RowActions';
 import {
@@ -278,6 +279,14 @@ export function useInboundColumns({
                   Reality
                 </Tag>,
               );
+          }
+          const multiplier = effectiveUsageMultiplier(record.usageMultiplier);
+          if (multiplier !== 1) {
+            tags.push(
+              <Tag key="mult" color="gold">
+                {formatUsageMultiplier(multiplier)}
+              </Tag>,
+            );
           }
           return <div className="protocol-tags">{tags}</div>;
         },

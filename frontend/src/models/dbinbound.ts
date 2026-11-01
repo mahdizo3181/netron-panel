@@ -46,6 +46,7 @@ export type DBInboundInit = Partial<{
   subSortIndex: number;
   excludeFromSub: boolean;
   disableFlow: boolean;
+  usageMultiplier: number | null;
   originNodeGuid: string;
   fallbackParent: FallbackParentRef | null;
 }>;
@@ -96,6 +97,7 @@ export class DBInbound {
   subSortIndex: number;
   excludeFromSub: boolean;
   disableFlow: boolean;
+  usageMultiplier: number;
   originNodeGuid: string;
   fallbackParent: FallbackParentRef | null;
 
@@ -128,6 +130,7 @@ export class DBInbound {
     this.subSortIndex = 1;
     this.excludeFromSub = false;
     this.disableFlow = false;
+    this.usageMultiplier = 1;
     this.originNodeGuid = '';
     this.fallbackParent = null;
     if (data == null) {

@@ -86,6 +86,25 @@ upstream files only pick the link type and call them.
 - `internal/xray/xraytest/` (in-process Xray core for tests)
 - `internal/nodee2e/usage_multiplier_test.go` (real master + node; `XUI_NODE_E2E_OLD_BINARY` = a stock v3.11.0 build for the old-node case)
 
+## Upstream files modified: usage multiplier UI
+
+New files (no rebase conflict): `frontend/src/lib/xray/usage-multiplier.ts`,
+`pages/inbounds/form/UsageMultiplierField.tsx`, `pages/settings/UsageMultiplierSetting.tsx`,
+`api/queries/useUsageMultiplierStatus.ts`, four `test/usage-multiplier-*.test.ts(x)`.
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `frontend/src/schemas/forms/inbound-form.ts` | `InboundDbFieldsSchema.usageMultiplier` (0..10, default 1) | form value |
+| `frontend/src/lib/xray/inbound-form-adapter.ts` | `RawInboundRow`/`WireInboundPayload` field; read via `effectiveUsageMultiplier`; payload forces x1 where `supportsUsageMultiplier` is false | sent with the other inbound fields; a protocol switch never trips backend validation |
+| `frontend/src/models/dbinbound.ts` | `usageMultiplier` in `DBInboundInit`, class field, default 1 | row model |
+| `frontend/src/pages/inbounds/form/InboundFormModal.tsx` | `<UsageMultiplierField protocol={protocol} />` before the Traffic Reset field, plus import | Basic tab field |
+| `frontend/src/pages/inbounds/list/useInboundColumns.tsx`, `list/types.ts` | gold `xN` tag in the protocol column when the multiplier is not 1; `usageMultiplier?` on `DBInboundRecord` | table badge |
+| `frontend/src/pages/settings/GeneralTab.tsx` | `<UsageMultiplierSetting .../>` after the "restart Xray on client disable" row, plus import | kill switch, pending restart, node warnings |
+| `frontend/src/models/setting.ts`, `schemas/setting.ts` | `usageMultiplierEnable` | setting |
+| `frontend/src/api/queryKeys.ts` | `settings.usageMultiplierStatus` | status query key |
+| `internal/web/translation/*.json` (14) | `pages.inbounds.form.usageMultiplier*` (4 keys) after `excludeFromSubHelp`; `pages.settings.usageMultiplier*` (12 keys) after `restartXrayOnClientDisableDesc`; real en-US and fa-IR text, English elsewhere; interpolation is `{name}`, not `{{name}}` | i18n (dead-key/parity test) |
+| `frontend/src/generated/*`, `frontend/public/openapi.json`, `docs/public/openapi.json`, `docs/content/docs/en/reference/api/settings.mdx` | regenerated (`make gen`, copy, `pnpm gen:api`) | `usageMultiplierEnable`, `Inbound.usageMultiplier`, `UsageMultiplierStatus` |
+
 ## Deliberately not hooked
 
 - Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes

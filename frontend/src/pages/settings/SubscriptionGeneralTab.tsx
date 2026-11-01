@@ -232,7 +232,9 @@ export default function SubscriptionGeneralTab({
                   id="sub-info-node-link-type"
                   aria-label={t('pages.settings.subInfoNodeLinkType')}
                   value={allSetting.subInfoNodeLinkType}
-                  onChange={(value: SubInfoNodeLinkType) => updateSetting({ subInfoNodeLinkType: value })}
+                  onChange={(value: SubInfoNodeLinkType) =>
+                    updateSetting({ subInfoNodeLinkType: value })
+                  }
                   options={[
                     { value: 'vless', label: t('pages.settings.subInfoNodeLinkVless') },
                     { value: 'socks', label: t('pages.settings.subInfoNodeLinkSocks') },

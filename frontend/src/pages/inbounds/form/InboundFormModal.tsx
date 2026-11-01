@@ -82,6 +82,7 @@ import { RealityForm, TlsForm } from './security';
 import { useSecurityActions } from './useSecurityActions';
 import { useInboundFallbacks } from './useInboundFallbacks';
 import FallbacksCard from './FallbacksCard';
+import UsageMultiplierField from './UsageMultiplierField';
 import SniffingTab from './SniffingTab';
 
 import type { DBInbound } from '@/models/dbinbound';
@@ -743,6 +744,8 @@ export default function InboundFormModal({
           {t('pages.inbounds.meansNoLimit')}
         </span>
       </Form.Item>
+
+      <UsageMultiplierField protocol={protocol} />
 
       <FormField name="trafficReset" label={t('pages.inbounds.periodicTrafficResetTitle')}>
         <Select

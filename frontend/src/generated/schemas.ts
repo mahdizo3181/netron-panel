@@ -562,6 +562,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "twoFactorToken": {
         "type": "string"
       },
+      "usageMultiplierEnable": {
+        "description": "netron: applies on the next forced Xray restart",
+        "type": "boolean"
+      },
       "warpUpdateInterval": {
         "minimum": 0,
         "type": "integer"
@@ -762,6 +766,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "trustedProxyCIDRs",
       "twoFactorEnable",
       "twoFactorToken",
+      "usageMultiplierEnable",
       "warpUpdateInterval",
       "webBasePath",
       "webCertFile",
@@ -1358,6 +1363,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "twoFactorToken": {
         "type": "string"
       },
+      "usageMultiplierEnable": {
+        "description": "netron: applies on the next forced Xray restart",
+        "type": "boolean"
+      },
       "warpUpdateInterval": {
         "minimum": 0,
         "type": "integer"
@@ -1566,6 +1575,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "trustedProxyCIDRs",
       "twoFactorEnable",
       "twoFactorToken",
+      "usageMultiplierEnable",
       "warpUpdateInterval",
       "webBasePath",
       "webCertFile",
@@ -3274,6 +3284,14 @@ export const SCHEMAS: Record<string, unknown> = {
         "description": "Upload traffic in bytes",
         "format": "int64",
         "type": "integer"
+      },
+      "usageMultiplier": {
+        "description": "netron: traffic weight; nil = x1",
+        "example": 1,
+        "maximum": 10,
+        "minimum": 0,
+        "nullable": true,
+        "type": "number"
       }
     },
     "required": [
@@ -4936,6 +4954,71 @@ export const SCHEMAS: Record<string, unknown> = {
       "private_key",
       "udp_relay_mode",
       "zero_rtt_handshake"
+    ],
+    "type": "object"
+  },
+  "UsageMultiplierNodeStatus": {
+    "description": "UsageMultiplierNodeStatus is one node hosting inbounds whose multiplier is not 1.",
+    "properties": {
+      "applies": {
+        "example": false,
+        "type": "boolean"
+      },
+      "inboundIds": {
+        "example": [
+          5,
+          7
+        ],
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "known": {
+        "description": "Known is false until the node has answered this panel once.",
+        "example": true,
+        "type": "boolean"
+      },
+      "name": {
+        "example": "de-1",
+        "type": "string"
+      },
+      "nodeId": {
+        "example": 2,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "applies",
+      "inboundIds",
+      "known",
+      "name",
+      "nodeId"
+    ],
+    "type": "object"
+  },
+  "UsageMultiplierStatus": {
+    "description": "UsageMultiplierStatus tells the UI whether the saved kill switch is live and\nwhich nodes would count a weighted inbound at x1.",
+    "properties": {
+      "active": {
+        "example": false,
+        "type": "boolean"
+      },
+      "configured": {
+        "example": true,
+        "type": "boolean"
+      },
+      "nodes": {
+        "items": {
+          "$ref": "#/components/schemas/UsageMultiplierNodeStatus"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "active",
+      "configured",
+      "nodes"
     ],
     "type": "object"
   },

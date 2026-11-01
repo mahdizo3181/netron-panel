@@ -202,6 +202,7 @@ export const AllSettingSchema = z.object({
   trustedProxyCIDRs: z.string(),
   twoFactorEnable: z.boolean(),
   twoFactorToken: z.string(),
+  usageMultiplierEnable: z.boolean(),
   warpUpdateInterval: z.number().int().min(0),
   webBasePath: z.string(),
   webCertFile: z.string(),
@@ -395,6 +396,7 @@ export const AllSettingViewSchema = z.object({
   trustedProxyCIDRs: z.string(),
   twoFactorEnable: z.boolean(),
   twoFactorToken: z.string(),
+  usageMultiplierEnable: z.boolean(),
   warpUpdateInterval: z.number().int().min(0),
   webBasePath: z.string(),
   webCertFile: z.string(),
@@ -795,6 +797,7 @@ export const InboundSchema = z.object({
   trafficReset: z.enum(['never', 'hourly', 'daily', 'weekly', 'monthly']),
   trafficResetDay: z.number().int().min(1).max(31),
   up: z.number().int(),
+  usageMultiplier: z.number().nullable().optional(),
 });
 export type Inbound = z.infer<typeof InboundSchema>;
 
@@ -1196,6 +1199,22 @@ export const TuicServerSettingsSchema = z.object({
   zero_rtt_handshake: z.boolean(),
 });
 export type TuicServerSettings = z.infer<typeof TuicServerSettingsSchema>;
+
+export const UsageMultiplierNodeStatusSchema = z.object({
+  applies: z.boolean(),
+  inboundIds: z.array(z.number().int()),
+  known: z.boolean(),
+  name: z.string(),
+  nodeId: z.number().int(),
+});
+export type UsageMultiplierNodeStatus = z.infer<typeof UsageMultiplierNodeStatusSchema>;
+
+export const UsageMultiplierStatusSchema = z.object({
+  active: z.boolean(),
+  configured: z.boolean(),
+  nodes: z.array(z.lazy(() => UsageMultiplierNodeStatusSchema)),
+});
+export type UsageMultiplierStatus = z.infer<typeof UsageMultiplierStatusSchema>;
 
 export const UserSchema = z.object({
   id: z.number().int(),

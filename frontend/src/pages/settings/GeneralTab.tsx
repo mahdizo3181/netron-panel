@@ -18,6 +18,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { catTabLabel } from './catTabLabel';
 import { sanitizePath } from './uriPath';
 import SecretInput from './SecretInput';
+import UsageMultiplierSetting from './UsageMultiplierSetting';
 
 interface ApiMsg<T = unknown> {
   success?: boolean;
@@ -339,6 +340,8 @@ export default function GeneralTab({ allSetting, updateSetting }: GeneralTabProp
                   onChange={(v) => updateSetting({ restartXrayOnClientDisable: v })}
                 />
               </SettingListItem>
+
+              <UsageMultiplierSetting allSetting={allSetting} updateSetting={updateSetting} />
 
               <SettingListItem paddings="small" title={t('pages.settings.language')}>
                 <Select

@@ -588,6 +588,10 @@
           "twoFactorToken": {
             "type": "string"
           },
+          "usageMultiplierEnable": {
+            "description": "netron: applies on the next forced Xray restart",
+            "type": "boolean"
+          },
           "warpUpdateInterval": {
             "minimum": 0,
             "type": "integer"
@@ -788,6 +792,7 @@
           "trustedProxyCIDRs",
           "twoFactorEnable",
           "twoFactorToken",
+          "usageMultiplierEnable",
           "warpUpdateInterval",
           "webBasePath",
           "webCertFile",
@@ -1384,6 +1389,10 @@
           "twoFactorToken": {
             "type": "string"
           },
+          "usageMultiplierEnable": {
+            "description": "netron: applies on the next forced Xray restart",
+            "type": "boolean"
+          },
           "warpUpdateInterval": {
             "minimum": 0,
             "type": "integer"
@@ -1592,6 +1601,7 @@
           "trustedProxyCIDRs",
           "twoFactorEnable",
           "twoFactorToken",
+          "usageMultiplierEnable",
           "warpUpdateInterval",
           "webBasePath",
           "webCertFile",
@@ -3300,6 +3310,14 @@
             "description": "Upload traffic in bytes",
             "format": "int64",
             "type": "integer"
+          },
+          "usageMultiplier": {
+            "description": "netron: traffic weight; nil = x1",
+            "example": 1,
+            "maximum": 10,
+            "minimum": 0,
+            "nullable": true,
+            "type": "number"
           }
         },
         "required": [
@@ -4965,6 +4983,71 @@
         ],
         "type": "object"
       },
+      "UsageMultiplierNodeStatus": {
+        "description": "UsageMultiplierNodeStatus is one node hosting inbounds whose multiplier is not 1.",
+        "properties": {
+          "applies": {
+            "example": false,
+            "type": "boolean"
+          },
+          "inboundIds": {
+            "example": [
+              5,
+              7
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "known": {
+            "description": "Known is false until the node has answered this panel once.",
+            "example": true,
+            "type": "boolean"
+          },
+          "name": {
+            "example": "de-1",
+            "type": "string"
+          },
+          "nodeId": {
+            "example": 2,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "applies",
+          "inboundIds",
+          "known",
+          "name",
+          "nodeId"
+        ],
+        "type": "object"
+      },
+      "UsageMultiplierStatus": {
+        "description": "UsageMultiplierStatus tells the UI whether the saved kill switch is live and\nwhich nodes would count a weighted inbound at x1.",
+        "properties": {
+          "active": {
+            "example": false,
+            "type": "boolean"
+          },
+          "configured": {
+            "example": true,
+            "type": "boolean"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/UsageMultiplierNodeStatus"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "active",
+          "configured",
+          "nodes"
+        ],
+        "type": "object"
+      },
       "User": {
         "description": "User represents a user account in the 3x-ui panel.",
         "properties": {
@@ -5404,7 +5487,8 @@
                       "total": 0,
                       "trafficReset": "never",
                       "trafficResetDay": 1,
-                      "up": 0
+                      "up": 0,
+                      "usageMultiplier": 1
                     }
                   ]
                 }
@@ -13617,6 +13701,57 @@
         }
       }
     },
+    "/panel/api/setting/usageMultiplierStatus": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Report the saved and running per-inbound usage multiplier mode, and the nodes that would count weighted inbounds at x1 (old version or mode off on the node).",
+        "operationId": "post_panel_api_setting_usageMultiplierStatus",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/UsageMultiplierStatus"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "active": false,
+                    "configured": true,
+                    "nodes": [
+                      {
+                        "applies": false,
+                        "inboundIds": [
+                          5,
+                          7
+                        ],
+                        "known": true,
+                        "name": "de-1",
+                        "nodeId": 2
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/panel/api/setting/testDiscord": {
       "post": {
         "tags": [
@@ -16817,7 +16952,8 @@
                   "total": 0,
                   "trafficReset": "never",
                   "trafficResetDay": 1,
-                  "up": 0
+                  "up": 0,
+                  "usageMultiplier": 1
                 }
               ],
               "time": 1735689600000

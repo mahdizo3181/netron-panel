@@ -53,6 +53,11 @@ _openapi:
         so the panel warns when it is off.
       url: '#report-what-the-configured-bot-can-do-inline-mode-is-a-botfather-switch-so-the-panel-warns-when-it-is-off'
     - depth: 2
+      title: Report the saved and running per-inbound usage multiplier mode, and the
+        nodes that would count weighted inbounds at x1 (old version or mode off
+        on the node).
+      url: '#report-the-saved-and-running-per-inbound-usage-multiplier-mode-and-the-nodes-that-would-count-weighted-inbounds-at-x1-old-version-or-mode-off-on-the-node'
+    - depth: 2
       title: Test Discord bot connection by sending a test embed to the configured
         channel.
       url: '#test-discord-bot-connection-by-sending-a-test-embed-to-the-configured-channel'
@@ -97,6 +102,10 @@ _openapi:
       - content: Report what the configured bot can do. Inline mode is a BotFather
           switch, so the panel warns when it is off.
         id: report-what-the-configured-bot-can-do-inline-mode-is-a-botfather-switch-so-the-panel-warns-when-it-is-off
+      - content: Report the saved and running per-inbound usage multiplier mode, and the
+          nodes that would count weighted inbounds at x1 (old version or mode
+          off on the node).
+        id: report-the-saved-and-running-per-inbound-usage-multiplier-mode-and-the-nodes-that-would-count-weighted-inbounds-at-x1-old-version-or-mode-off-on-the-node
       - content: Test Discord bot connection by sending a test embed to the configured
           channel.
         id: test-discord-bot-connection-by-sending-a-test-embed-to-the-configured-channel
@@ -113,7 +122,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/setting/all","method":"post"},{"path":"/panel/api/setting/defaultSettings","method":"post"},{"path":"/panel/api/setting/factoryDefaults","method":"post"},{"path":"/panel/api/setting/update","method":"post"},{"path":"/panel/api/setting/validateRegex","method":"post"},{"path":"/panel/api/setting/updateUser","method":"post"},{"path":"/panel/api/setting/restartPanel","method":"post"},{"path":"/panel/api/setting/testSmtp","method":"post"},{"path":"/panel/api/setting/testTgBot","method":"post"},{"path":"/panel/api/setting/tgBotCapabilities","method":"post"},{"path":"/panel/api/setting/testDiscord","method":"post"},{"path":"/panel/api/setting/getDefaultJsonConfig","method":"get"}]} showTitle />
+      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/setting/all","method":"post"},{"path":"/panel/api/setting/defaultSettings","method":"post"},{"path":"/panel/api/setting/factoryDefaults","method":"post"},{"path":"/panel/api/setting/update","method":"post"},{"path":"/panel/api/setting/validateRegex","method":"post"},{"path":"/panel/api/setting/updateUser","method":"post"},{"path":"/panel/api/setting/restartPanel","method":"post"},{"path":"/panel/api/setting/testSmtp","method":"post"},{"path":"/panel/api/setting/testTgBot","method":"post"},{"path":"/panel/api/setting/tgBotCapabilities","method":"post"},{"path":"/panel/api/setting/usageMultiplierStatus","method":"post"},{"path":"/panel/api/setting/testDiscord","method":"post"},{"path":"/panel/api/setting/getDefaultJsonConfig","method":"get"}]} showTitle />
     </>
   );
 }
