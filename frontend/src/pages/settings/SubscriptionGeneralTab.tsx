@@ -11,7 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 import type { AllSetting } from '@/models/setting';
-import type { SubProfileMode, SubHostSortMode } from '@/schemas/setting';
+import type { SubProfileMode, SubHostSortMode, SubInfoNodeLinkType } from '@/schemas/setting';
 import { onNumber } from '@/utils/onNumber';
 import { DefaultSettingTag, SettingListItem } from '@/components/ui';
 import { RemarkTemplateField } from '@/components/form';
@@ -220,6 +220,23 @@ export default function SubscriptionGeneralTab({
                 <Switch
                   checked={allSetting.subInfoNodeEnable}
                   onChange={(v) => updateSetting({ subInfoNodeEnable: v })}
+                />
+              </SettingListItem>
+
+              <SettingListItem
+                paddings="small"
+                title={t('pages.settings.subInfoNodeLinkType')}
+                description={t('pages.settings.subInfoNodeLinkTypeDesc')}
+              >
+                <Select
+                  id="sub-info-node-link-type"
+                  aria-label={t('pages.settings.subInfoNodeLinkType')}
+                  value={allSetting.subInfoNodeLinkType}
+                  onChange={(value: SubInfoNodeLinkType) => updateSetting({ subInfoNodeLinkType: value })}
+                  options={[
+                    { value: 'vless', label: t('pages.settings.subInfoNodeLinkVless') },
+                    { value: 'socks', label: t('pages.settings.subInfoNodeLinkSocks') },
+                  ]}
                 />
               </SettingListItem>
 

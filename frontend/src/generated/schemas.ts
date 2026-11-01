@@ -422,6 +422,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "subInfoNodeEnable": {
         "type": "boolean"
       },
+      "subInfoNodeLinkType": {
+        "example": "vless",
+        "type": "string"
+      },
       "subJsonAlwaysArray": {
         "type": "boolean"
       },
@@ -715,6 +719,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "subIncySortOrder",
       "subIncySupportEmail",
       "subInfoNodeEnable",
+      "subInfoNodeLinkType",
       "subJsonAlwaysArray",
       "subJsonAutoDetect",
       "subJsonDns",
@@ -1213,6 +1218,10 @@ export const SCHEMAS: Record<string, unknown> = {
       "subInfoNodeEnable": {
         "type": "boolean"
       },
+      "subInfoNodeLinkType": {
+        "example": "vless",
+        "type": "string"
+      },
       "subJsonAlwaysArray": {
         "type": "boolean"
       },
@@ -1514,6 +1523,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "subIncySortOrder",
       "subIncySupportEmail",
       "subInfoNodeEnable",
+      "subInfoNodeLinkType",
       "subJsonAlwaysArray",
       "subJsonAutoDetect",
       "subJsonDns",

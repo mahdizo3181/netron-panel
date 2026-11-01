@@ -45,9 +45,30 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `.github/workflows/release.yml` | tags `v*.*.*-netron.*` + dispatch only; matrix amd64/arm64; tag-vs-version check; `npm run gen:zod` before the frontend build; per-platform upload replaced by one `publish` job (`gh release`, latest vs pre-release); Windows and dev-channel jobs guarded upstream-only | fork releases |
 | `.github/workflows/docker.yml`, `docs-deploy.yml`, `mutation.yml`, `cleanup_caches.yml`, `claude-issue-analyst.yml`, `claude-pr-review.yml` | job `if: github.repository == 'MHSanaei/3x-ui'` | upstream-only jobs (image push, Pages deploy, nightly jobs, Claude bots) never run on the fork |
 
+## Upstream files modified: info config link type
+
+See `docs/INFO_CONFIG.md`. Builders live in `internal/sub/info_link.go`; the
+upstream files only pick the link type and call them.
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `internal/sub/service.go` | `SubService.subInfoNodeLinkType string` field; `loadRemarkSettings`: `s.subInfoNodeLinkType, _ = s.settingService.GetSubInfoNodeLinkType()`; `getSubs`: `dummyLink := infoNodeLink(s.subInfoNodeLinkType, remark)` (was the inline `socks://127.0.0.1:1080#…` `Sprintf`) | raw/base64 info entry is VLESS by default; Happ rejects SOCKS |
+| `internal/sub/json_service.go` | `genDummySocksConfig(remark)` renamed `genDummyInfoConfig(outbound, remark)` with the SOCKS outbound literal moved to `infoNodeOutbound`; call site `s.genDummyInfoConfig(infoNodeOutbound(subReq.subInfoNodeLinkType), remark)` | JSON info document uses the same link type |
+| `internal/sub/clash_service.go` | none (dummy stays `socks5`, `isDummyProxy` unchanged) | every Clash core reads socks5; the original Clash core has no VLESS |
+| `internal/web/service/setting.go` | `"subInfoNodeLinkType": SubInfoNodeLinkVless` in `defaultValueMap`; `UpdateAllSetting`: `normalizeSubInfoNodeLinkType(...)` right after the host-sort-mode switch | default `vless` for new and existing installs; reject anything but vless/socks |
+| `internal/web/entity/entity.go` | `AllSetting.SubInfoNodeLinkType` (`example:"vless"`) after `SubInfoNodeEnable` | setting in the settings API and OpenAPI |
+| `frontend/src/schemas/setting.ts` | `SubInfoNodeLinkTypeSchema` (`vless`/`socks`); `subInfoNodeLinkType` in `AllSettingSchema` | settings form validation |
+| `frontend/src/models/setting.ts` | `subInfoNodeLinkType: SubInfoNodeLinkType = 'vless'` | form default |
+| `frontend/src/pages/settings/SubscriptionGeneralTab.tsx` | `Select` `sub-info-node-link-type` after the info config switch | the setting in the UI |
+| `internal/web/translation/*.json` (14) | `subInfoNodeLinkType`, `…Desc`, `subInfoNodeLinkVless`, `subInfoNodeLinkSocks` after `subInfoNodeEnableDesc` (fa-IR translated, others English); `subInfoNodeEnableDesc` no longer says SOCKS in any locale | i18n key parity test |
+| `internal/sub/service_info_node_test.go`, `json_info_node_test.go`, `host_order_test.go`, `frontend/src/test/setting-sub-info-node.test.ts` | info-entry assertions expect the VLESS link (`assertInfoVlessLink`) | default changed |
+| `frontend/src/generated/*`, `frontend/public/openapi.json`, `docs/public/openapi.json` | regenerated: `subInfoNodeLinkType` | `make gen` / `docs-openapi-check` |
+
 ## New files (no rebase conflict expected)
 
-- `docs/MULTIPLIER.md`, `docs/NETRON_UPSTREAM_CHANGES.md`
+- `docs/MULTIPLIER.md`, `docs/NETRON_UPSTREAM_CHANGES.md`, `docs/INFO_CONFIG.md`
+- `internal/sub/info_link.go` (+ `info_link_test.go`): info entry link/outbound builders
+- `internal/web/service/sub_info_link_setting.go` (+ test): link type constants, getter, validation
 - `internal/util/version/netron.go` (+ test), `internal/web/service/panel/netron_repo.go`, `netron_update_test.go`
 - `internal/database/model/usage_multiplier.go` (+ test)
 - `internal/database/usage_multiplier_migration_test.go`, `usage_multiplier_postgres_test.go`
