@@ -316,6 +316,9 @@ jobs:
         run: |
           shellcheck --severity=style DockerInit.sh DockerEntrypoint.sh deploy/test/smoke-noninteractive.sh
           shellcheck --severity=error install.sh update.sh x-ui.sh
+          shellcheck -x --severity=style upgrade-from-stock.sh deploy/test/upgrade/*.sh
+      - name: Upgrade-from-stock tests
+        run: bash deploy/test/upgrade/run.sh
 
   frontend:
     runs-on: ubuntu-latest

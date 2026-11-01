@@ -23,6 +23,8 @@
 > Install netron-panel (Ubuntu/Debian, amd64/arm64, as root):
 > `bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/install.sh)`
 >
+> Already running stock 3x-ui? The same command converts it in place (backup first, automatic rollback). See [docs/UPGRADE_FROM_STOCK.md](docs/UPGRADE_FROM_STOCK.md).
+>
 > **Never run the stock upstream installer/updater on a netron server: it would replace the binary with stock 3x-ui.** Releases: see "Cutting a release" in [docs/MULTIPLIER.md](docs/MULTIPLIER.md).
 
 **3X-UI** is an advanced, open-source web control panel for managing [Xray-core](https://github.com/XTLS/Xray-core) servers. It provides a clean, multi-language interface for deploying, configuring, and monitoring a wide range of proxy and VPN protocols — from a single VPS to multi-node deployments.

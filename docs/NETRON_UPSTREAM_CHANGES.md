@@ -105,6 +105,27 @@ New files (no rebase conflict): `frontend/src/lib/xray/usage-multiplier.ts`,
 | `internal/web/translation/*.json` (14) | `pages.inbounds.form.usageMultiplier*` (4 keys) after `excludeFromSubHelp`; `pages.settings.usageMultiplier*` (12 keys) after `restartXrayOnClientDisableDesc`; real en-US and fa-IR text, English elsewhere; interpolation is `{name}`, not `{{name}}` | i18n (dead-key/parity test) |
 | `frontend/src/generated/*`, `frontend/public/openapi.json`, `docs/public/openapi.json`, `docs/content/docs/en/reference/api/settings.mdx` | regenerated (`make gen`, copy, `pnpm gen:api`) | `usageMultiplierEnable`, `Inbound.usageMultiplier`, `UsageMultiplierStatus` |
 
+## Upstream files modified: in-place upgrade from stock
+
+See `docs/UPGRADE_FROM_STOCK.md`. All logic lives in the new `upgrade-from-stock.sh`;
+the upstream files only hand over to it.
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `install.sh` | tail: `netron_flags`/`netron_version` parsing (flags no longer reach `install_x-ui` as the version), `handoff_existing_panel` called before `install_base`; downloads `upgrade-from-stock.sh` from the release ref (main as fallback) and runs `convert` | an existing panel is converted in place, never reinstalled over (the stock flow wipes the install dir and may regenerate credentials) |
+| `update.sh` | `refuse_stock_panel` before `require_writable_update_paths`/`install_base` | a stock panel must be converted (backup, health check, rollback), not binary-swapped |
+| `x-ui.sh` | `rollback()` function, `rollback` case, one usage line (the numbered menu is unchanged) | `x-ui rollback` runs the backup's own helper |
+| `.github/workflows/ci.yml` | shell-lint job: full-style shellcheck of the new scripts and a `run.sh` step | keeps the upgrade tests running |
+| `Makefile` | `test-upgrade` target | local run |
+| `README.md` | one line pointing at `docs/UPGRADE_FROM_STOCK.md` | discoverability |
+
+New files: `upgrade-from-stock.sh`, `docs/UPGRADE_FROM_STOCK.md`,
+`deploy/test/upgrade/` (`run.sh`, `e2e.sh`, `lib.sh`, `make-stock-fixture.sh`,
+`fixtures/stock-3.10.2.db`, `fixtures/stock-3.11.0.db`: synthetic stock databases
+made with the stock binaries), `internal/web/service/upgrade_from_stock_test.go`.
+`MIN_VERIFIED_VERSION` in the script is the oldest stock fixture; add a fixture
+(run `make-stock-fixture.sh` with that stock binary) before lowering it.
+
 ## Deliberately not hooked
 
 - Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes

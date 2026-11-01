@@ -65,6 +65,11 @@ node-e2e: dist-stub ## Master+node sync end to end with two real panel processes
 	go build -o $(NODE_E2E_BIN) .
 	XUI_NODE_E2E_BINARY=$(NODE_E2E_BIN) go test -count=1 -timeout 20m -v ./internal/nodee2e/
 
+.PHONY: test-upgrade
+test-upgrade: ## Shell tests for upgrade-from-stock.sh (set XUI_E2E_* to add the real-binary run, see deploy/test/upgrade/e2e.sh)
+	bash deploy/test/upgrade/run.sh
+	bash deploy/test/upgrade/e2e.sh
+
 .PHONY: test-fe
 test-fe: ## Frontend tests (vitest)
 	cd $(FRONTEND) && npm test
