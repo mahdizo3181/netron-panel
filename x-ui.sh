@@ -176,6 +176,18 @@ update_dev() {
     fi
 }
 
+# Restores the newest backup taken by upgrade-from-stock.sh: stock binary, menu
+# script and database. The helper lives in the backup, so it works offline.
+rollback() {
+    local backup_root="${XUI_BACKUP_ROOT:-/root}" latest
+    latest=$(find "${backup_root}" -maxdepth 1 -type d -name 'xui-backup-*' 2> /dev/null | sort | tail -n 1)
+    if [[ -z "$latest" || ! -f "$latest/upgrade-from-stock.sh" ]]; then
+        LOGE "No upgrade backup found (${backup_root}/xui-backup-*)."
+        return 1
+    fi
+    bash "$latest/upgrade-from-stock.sh" rollback "$latest"
+}
+
 replace_xui_script() {
     local url="$1"
     local use_if_modified_since="$2"
@@ -3495,6 +3507,7 @@ show_usage() {
 │  ${blue}x-ui banlog${plain}                - Check Fail2ban ban logs          │
 │  ${blue}x-ui update${plain}                - Update                           │
 │  ${blue}x-ui update-dev${plain}            - Update to Dev channel (latest)   │
+│  ${blue}x-ui rollback${plain}              - Restore pre-upgrade backup       │
 │  ${blue}x-ui update-all-geofiles${plain}   - Update all geo files             │
 │  ${blue}x-ui migrateDB [file]${plain}      - Convert .db <-> .dump (SQLite)   │
 │  ${blue}x-ui pgclient [ver]${plain}        - Upgrade pg_dump/pg_restore tools │
@@ -3682,6 +3695,9 @@ if [[ $# -gt 0 ]]; then
             ;;
         "update-dev")
             check_install 0 && update_dev 0
+            ;;
+        "rollback")
+            rollback
             ;;
         "legacy")
             check_install 0 && legacy_version 0

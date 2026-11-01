@@ -2061,6 +2061,48 @@ install_x-ui() {
 └───────────────────────────────────────────────────────┘"
 }
 
+# netron-panel: a server that already runs a panel is upgraded in place by
+# upgrade-from-stock.sh (backup, health check, automatic rollback). It is never
+# reinstalled over: that would wipe the install dir and could regenerate credentials.
+netron_flags=()
+netron_version=""
+for netron_arg in "$@"; do
+    case "${netron_arg}" in
+        --yes | -y | --force-old) netron_flags+=("${netron_arg}") ;;
+        *) [[ -z "${netron_version}" ]] && netron_version="${netron_arg}" ;;
+    esac
+done
+
+handoff_existing_panel() {
+    [[ -n "${XUI_SKIP_UPGRADE_CHECK:-}" ]] && return 0
+    [[ -e "${xui_folder}/x-ui" || -f "${xui_service}/x-ui.service" ]] || return 0
+    local ref helper rc tag_arg=()
+    ref="${netron_version}"
+    if [[ -z "${ref}" ]]; then
+        ref="$(resolve_latest_tag)"
+    elif [[ "${ref}" == "dev" || "${ref}" == "dev-latest" ]]; then
+        ref="main"
+    else
+        tag_arg=(--version "${ref}")
+    fi
+    echo -e "${yellow}An existing x-ui panel was found; switching to the in-place upgrade flow.${plain}"
+    helper="$(mktemp /tmp/upgrade-from-stock.XXXXXX)"
+    # The helper from the release being installed; main until a release ships it.
+    curl -fsSL "https://raw.githubusercontent.com/${xui_repo}/${ref:-main}/upgrade-from-stock.sh" -o "${helper}" ||
+        curl -fsSL "https://raw.githubusercontent.com/${xui_repo}/main/upgrade-from-stock.sh" -o "${helper}" || {
+        rm -f "${helper}"
+        echo -e "${red}Could not download upgrade-from-stock.sh; nothing was changed.${plain}"
+        exit 1
+    }
+    rc=0
+    bash "${helper}" convert "${tag_arg[@]}" "${netron_flags[@]}" || rc=$?
+    rm -f "${helper}"
+    # 10 = no existing panel after all: fall through to the normal fresh install.
+    [[ "${rc}" -eq 10 ]] && return 0
+    exit "${rc}"
+}
+
 echo -e "${green}Running...${plain}"
+handoff_existing_panel
 install_base
-install_x-ui $1
+install_x-ui ${netron_version}

@@ -809,7 +809,19 @@ update_x-ui() {
 └───────────────────────────────────────────────────────┘"
 }
 
+# netron-panel: a stock 3x-ui must go through the converter (backup, health check,
+# automatic rollback), never through a plain binary swap. Checked before any side effect.
+refuse_stock_panel() {
+    local installed
+    [[ -x "${xui_folder}/x-ui" ]] || return 0
+    installed="$("${xui_folder}/x-ui" -v 2> /dev/null | head -n1 | tr -d '[:space:]')"
+    if [[ -n "${installed}" && "${installed}" != *-netron.* && -z "${XUI_ALLOW_STOCK_UPDATE:-}" ]]; then
+        _fail "ERROR: this is a stock 3x-ui (${installed}). Convert it with: bash <(curl -Ls https://raw.githubusercontent.com/${xui_repo}/main/install.sh)   (it backs up first and rolls back on failure). Nothing was changed."
+    fi
+}
+
 echo -e "${green}Running...${plain}"
+refuse_stock_panel
 require_writable_update_paths
 install_base
 update_x-ui $1
