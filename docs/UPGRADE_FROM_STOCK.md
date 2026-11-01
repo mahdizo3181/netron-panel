@@ -55,6 +55,36 @@ bash <(curl -Ls https://raw.githubusercontent.com/mahdizo3181/netron-panel/main/
 Downtime is the stop-to-healthy window, normally well under a minute. Running
 connections on Xray are interrupted during it.
 
+## If your connection drops or you press Ctrl-C
+
+Run the upgrade **inside `tmux` or `screen`** (or with `nohup`) when you are on
+SSH; the script prints a one-line tip when it sees you are not. It never blocks on it.
+
+Independently of that, the destructive part protects itself:
+
+- From just before the panel is stopped until the upgrade is decided
+  (converted, or rolled back), the script **ignores** SIGHUP (SSH drop), SIGINT
+  (Ctrl-C), SIGTERM and a dead terminal. It prints this before it starts. Do not
+  power off the server during it; the window is normally under a minute.
+  Ignoring is inherited by `systemctl`, `tar` and `cp`, so a hangup does not kill
+  those mid-operation either.
+- It records how far it got (stopped, swapped, started). If it nevertheless
+  exits abnormally after stopping the panel (a failing command, disk full),
+  its exit handler **undoes what was done** and prints what it did: before the
+  swap it restarts the old panel; after, it rolls back to the backup.
+- Every `systemctl` call it makes has a deadline (120 s for stop/start, 10 s for
+  status checks; `XUI_SYSTEMCTL_TIMEOUT` and `XUI_SYSTEMCTL_CHECK_TIMEOUT` override).
+  A wedged systemd therefore cannot freeze the upgrade forever: a timeout counts as
+  a failure and takes the same recovery path (restart the old panel, or roll back).
+- Before the window (download, backup, prompts), a signal just exits cleanly:
+  nothing has been changed.
+- `kill -9` and power loss cannot be caught by any program. For those, a
+  marker file `IN_PROGRESS` stays in the backup directory. `detect` and the next
+  `convert` report it and refuse to proceed until you restore with
+  `/root/xui-backup-<time>/rollback.sh` (a stale lock from the dead run does not
+  block that). If it died before the final backup step nothing was replaced, and
+  the message says to just start the panel again.
+
 ## Kept and replaced
 
 | Kept exactly as is | Replaced |
@@ -73,8 +103,15 @@ until you turn it on yourself.
 
 ## Backup and rollback
 
-Each conversion writes `/root/xui-backup-<time>/` (mode 700, it contains your
-database and keys; keep it private):
+Each conversion writes `/root/xui-backup-<time>/`. **It is sensitive**: it holds
+your panel database (password hashes, API tokens, Telegram/Discord bot tokens,
+node tokens, the session secret) and copies of your TLS **private keys**. It is
+created with `umask 077` and then locked down (`chmod -R go-rwx`): nothing in it is readable by anyone but root. It is still
+a full copy of your secrets on the same disk as the panel. After you have
+confirmed the upgrade is good, **move it off the server** (for example
+`tar czf - /root/xui-backup-<time> | gpg -c > xui-backup.tgz.gpg`, then copy that
+elsewhere) **or delete it** (`rm -r /root/xui-backup-<time>`). Keep it only for
+as long as you may still want to roll back. Never put it in a public place.
 
 | File | What |
 | --- | --- |
@@ -143,7 +180,9 @@ Non-default install or database locations (read from the unit and
 - [ ] You can log in with the **same** credentials, port and base path.
 - [ ] Inbounds and client counts look the same; open one subscription link.
 - [ ] Settings → "Enable per-inbound multiplier" is **off**.
-- [ ] Keep `/root/xui-backup-<time>/` for a while.
+- [ ] Keep `/root/xui-backup-<time>/` only while you may still roll back, then move it
+      off the server (encrypted) or delete it: it contains your database and TLS
+      private keys.
 - [ ] Do not run the stock upstream installer/updater again on this server: it
       would put stock 3x-ui back (the netron `x-ui update` is the right one).
 
@@ -239,7 +278,14 @@ fresh server, stock to netron, already netron, Docker and PostgreSQL refusals,
 backup failure, bad checksum, health failure in four ways (each rolls back to
 the exact original database bytes), running twice, non-interactive and `--yes`,
 old versions, the `rollback` command, a relocated database and a panel bound to
-a specific address. `deploy/test/upgrade/e2e.sh` converts the **real** stock
+a specific address, and interruption safety: HUP, INT and TERM sent at each point
+of the destructive window (after the stop, after the swap, after the start) all
+end in the fully converted healthy panel; an abnormal exit after the stop, or with
+the files half replaced, ends in the original panel with the exact original database
+bytes (never stopped, never half swapped); `kill -9` leaves a marker that blocks a
+blind retry and `rollback.sh` recovers; a dead terminal does not abort a running
+conversion; a `systemctl` that hangs forever (on stop, or on start after the swap)
+times out and ends in the original panel, running. `deploy/test/upgrade/e2e.sh` converts the **real** stock
 3.10.2 and 3.11.0 binaries on real stock databases to the real netron binary and
 checks the running panel's API. The Go test
 `TestStockDatabaseMigratesLosslesslyAndMultiplierStaysOff` compares every table of
