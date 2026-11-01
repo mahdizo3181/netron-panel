@@ -5,7 +5,7 @@
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HERE="${REPO}/deploy/test/upgrade"
-SCRIPT="${REPO}/upgrade-from-stock.sh"
+SCRIPT="${UPGRADE_SCRIPT:-${REPO}/upgrade-from-stock.sh}"
 FIXTURE_DIR="${HERE}/fixtures"
 
 pass=0
@@ -75,7 +75,8 @@ case "\${BEHAVIOUR}" in
 esac
 mkdir -p "\${STUB_STATE}/www"
 listen="\$(sqlite3 "\${db}" "SELECT value FROM settings WHERE key = 'webListen'")"
-exec python3 -m http.server "\${port}" --bind "\${listen:-127.0.0.1}" --directory "\${STUB_STATE}/www" > /dev/null 2>&1
+# The converter ignores TERM/INT/HUP and children inherit that; a real service does not, so reset it.
+exec python3 -c 'import signal, sys, runpy; signal.signal(signal.SIGTERM, signal.SIG_DFL); sys.argv = ["http.server", sys.argv[1], "--bind", sys.argv[2], "--directory", sys.argv[3]]; runpy.run_module("http.server", run_name="__main__")' "\${port}" "\${listen:-127.0.0.1}" "\${STUB_STATE}/www" > /dev/null 2>&1
 EOF
     chmod +x "$1"
 }
@@ -87,6 +88,28 @@ write_stubs() {
 state="${STUB_STATE}"
 pidfile="${state}/pid"
 alive() { [[ -f "${pidfile}" ]] && kill -0 "$(cat "${pidfile}")" 2> /dev/null; }
+# fire_signal AT: once, send STUB_SIGNAL to the script that called us when STUB_SIGNAL_AT matches.
+fire_signal() {
+    [[ "${STUB_SIGNAL_AT:-}" == "$1" && ! -f "${state}/signal-fired" ]] || return 0
+    : > "${state}/signal-fired"
+    # the converter runs systemctl under `timeout`: the script is the parent of that wrapper
+    local target="${PPID}"
+    if [[ "$(ps -o comm= -p "${target}" 2> /dev/null | tr -d ' ')" == timeout ]]; then
+        target="$(ps -o ppid= -p "${target}" | tr -d ' ')"
+    fi
+    if [[ "$1" == start-after ]]; then
+        ( sleep 1; kill "-${STUB_SIGNAL}" "${target}" ) > /dev/null 2>&1 &
+    else
+        kill "-${STUB_SIGNAL}" "${target}"
+    fi
+}
+# hang_once CMD: block forever (once) when STUB_HANG names this subcommand: a wedged systemd.
+hang_once() {
+    [[ "${STUB_HANG:-}" == "$1" && ! -f "${state}/hung-$1" ]] || return 0
+    : > "${state}/hung-$1"
+    exec sleep 300
+}
+hang_once "${1:-}"
 case "${1:-}" in
     is-active)
         alive && exit 0
@@ -94,11 +117,15 @@ case "${1:-}" in
         ;;
     start)
         alive && exit 0
+        fire_signal start-before
+        # a killed script never gets to start the panel
+        [[ "${STUB_SIGNAL_AT:-}" == start-before && "${STUB_SIGNAL:-}" == KILL ]] && exit 0
         echo "$*" >> "${state}/systemctl.log"
         # exec so the recorded PID is the panel process itself, not a wrapper
         nohup bash -c 'cd "${STUB_MAIN}" && exec env XUI_DB_FOLDER="${STUB_DBDIR}" XUI_LOG_FOLDER="${STUB_LOGDIR}" XUI_BIN_FOLDER="${STUB_MAIN}/bin" "${STUB_MAIN}/x-ui" run' >> "${state}/panel.out" 2>&1 &
         echo $! > "${pidfile}"
         sleep 0.3
+        fire_signal start-after
         exit 0
         ;;
     stop)
@@ -112,6 +139,11 @@ case "${1:-}" in
             kill -9 "${pid}" 2> /dev/null || true
         fi
         rm -f "${pidfile}"
+        fire_signal stop
+        if [[ -n "${STUB_STOP_FAIL_ONCE:-}" && ! -f "${state}/stop-failed" ]]; then
+            : > "${state}/stop-failed"
+            exit 1
+        fi
         exit 0
         ;;
     show)
@@ -200,6 +232,16 @@ EOF
 [[ -n "${STUB_DOCKER_PS:-}" ]] && echo "${STUB_DOCKER_PS}"
 exit 0
 EOF
+    cat > "${STUBS}/mv" << 'EOF'
+#!/bin/bash
+# Fails once when the destination equals $STUB_MV_FAIL_TARGET (simulates a disk error mid-swap).
+if [[ -n "${STUB_MV_FAIL_TARGET:-}" && ! -f "${STUB_STATE}/mv-failed" && "${*: -1}" == "${STUB_MV_FAIL_TARGET}" ]]; then
+    : > "${STUB_STATE}/mv-failed"
+    echo "mv: injected failure" >&2
+    exit 1
+fi
+exec /usr/bin/mv "$@"
+EOF
     local pm
     for pm in apt-get apt dnf yum pacman zypper apk; do
         # shellcheck disable=SC2016
@@ -255,7 +297,7 @@ EOF
     export STUB_STATE="${STATE}" STUB_MAIN="${MAIN}" STUB_DBDIR="${DBDIR}" STUB_LOGDIR="${R}/var/log/x-ui"
     export STUB_HELPER="${SCRIPT}" STUB_RELEASE_DIR="${T}/release" STUB_LATEST_TAG="v3.11.0-netron.9" STUB_DOCKER_PS=""
     export XUI_ROOT="${R}" XUI_BACKUP_ROOT="${R}/root" XUI_HEALTH_WAIT=14 XUI_HEALTH_STABLE=2 XUI_DOCKER="${STUBS}/docker"
-    unset XUI_MAIN_FOLDER XUI_SERVICE XUI_PROMPT_STDIN
+    unset XUI_MAIN_FOLDER XUI_SERVICE XUI_PROMPT_STDIN STUB_SIGNAL STUB_SIGNAL_AT STUB_STOP_FAIL_ONCE STUB_MV_FAIL_TARGET STUB_HANG
     write_stubs
     export PATH="${STUBS}:${PATH}"
 }

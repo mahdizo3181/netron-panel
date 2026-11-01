@@ -56,6 +56,7 @@ case_stock_converts_in_place() {
         check "backup contains ${f}" test -e "${b}/${f}"
     done
     assert_eq "$(stat -c %a "${b}")" 700 "backup dir is private (700)"
+    assert_eq "$(find "${b}" -perm /077 | wc -l)" 0 "no file or dir in the backup is accessible to group/other"
     assert_not_contains "${OUT}" "${SECRET_SESSION}" "report never prints the session secret"
     assert_not_contains "${OUT}" "${SECRET_BASEPATH}" "report never prints the base path"
     assert_contains "${OUT}" "Node rollout order" "node rollout reminder printed"
@@ -390,6 +391,198 @@ case_update_sh_refuses_a_stock_panel_before_any_side_effect() {
     assert_contains "${OUT}" "mahdizo3181/netron-panel" "points at this repository"
     check "no package manager call" test ! -s "${STATE}/pkg.log"
     assert_eq "$(tree_hash "${MAIN}")" "${before}" "install dir untouched"
+    teardown
+}
+
+# ---------------------------------------------------------------- interruption safety
+
+assert_converted_healthy() { # label
+    assert_eq "$(panel_version)" "3.11.0-netron.9" "[$1] the panel is the converted build"
+    check "[$1] service active" "${STUBS}/systemctl" is-active --quiet x-ui
+    check "[$1] panel answers HTTP" test "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/fixture/")" != 000
+    check "[$1] decided: no IN_PROGRESS marker left" test -z "$(find "${R}/root" -name IN_PROGRESS)"
+    check "[$1] migration present in the DB" test "$(sqlite3 -readonly "${DBDIR}/x-ui.db" "select count(*) from pragma_table_info('inbounds') where name='usage_multiplier'")" = 1
+}
+
+assert_original_state() { # label db_sha
+    assert_eq "$(panel_version)" "3.11.0" "[$1] stock binary"
+    assert_eq "$(sha "${DBDIR}/x-ui.db")" "$2" "[$1] database is the EXACT original bytes"
+    assert_eq "$(cat "${MAIN}/x-ui.sh")" "stock-xui.sh 3.11.0" "[$1] stock x-ui.sh in the install dir"
+    assert_eq "$(cat "${R}/usr/bin/x-ui")" "stock-menu 3.11.0" "[$1] stock menu script"
+    check "[$1] stock panel is running (not stopped)" "${STUBS}/systemctl" is-active --quiet x-ui
+    check "[$1] panel answers HTTP" test "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/fixture/")" != 000
+    check "[$1] no IN_PROGRESS marker left" test -z "$(find "${R}/root" -name IN_PROGRESS)"
+}
+
+# HUP (ssh drop), INT (Ctrl-C) and TERM arriving at each point of the destructive window
+# must not interrupt it: the end state is the fully converted, healthy panel.
+case_signals_in_the_critical_window_cannot_interrupt() {
+    local spec sig at
+    for spec in HUP:stop TERM:stop INT:stop HUP:start-before TERM:start-before HUP:start-after TERM:start-after; do
+        sig="${spec%%:*}"
+        at="${spec##*:}"
+        setup
+        make_release v3.11.0-netron.9 ok
+        start_stock_panel
+        export STUB_SIGNAL="${sig}" STUB_SIGNAL_AT="${at}"
+        run_convert --yes
+        assert_eq "${RC}" 0 "[${spec}] conversion completes despite the signal (output: ${OUT: -300})"
+        check "[${spec}] the signal was really sent" test -f "${STATE}/signal-fired"
+        assert_not_contains "${OUT}" "stopped unexpectedly" "[${spec}] no recovery was needed"
+        assert_converted_healthy "${spec}"
+        teardown
+    done
+}
+
+# An abnormal exit (here: systemctl stop fails after stopping) while only stopped: the old panel comes back.
+case_abnormal_exit_after_stop_restarts_the_old_panel() {
+    setup
+    make_release v3.11.0-netron.9 ok
+    start_stock_panel
+    local db_before
+    db_before="$(sha "${DBDIR}/x-ui.db")"
+    export STUB_STOP_FAIL_ONCE=1
+    run_convert --yes
+    assert_eq "${RC}" 40 "abnormal exit after stop is recovered (output: ${OUT: -400})"
+    assert_contains "${OUT}" "stopped unexpectedly" "what happened is printed"
+    assert_contains "${OUT}" "is running again" "the old panel was restarted"
+    assert_original_state "after-stop" "${db_before}"
+    teardown
+}
+
+# An abnormal exit with the files half replaced (the 2nd file move fails): exact original bytes come back.
+case_abnormal_exit_half_swapped_rolls_back_exact_bytes() {
+    setup
+    make_release v3.11.0-netron.9 ok
+    start_stock_panel
+    local db_before
+    db_before="$(sha "${DBDIR}/x-ui.db")"
+    export STUB_MV_FAIL_TARGET="${MAIN}/x-ui.sh"
+    run_convert --yes
+    assert_eq "${RC}" 40 "half-swapped exit is rolled back (output: ${OUT: -500})"
+    assert_contains "${OUT}" "Files may be half replaced" "the half-swapped state is recognised"
+    check "the failure was really injected" test -f "${STATE}/mv-failed"
+    assert_original_state "half-swapped" "${db_before}"
+    teardown
+}
+
+# SIGKILL cannot be trapped. It must leave a marker so the next run refuses to guess, a stale lock
+# must not block the recovery, and rollback.sh must restore the exact original state.
+case_sigkill_is_detected_and_recoverable() {
+    setup
+    make_release v3.11.0-netron.9 ok
+    start_stock_panel
+    local db_before b
+    db_before="$(sha "${DBDIR}/x-ui.db")"
+    export STUB_SIGNAL=KILL STUB_SIGNAL_AT=start-before
+    run_convert --yes
+    check "script was killed (non-zero exit)" test "${RC}" -ne 0
+    check "panel is left stopped (the unrecoverable-by-script state)" test ! "$("${STUBS}/systemctl" is-active x-ui > /dev/null 2>&1 && echo up)" = up
+    b="$(backup_dir)"
+    check "IN_PROGRESS marker left behind" test -f "${b}/IN_PROGRESS"
+    unset STUB_SIGNAL STUB_SIGNAL_AT
+    set +e
+    OUT="$(bash "${SCRIPT}" detect 2>&1)"
+    set -e
+    assert_contains "${OUT}" "INTERRUPTED upgrade" "detect reports the interrupted upgrade"
+    run_convert --yes
+    assert_eq "${RC}" 20 "a new convert refuses while an interrupted one is undecided"
+    assert_contains "${OUT}" "rollback.sh" "it points at the rollback"
+    set +e
+    OUT="$("${b}/rollback.sh" --yes 2>&1)"
+    RC=$?
+    set -e
+    assert_eq "${RC}" 0 "rollback.sh recovers despite the stale lock (output: ${OUT: -300})"
+    assert_original_state "after-sigkill-rollback" "${db_before}"
+    run_convert --yes
+    assert_eq "${RC}" 0 "a fresh conversion works after the recovery"
+    teardown
+}
+
+# The EXIT trap's recovery when the abnormal exit happens after the new panel was started.
+case_abnormal_exit_after_start_rolls_back() {
+    setup
+    make_release v3.11.0-netron.9 ok
+    start_stock_panel
+    local db_before b
+    db_before="$(sha "${DBDIR}/x-ui.db")"
+    export STUB_SIGNAL=KILL STUB_SIGNAL_AT=start-after
+    run_convert --yes
+    unset STUB_SIGNAL STUB_SIGNAL_AT
+    b="$(backup_dir)"
+    assert_eq "$(panel_version)" "3.11.0-netron.9" "precondition: killed after the new panel started"
+    # what the script's EXIT trap does when it exits abnormally in phase 'started'
+    set +e
+    OUT="$(bash -c 'source "$1"; PHASE=started; BACKUP="$2"; WAS_RUNNING=yes; VERSION=3.11.0; cleanup' _ "${SCRIPT}" "${b}" 2>&1)"
+    RC=$?
+    set -e
+    assert_eq "${RC}" 40 "cleanup in phase 'started' rolls back (output: ${OUT: -400})"
+    assert_original_state "after-start" "${db_before}"
+    teardown
+}
+
+# ssh dropped: stdout is gone for the whole destructive window. Output errors must not abort the
+# conversion (which would roll back a healthy panel).
+case_dead_terminal_does_not_abort_the_conversion() {
+    setup
+    make_release v3.11.0-netron.9 ok
+    start_stock_panel
+    set +e
+    bash "${SCRIPT}" convert --yes 2>&1 | python3 -c '
+import sys
+for line in sys.stdin:
+    if "Backup complete" in line:
+        break
+'
+    local rc="${PIPESTATUS[0]}"
+    set -e
+    assert_eq "${rc}" 0 "converted although nothing could be printed any more"
+    assert_converted_healthy "dead-terminal"
+    teardown
+}
+
+# A wedged systemd must not freeze the conversion: the call times out, counts as a failure and the
+# normal recovery runs. (The hung stub inherits the ignored TERM, so this also proves the -k kill.)
+case_hung_systemctl_times_out_and_takes_the_recovery_path() {
+    local db_before hang
+    export XUI_SYSTEMCTL_TIMEOUT=2 XUI_SYSTEMCTL_CHECK_TIMEOUT=2 XUI_HEALTH_WAIT=5
+    for hang in start stop; do
+        setup
+        export XUI_SYSTEMCTL_TIMEOUT=2 XUI_SYSTEMCTL_CHECK_TIMEOUT=2 XUI_HEALTH_WAIT=5
+        make_release v3.11.0-netron.9 ok
+        start_stock_panel
+        db_before="$(sha "${DBDIR}/x-ui.db")"
+        export STUB_HANG="${hang}"
+        local t0=${SECONDS}
+        run_convert --yes
+        check "[hang ${hang}] it did not hang (finished in well under the stub's 300s sleep)" test $((SECONDS - t0)) -lt 60
+        assert_eq "${RC}" 40 "[hang ${hang}] timeout is a failure -> recovery/rollback (output: ${OUT: -500})"
+        assert_contains "${OUT}" "did not answer within 2s" "[hang ${hang}] the timeout is reported"
+        check "[hang ${hang}] the hang was really injected" test -f "${STATE}/hung-${hang}"
+        assert_original_state "hang-${hang}" "${db_before}"
+        unset STUB_HANG
+        teardown
+    done
+    unset XUI_SYSTEMCTL_TIMEOUT XUI_SYSTEMCTL_CHECK_TIMEOUT
+    export XUI_HEALTH_WAIT=14
+}
+
+case_recommends_tmux_over_ssh_without_blocking() {
+    setup
+    make_release v3.11.0-netron.9 ok
+    start_stock_panel
+    export SSH_CONNECTION="198.51.100.1 50000 192.0.2.1 22"
+    unset TMUX STY
+    set +e
+    OUT="$(bash "${SCRIPT}" convert < /dev/null 2>&1)"
+    set -e
+    assert_contains "${OUT}" "inside tmux or screen" "tip shown over ssh"
+    OUT="$(TMUX=/tmp/tmux-0/default,1,0 bash "${SCRIPT}" convert < /dev/null 2>&1 || true)"
+    assert_not_contains "${OUT}" "inside tmux or screen" "no tip inside tmux"
+    OUT="$(bash -c 'trap "" HUP; exec bash "$1" convert' _ "${SCRIPT}" < /dev/null 2>&1 || true)"
+    assert_not_contains "${OUT}" "inside tmux or screen" "no tip under nohup (SIGHUP already ignored)"
+    assert_eq "$(panel_version)" "3.11.0" "the tip never changes anything"
+    unset SSH_CONNECTION
     teardown
 }
 

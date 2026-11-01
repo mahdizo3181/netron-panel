@@ -38,10 +38,11 @@ else
     red='' green='' yellow='' blue='' plain=''
 fi
 
-say() { echo -e "$*"; }
-warn() { echo -e "${yellow}$*${plain}" >&2; }
-err() { echo -e "${red}$*${plain}" >&2; }
-ok() { echo -e "${green}$*${plain}"; }
+# Output is best effort: with a closed terminal (ssh drop) a failing echo must not abort the script.
+say() { echo -e "$*" || true; }
+warn() { echo -e "${yellow}$*${plain}" >&2 || true; }
+err() { echo -e "${red}$*${plain}" >&2 || true; }
+ok() { echo -e "${green}$*${plain}" || true; }
 
 ROOT="${XUI_ROOT:-}"
 p() { printf '%s%s' "${ROOT}" "$1"; }
@@ -62,6 +63,9 @@ USRBIN_XUI="$(p /usr/bin/x-ui)"
 BACKUP_ROOT="${XUI_BACKUP_ROOT:-$(p /root)}"
 HEALTH_WAIT="${XUI_HEALTH_WAIT:-30}"
 HEALTH_STABLE="${XUI_HEALTH_STABLE:-8}"
+# Deadlines for systemctl: a hung systemd call must not freeze the conversion forever.
+SYSTEMCTL_TIMEOUT="${XUI_SYSTEMCTL_TIMEOUT:-120}"
+SYSTEMCTL_CHECK_TIMEOUT="${XUI_SYSTEMCTL_CHECK_TIMEOUT:-10}"
 DOCKER="${XUI_DOCKER:-docker}"
 
 # ---------------------------------------------------------------- facts (filled by gather_facts)
@@ -94,6 +98,21 @@ NONDEFAULT=""
 HAVE_SQLITE="no"
 
 command -v sqlite3 > /dev/null 2>&1 && HAVE_SQLITE="yes"
+
+# svc ARGS / svc_check ARGS: systemctl with a deadline (stop/start/reload vs. is-active/show).
+# A timeout is a failure like any other, so it takes the normal recovery/rollback path. -k kills
+# a call that inherited the ignored TERM of the protected window.
+svc() { svc_run "${SYSTEMCTL_TIMEOUT}" "$@"; }
+svc_check() { svc_run "${SYSTEMCTL_CHECK_TIMEOUT}" "$@"; }
+svc_run() {
+    local limit="$1" rc=0
+    shift
+    timeout -k 5 "${limit}" systemctl "$@" || rc=$?
+    if [[ "${rc}" -eq 124 || "${rc}" -eq 137 ]]; then
+        err "systemctl $* did not answer within ${limit}s (treated as a failure)"
+    fi
+    return "${rc}"
+}
 
 sql() {
     [[ "${HAVE_SQLITE}" == "yes" && -f "${DB_FILE}" ]] || return 1
@@ -175,7 +194,7 @@ gather_facts() {
 
     [[ "${MAIN}" != "$(p /usr/local/x-ui)" || "${DB_DIR}" != "$(p /etc/x-ui)" ]] && NONDEFAULT="install dir ${MAIN}, database folder ${DB_DIR}"
 
-    if [[ "${HAVE_UNIT}" == "yes" ]] && systemctl is-active --quiet x-ui 2> /dev/null; then RUNNING="yes"; fi
+    if [[ "${HAVE_UNIT}" == "yes" ]] && svc_check is-active --quiet x-ui 2> /dev/null; then RUNNING="yes"; fi
 
     if VERSION="$(installed_version)" && [[ -n "${VERSION}" ]]; then
         case "${VERSION}" in
@@ -285,6 +304,9 @@ print_report() {
     say "  running          : ${RUNNING}"
     say "  panel version    : ${VERSION:-unknown} (${KIND})"
     say "  non-default paths: ${NONDEFAULT:-none}"
+    local pending
+    pending="$(interrupted_backups)"
+    [[ -n "${pending}" ]] && say "  INTERRUPTED upgrade: $(dirname "$(head -n1 <<< "${pending}")") (run its rollback.sh)"
     say "  docker           : ${DOCKER_NOTE:-none found}"
     if [[ "${ENGINE}" == "sqlite" && "${HAVE_SQLITE}" == "yes" && -f "${DB_FILE}" ]]; then
         say "  panel port       : ${PORT} (${SCHEME}), base path ${base_path_note}"
@@ -308,22 +330,109 @@ die() {
 
 lock_dir=""
 acquire_lock() {
-    lock_dir="${MAIN}.upgrade.lock"
-    if ! mkdir "${lock_dir}" 2> /dev/null; then
-        lock_dir=""
-        die "Another upgrade seems to be running (${MAIN}.upgrade.lock exists). If none is, remove that directory and retry." "${EX_REFUSED}"
+    local dir="${MAIN}.upgrade.lock" pid
+    if ! mkdir "${dir}" 2> /dev/null; then
+        pid="$(cat "${dir}/pid" 2> /dev/null || true)"
+        if [[ -n "${pid}" ]] && ! kill -0 "${pid}" 2> /dev/null; then
+            # A killed run (SIGKILL, power loss) leaves its lock behind; its owner is gone.
+            rm -f "${dir}/pid"
+            rmdir "${dir}" 2> /dev/null || true
+            mkdir "${dir}" 2> /dev/null || die "Could not take over the stale lock ${dir}." "${EX_REFUSED}"
+        else
+            die "Another upgrade seems to be running (${dir} exists). If none is, remove that directory and retry." "${EX_REFUSED}"
+        fi
     fi
+    echo "$$" > "${dir}/pid"
+    lock_dir="${dir}"
 }
 
 release_lock() {
-    if [[ -n "${lock_dir}" ]]; then rmdir "${lock_dir}" 2> /dev/null || true; fi
+    if [[ -n "${lock_dir}" ]]; then
+        rm -f "${lock_dir}/pid"
+        rmdir "${lock_dir}" 2> /dev/null || true
+    fi
     lock_dir=""
 }
 
-cleanup() {
-    release_lock
-    [[ -n "${WORK}" ]] && safe_rm_rf "${WORK}"
+# ---- interruption safety
+# PHASE records how far the destructive part got, so an abnormal exit knows what to undo:
+#   pre-stop  nothing touched yet (default)     stopped  panel may be stopped, files untouched
+#   swapped   files may be half replaced        started  new panel started, decision pending
+#   done      decided: converted, or rolled back
+PHASE="pre-stop"
+
+# In the destructive window the conversion must not be killable halfway: HUP (ssh drop),
+# INT (Ctrl-C), TERM and PIPE (a dead terminal) are ignored. Ignored signals are inherited by
+# systemctl/tar/cp, so a terminal hangup does not kill those either.
+protect_signals() { trap '' HUP INT TERM PIPE; }
+
+# Outside the window a signal exits through the EXIT trap (lock and temp dir are tidied).
+# PIPE stays ignored for the whole run: all output is best effort (see say/err), so a dead
+# terminal must not kill the script, not even at the final summary.
+exit_on_signals() {
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap '' PIPE
+}
+
+# The conversion is decided (success or rolled back): nothing is left to undo.
+finish_decided() {
+    PHASE="done"
+    if [[ -n "${BACKUP}" ]]; then rm -f "${BACKUP}/IN_PROGRESS"; fi
     return 0
+}
+
+# Backups whose conversion never reached a decision (the script was SIGKILLed / power loss).
+interrupted_backups() {
+    find "${BACKUP_ROOT}" -maxdepth 2 -name IN_PROGRESS -path '*xui-backup-*' 2> /dev/null | sort || true
+}
+
+# recover_interrupted CODE: the script is exiting abnormally after it stopped the panel.
+# Prints what it does and returns the exit code to report.
+recover_interrupted() {
+    local code="$1"
+    err ""
+    err "The upgrade stopped unexpectedly (exit ${code}) after the panel was stopped (phase: ${PHASE})."
+    case "${PHASE}" in
+        stopped)
+            err "Nothing was replaced yet. Starting the previous panel again ..."
+            if [[ "${WAS_RUNNING}" == "yes" ]]; then
+                if svc start x-ui; then
+                    ok "The previous panel (stock ${VERSION}) is running again; nothing changed."
+                else
+                    err "Could not start it. Run: systemctl start x-ui   (the backup is at ${BACKUP:-<none yet>})"
+                    return "${EX_FAILED_NO_ROLLBACK}"
+                fi
+            fi
+            finish_decided
+            return "${EX_FAILED_ROLLED_BACK}"
+            ;;
+        *)
+            err "Files may be half replaced. Rolling back to the backup ..."
+            if [[ -n "${BACKUP}" ]] && do_rollback "${BACKUP}"; then
+                err "Restored stock ${VERSION}: binary, database bytes and scripts from ${BACKUP}."
+                finish_decided
+                return "${EX_FAILED_ROLLED_BACK}"
+            fi
+            err "AUTOMATIC ROLLBACK FAILED. Your backup is intact at ${BACKUP:-<none>}; restore by hand with ${BACKUP:-<backup>}/rollback.sh"
+            svc start x-ui > /dev/null 2>&1 || true
+            return "${EX_FAILED_NO_ROLLBACK}"
+            ;;
+    esac
+}
+
+cleanup() {
+    local rc=$?
+    set +e
+    if [[ "${PHASE}" != "pre-stop" && "${PHASE}" != "done" ]]; then
+        protect_signals
+        recover_interrupted "${rc}"
+        rc=$?
+    fi
+    release_lock
+    if [[ -n "${WORK}" ]]; then safe_rm_rf "${WORK}"; fi
+    exit "${rc}"
 }
 
 # safe_rm_rf DIR: only ever removes an absolute path with at least three parts.
@@ -490,8 +599,10 @@ backup_phase_two() { # after the panel stopped: the exact bytes rollback restore
     fi
     write_manifest
     install_rollback_helper || return 1
-    (cd "${BACKUP}" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "${BACKUP}.sums.tmp") || return 1
+    (cd "${BACKUP}" && find . -type f ! -name SHA256SUMS ! -name IN_PROGRESS -print0 | sort -z | xargs -0 sha256sum > "${BACKUP}.sums.tmp") || return 1
     mv "${BACKUP}.sums.tmp" "${BACKUP}/SHA256SUMS"
+    # cp -p keeps the source modes; nothing in the backup may be readable by anyone but root.
+    chmod -R go-rwx "${BACKUP}" || return 1
     return 0
 }
 
@@ -513,7 +624,7 @@ EOF
 # ---------------------------------------------------------------- stop / swap / start / health
 
 stop_panel() {
-    systemctl stop x-ui
+    svc stop x-ui
     kill_sidecars
 }
 
@@ -610,8 +721,8 @@ health_check() {
             HEALTH_REASON="the panel restarted by itself (crash loop)"
             return 1
         fi
-        pid="$(systemctl show -p MainPID --value x-ui 2> /dev/null || true)"
-        if systemctl is-active --quiet x-ui 2> /dev/null && port_listening; then
+        pid="$(svc_check show -p MainPID --value x-ui 2> /dev/null || true)"
+        if svc_check is-active --quiet x-ui 2> /dev/null && port_listening; then
             status=200
             [[ -n "${PORT}" ]] && status="$(http_status)"
             if [[ "${status}" =~ ^[234][0-9][0-9]$ ]]; then
@@ -623,7 +734,7 @@ health_check() {
                 ((ok_since < 0)) && ok_since=${now}
                 if ((now - ok_since >= HEALTH_STABLE)); then
                     local restarts_after
-                    restarts_after="$(systemctl show -p NRestarts --value x-ui 2> /dev/null || true)"
+                    restarts_after="$(svc_check show -p NRestarts --value x-ui 2> /dev/null || true)"
                     if [[ "${restarts_after}" != "${restarts_before}" ]]; then
                         HEALTH_REASON="systemd restarted the service during the check"
                         return 1
@@ -671,7 +782,7 @@ do_rollback() {
     load_manifest "${dir}" || { err "No manifest in ${dir}; cannot roll back from it."; return 1; }
     [[ -f "${dir}/db/x-ui.db" && -f "${dir}/install-dir.tar.gz" ]] || { err "${dir} is incomplete; cannot roll back from it."; return 1; }
     say "Rolling back from ${dir} ..."
-    systemctl stop x-ui 2> /dev/null || true
+    svc stop x-ui 2> /dev/null || true
     kill_sidecars
 
     local parent base restore
@@ -681,8 +792,12 @@ do_rollback() {
     tar -xzf "${dir}/install-dir.tar.gz" -C "${restore}" || { err "Could not extract the install-dir backup."; safe_rm_rf "${restore}"; return 1; }
     [[ -s "${restore}/${base}/x-ui" ]] || { err "The install-dir backup has no panel binary."; safe_rm_rf "${restore}"; return 1; }
     local failed="${parent}/x-ui-netron-failed.$$"
-    mv "${MAIN}" "${failed}"
-    mv "${restore}/${base}" "${MAIN}"
+    mv "${MAIN}" "${failed}" || { err "Could not move the current install dir aside."; safe_rm_rf "${restore}"; return 1; }
+    if ! mv "${restore}/${base}" "${MAIN}"; then
+        err "Could not move the restored install dir into place; putting the current one back."
+        mv "${failed}" "${MAIN}" || err "!! ${MAIN} is missing: the restored copy is in ${restore}/${base}"
+        return 1
+    fi
     safe_rm_rf "${restore}"
     safe_rm_rf "${failed}"
 
@@ -705,10 +820,11 @@ do_rollback() {
         cp -p "${dir}/service-env" "${ENV_FILE}"
     fi
     [[ -f "${dir}/usr-bin-x-ui" ]] && cp -p "${dir}/usr-bin-x-ui" "${USRBIN_XUI}"
-    ((reload == 1)) && systemctl daemon-reload
+    ((reload == 1)) && svc daemon-reload
     if [[ "${WAS_RUNNING}" == "yes" ]]; then
-        systemctl start x-ui || { err "Restored everything but the service did not start; check 'systemctl status x-ui'."; return 1; }
+        svc start x-ui || { err "Restored everything but the service did not start; check 'systemctl status x-ui'."; return 1; }
     fi
+    rm -f "${dir}/IN_PROGRESS"
     ok "Restored panel ${PREV_VERSION:-?} (binary, database, scripts) from ${dir}"
     return 0
 }
@@ -746,11 +862,43 @@ delegate_update() {
     exec env "${tag_env[@]+"${tag_env[@]}"}" bash <(curl -Ls "https://raw.githubusercontent.com/${xui_repo}/main/update.sh")
 }
 
+# sighup_ignored: true under nohup (SIGHUP is ignored from the start).
+sighup_ignored() {
+    local mask
+    mask="$(awk '/^SigIgn:/ {print $2}' /proc/$$/status 2> /dev/null || true)"
+    [[ -n "${mask}" ]] && (((16#${mask} & 1) == 1))
+}
+
+# One line, never blocks: a dropped SSH session is the usual way an upgrade gets interrupted.
+recommend_tmux() {
+    [[ -n "${TMUX:-}" || -n "${STY:-}" ]] && return 0
+    sighup_ignored && return 0
+    if [[ ! -t 1 || -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
+        say "${yellow}Tip: run this inside tmux or screen (or with nohup) so a dropped connection cannot interrupt it. It protects itself and rolls back on failure, but a multiplexer is still safer.${plain}"
+    fi
+    return 0
+}
+
 cmd_convert() {
     gather_facts
     decide
     print_report
     say ""
+    # First: a half-replaced panel reads as "already netron", so this must precede the state switch.
+    local pending
+    pending="$(interrupted_backups)"
+    if [[ -n "${pending}" ]]; then
+        local pdir
+        pdir="$(dirname "$(head -n1 <<< "${pending}")")"
+        err "A previous upgrade was interrupted before it was decided (${pdir})."
+        if [[ -f "${pdir}/rollback.sh" ]]; then
+            err "The panel may be stopped or half replaced. Restore it first with: ${pdir}/rollback.sh"
+        else
+            err "It died before the final backup step, so no file was replaced. Start the panel again with: systemctl start x-ui"
+            err "then remove ${pdir}/IN_PROGRESS (or the whole directory) and re-run."
+        fi
+        die "Nothing was changed by this run." "${EX_REFUSED}"
+    fi
     case "${STATE}" in
         fresh)
             say "No existing panel found: nothing to convert (use the normal installer)."
@@ -816,6 +964,7 @@ cmd_convert() {
     fi
     if [[ "${TG}" == "true" ]]; then say "  Note: the Telegram bot is enabled and will restart with the panel."; fi
     say "  The panel is stopped for the swap (usually well under a minute); running clients on Xray are interrupted."
+    recommend_tmux
     confirm "Convert this server to netron-panel ${NEW_VERSION}?" || { say "Cancelled. Nothing was changed."; return "${EX_DECLINED}"; }
     if [[ "${NODES}" != "?" && "${NODES}" != "0" && "${ASSUME_YES}" != "1" ]]; then
         confirm "This master has ${NODES} node(s). Do you understand that stock nodes keep counting at x1 until they are upgraded too?" ||
@@ -832,24 +981,32 @@ cmd_convert() {
     log_size=0
     [[ -f "${log_file}" ]] && log_size="$(stat -c %s "${log_file}")"
 
-    # ---- stop, final backup, swap
+    # ---- from here until the decision nothing may interrupt the conversion halfway
+    say "From now on Ctrl-C, a closed terminal and kill are ignored until the upgrade is decided (converted or rolled back). Do not power off the server."
+    protect_signals
     local was_running="${RUNNING}"
+    : > "${BACKUP}/IN_PROGRESS"
+    PHASE="stopped"
     stop_panel
     if ! backup_phase_two; then
         err "Final backup step failed; restarting the panel untouched. Nothing was changed."
-        [[ "${was_running}" == "yes" ]] && systemctl start x-ui
+        if [[ "${was_running}" == "yes" ]]; then svc start x-ui; fi
+        finish_decided
+        exit_on_signals
         return "${EX_REFUSED}"
     fi
     ok "Backup complete: ${BACKUP}"
     say "Rollback any time with:  ${BACKUP}/rollback.sh   (or: x-ui rollback)"
 
+    PHASE="swapped"
     swap_files
+    PHASE="started"
     local start_epoch restarts_before
     start_epoch="$(date +%s)"
-    restarts_before="$(systemctl show -p NRestarts --value x-ui 2> /dev/null || true)"
+    restarts_before="$(svc_check show -p NRestarts --value x-ui 2> /dev/null || true)"
     if [[ "${was_running}" == "yes" || "${HAVE_UNIT}" == "yes" ]]; then
         say "Starting netron-panel ${NEW_VERSION} and checking its health for up to ${HEALTH_WAIT}s ..."
-        systemctl start x-ui || true
+        svc start x-ui || true
         # Port/base path are re-read from the migrated DB (they must be unchanged).
         if health_check "${start_epoch}" "${log_size}" "${restarts_before}" && multiplier_switch_off; then
             :
@@ -860,13 +1017,19 @@ cmd_convert() {
             if do_rollback "${BACKUP}"; then
                 err "The server is back on stock ${VERSION}: binary, database bytes and scripts restored. Backup kept at ${BACKUP}."
                 err "Look at: journalctl -u x-ui   and   $(panel_log_file)"
+                finish_decided
+                exit_on_signals
                 return "${EX_FAILED_ROLLED_BACK}"
             fi
             err "AUTOMATIC ROLLBACK FAILED. Your backup is intact at ${BACKUP}; restore by hand with ${BACKUP}/rollback.sh"
+            exit_on_signals
             return "${EX_FAILED_NO_ROLLBACK}"
         fi
     fi
 
+    # Decided first: after this point nothing (not even a failing echo) may trigger a rollback.
+    finish_decided
+    exit_on_signals
     ok "Converted: panel is now netron-panel ${NEW_VERSION} and healthy."
     say ""
     say "  Credentials, port, base path, certificates and settings are unchanged."
@@ -874,6 +1037,9 @@ cmd_convert() {
     say "  Backup (keep it): ${BACKUP}"
     say "  Roll back:        x-ui rollback    or    ${BACKUP}/rollback.sh"
     say "  Rolling back restores the database from the backup: anything written after the upgrade is lost."
+    say ""
+    say "${yellow}  The backup is SENSITIVE: it holds the panel database (credentials, API tokens, bot tokens) and TLS private keys.${plain}"
+    say "  It was created with umask 077 (root only). Once the upgrade is confirmed good, move it off this server or delete it."
     nodes_reminder
     return 0
 }
@@ -893,9 +1059,13 @@ cmd_rollback() {
     confirm "Restore this backup now?" || { say "Cancelled."; return "${EX_DECLINED}"; }
     acquire_lock
     trap cleanup EXIT
+    say "Ctrl-C, a closed terminal and kill are ignored until the restore finishes."
+    protect_signals
     if do_rollback "${dir}"; then
+        exit_on_signals
         return 0
     fi
+    exit_on_signals
     return "${EX_FAILED_NO_ROLLBACK}"
 }
 
@@ -930,10 +1100,19 @@ main() {
     parse_args "$@"
     case "${CMD}" in
         detect) cmd_detect ;;
-        convert) cmd_convert ;;
-        rollback) cmd_rollback ;;
+        convert)
+            exit_on_signals
+            cmd_convert
+            ;;
+        rollback)
+            exit_on_signals
+            cmd_rollback
+            ;;
         *) usage; exit 2 ;;
     esac
 }
 
-main "$@"
+# Sourcing the file (tests) must not run main.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
