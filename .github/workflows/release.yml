@@ -193,6 +193,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Check out release notes
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: docs/releases
+          persist-credentials: false
+
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
