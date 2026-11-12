@@ -197,8 +197,8 @@ func (a *ServerController) getXrayVersion(c *gin.Context) {
 func (a *ServerController) getPanelUpdateInfo(c *gin.Context) {
 	info, err := a.panelService.GetUpdateInfo()
 	if err != nil {
-		logger.Debug("panel update check failed:", err)
-		c.JSON(http.StatusOK, entity.Msg{Success: false})
+		// Not jsonMsg: the service already logs each distinct failure once, and the UI polls.
+		c.JSON(http.StatusOK, entity.Msg{Success: false, Msg: I18nWeb(c, "pages.index.panelUpdateCheckFailed") + " (" + err.Error() + ")"})
 		return
 	}
 	jsonObj(c, info, nil)

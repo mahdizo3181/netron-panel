@@ -156,6 +156,7 @@
       "currentPanelVersion": "目前面板版本",
       "latestPanelVersion": "最新面板版本",
       "panelUpToDate": "面板已是最新",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "開發通道",
       "devChannelWarning": "開發版會追蹤 main 的每次提交，並非穩定版本，且無法自動降級。",
       "currentCommit": "目前提交",

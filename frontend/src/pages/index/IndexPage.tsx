@@ -30,6 +30,7 @@ import ThroughputCard from './ThroughputCard';
 import ConnectionsCard from './ConnectionsCard';
 import SystemStrip from './SystemStrip';
 import { mean, peak, useOverviewHistory } from './useOverviewHistory';
+import { usePanelUpdateInfo } from '@/api/queries/usePanelUpdateInfo';
 import type { PanelUpdateInfo } from './PanelUpdateModal';
 const JsonEditor = lazy(() => import('@/components/form/JsonEditor'));
 const PanelUpdateModal = lazy(() => import('./PanelUpdateModal'));
@@ -54,11 +55,16 @@ export default function IndexPage() {
 
   const [accessLogEnable, setAccessLogEnable] = useState(false);
   const [devChannelEnable, setDevChannelEnable] = useState(false);
-  const [panelUpdateInfo, setPanelUpdateInfo] = useState<PanelUpdateInfo>({
+  const {
+    info: fetchedUpdateInfo,
+    checkError: updateCheckError,
+    refetch: refetchUpdateInfo,
+  } = usePanelUpdateInfo();
+  const panelUpdateInfo: PanelUpdateInfo = fetchedUpdateInfo ?? {
     currentVersion: '',
     latestVersion: '',
     updateAvailable: false,
-  });
+  };
 
   const basePath = window.X_UI_BASE_PATH || '';
 
@@ -87,9 +93,6 @@ export default function IndexPage() {
         setDevChannelEnable(!!msg.obj.devChannelEnable);
       }
     });
-    HttpUtil.get<PanelUpdateInfo>('/panel/api/server/getPanelUpdateInfo').then((msg) => {
-      if (msg?.success && msg.obj) setPanelUpdateInfo(msg.obj);
-    });
   }, []);
 
   const displayVersion = useMemo(
@@ -116,8 +119,7 @@ export default function IndexPage() {
     const res = await HttpUtil.post('/panel/api/server/setUpdateChannel', { dev });
     if (!res?.success) return;
     setDevChannelEnable(dev);
-    const msg = await HttpUtil.get<PanelUpdateInfo>('/panel/api/server/getPanelUpdateInfo');
-    if (msg?.success && msg.obj) setPanelUpdateInfo(msg.obj);
+    await refetchUpdateInfo();
   }
 
   async function openConfig() {
@@ -201,6 +203,7 @@ export default function IndexPage() {
                     panelVersion={displayVersion}
                     latestVersion={panelUpdateInfo.latestVersion}
                     updateAvailable={panelUpdateInfo.updateAvailable}
+                    updateCheckError={updateCheckError}
                     onStopXray={stopXray}
                     onRestartXray={restartXray}
                     onOpenLogs={() => setLogsOpen(true)}
@@ -310,9 +313,13 @@ export default function IndexPage() {
           <PanelUpdateModal
             open={panelUpdateOpen}
             info={panelUpdateInfo}
+            checkError={updateCheckError}
             devChannelEnable={devChannelEnable}
             onChannelChange={handleChannelChange}
-            onClose={() => setPanelUpdateOpen(false)}
+            onClose={() => {
+              setPanelUpdateOpen(false);
+              void refetchUpdateInfo();
+            }}
             onBusy={setBusy}
           />
         </LazyMount>

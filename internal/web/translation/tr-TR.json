@@ -156,6 +156,7 @@
       "currentPanelVersion": "Mevcut panel sürümü",
       "latestPanelVersion": "Panelin en son sürümü",
       "panelUpToDate": "Panel güncel",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Geliştirme kanalı",
       "devChannelWarning": "Geliştirme yapıları main üzerindeki her commit'i izler ve kararlı sürüm değildir — otomatik geri alma yoktur.",
       "currentCommit": "Geçerli commit",

@@ -13,6 +13,7 @@ import {
   FileTextOutlined,
   PoweroffOutlined,
   ReloadOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 
 import { formatPanelVersion } from '@/lib/panel-version';
@@ -26,6 +27,7 @@ interface OverviewActionBarProps {
   panelVersion: string;
   latestVersion: string;
   updateAvailable: boolean;
+  updateCheckError?: string;
   onStopXray: () => void;
   onRestartXray: () => void;
   onOpenLogs: () => void;
@@ -60,6 +62,7 @@ export default function OverviewActionBar({
   panelVersion,
   latestVersion,
   updateAvailable,
+  updateCheckError,
   onStopXray,
   onRestartXray,
   onOpenLogs,
@@ -192,9 +195,12 @@ export default function OverviewActionBar({
           {`${t('update')} ${formatPanelVersion(latestVersion)}`}
         </Tag>
       ) : (
-        <Tooltip title={t('pages.index.updatePanel')}>
+        <Tooltip title={updateCheckError ?? t('pages.index.updatePanel')}>
           <button type="button" className="ov-panel-version ov-mono" onClick={onOpenPanelUpdate}>
             {formatPanelVersion(panelVersion)}
+            {updateCheckError && (
+              <WarningOutlined aria-label={updateCheckError} style={{ marginInlineStart: 4 }} />
+            )}
           </button>
         </Tooltip>
       )}

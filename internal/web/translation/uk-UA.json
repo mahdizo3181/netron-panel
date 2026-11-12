@@ -156,6 +156,7 @@
       "currentPanelVersion": "Поточна версія панелі",
       "latestPanelVersion": "Остання версія панелі",
       "panelUpToDate": "Панель оновлено",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Канал розробки",
       "devChannelWarning": "Збірки розробки відстежують кожен коміт у main і не є стабільними релізами — автоматичного відкату немає.",
       "currentCommit": "Поточний коміт",
