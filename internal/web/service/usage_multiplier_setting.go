@@ -28,3 +28,13 @@ func (s *XrayService) latchUsageMultiplierMode(isForce bool) {
 	}
 	usagemult.SetActive(on)
 }
+
+// ApplySavedUsageMultiplierMode force-restarts Xray when the saved mode is not
+// live, so a panel-only restart applies it; a manually stopped core stays down.
+func (s *XrayService) ApplySavedUsageMultiplierMode() error {
+	on, err := s.settingService.GetUsageMultiplierEnable()
+	if err != nil || on == usagemult.Active() || isManuallyStopped.Load() {
+		return err
+	}
+	return s.RestartXray(true)
+}

@@ -72,3 +72,22 @@ func TestUsageMultiplierLatchFlipsOnlyOnForcedRestart(t *testing.T) {
 		t.Fatal("forced restart did not latch OFF")
 	}
 }
+
+// A panel restart applies a pending mode by restarting Xray, but must not start
+// a core the admin stopped; its next start latches the mode anyway.
+func TestApplySavedUsageMultiplierModeLeavesManuallyStoppedXrayDown(t *testing.T) {
+	initUsageMultTestDB(t)
+	s := &XrayService{}
+	if err := s.settingService.setBool(usageMultiplierEnableKey, true); err != nil {
+		t.Fatalf("enable setting: %v", err)
+	}
+	isManuallyStopped.Store(true)
+	t.Cleanup(func() { isManuallyStopped.Store(false) })
+
+	if err := s.ApplySavedUsageMultiplierMode(); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	if !isManuallyStopped.Load() || usagemult.Active() {
+		t.Fatalf("manually stopped core was restarted: stopped=%v active=%v", isManuallyStopped.Load(), usagemult.Active())
+	}
+}

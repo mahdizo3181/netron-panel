@@ -1,10 +1,12 @@
 package nodee2e
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -74,9 +76,8 @@ func enrollNode(t *testing.T, master, node *panel) int {
 	return view.Id
 }
 
-// setUsageMultiplierSwitch round-trips the full settings object, as the UI does,
-// then force-restarts Xray, the only point where the saved mode goes live.
-func setUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
+// saveUsageMultiplierSwitch round-trips the full settings object, as the UI does.
+func saveUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
 	t.Helper()
 	var all map[string]any
 	if err := json.Unmarshal(p.call(http.MethodPost, "/panel/api/setting/all", nil), &all); err != nil {
@@ -84,6 +85,12 @@ func setUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
 	}
 	all["usageMultiplierEnable"] = on
 	p.call(http.MethodPost, "/panel/api/setting/update", all)
+}
+
+// setUsageMultiplierSwitch saves the switch, then force-restarts Xray so it goes live.
+func setUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
+	t.Helper()
+	saveUsageMultiplierSwitch(t, p, on)
 	// No Xray binary in the harness: the restart fails after the mode latches.
 	_, _ = p.try(http.MethodPost, "/panel/api/server/restartXrayService", nil)
 }
@@ -153,4 +160,38 @@ func TestOldNodeKeepsMasterMultiplierAndIsFlagged(t *testing.T) {
 		known, applies := nodeApplies(t, master, nodeID)
 		return known && !applies, fmt.Sprintf("known=%v applies=%v", known, applies)
 	})
+}
+
+// The harness has no Xray binary, but the panel writes config.json before it
+// execs the core, so the file shows which emails a restart would give Xray.
+func xrayConfigHasStatEmails(p *panel) (bool, error) {
+	b, err := os.ReadFile(filepath.Join(p.dir, "bin", "config.json"))
+	return bytes.Contains(b, []byte(`"nxm_`)), err
+}
+
+// Both UI restart buttons must bring the saved switch into the Xray config, as
+// `systemctl restart x-ui` does: stat emails after saving ON, plain ones after OFF.
+func TestUIRestartsApplySavedUsageMultiplierMode(t *testing.T) {
+	bin := panelBinary(t)
+	for _, tc := range []struct{ button, path string }{
+		{"Restart Xray", "/panel/api/server/restartXrayService"},
+		{"Restart Panel", "/panel/api/setting/restartPanel"},
+	} {
+		t.Run(tc.button, func(t *testing.T) {
+			p := newPanel(t, bin, "mult-ui-restart")
+			p.start()
+			p.call(http.MethodPost, "/panel/api/inbounds/add", vlessInbound("weighted", freePort(t), nil, vlessClient("ui-user")))
+			for _, on := range []bool{true, false} {
+				saveUsageMultiplierSwitch(t, p, on)
+				_, _ = p.try(http.MethodPost, tc.path, nil)
+				eventually(t, settleTimeout, fmt.Sprintf("config.json has stat emails = %v after %s", on, tc.button), func() (bool, string) {
+					has, err := xrayConfigHasStatEmails(p)
+					if err != nil {
+						return false, err.Error()
+					}
+					return has == on, fmt.Sprintf("nxm_ present=%v", has)
+				})
+			}
+		})
+	}
 }
