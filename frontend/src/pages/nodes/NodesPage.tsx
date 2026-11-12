@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
   Button,
@@ -35,7 +34,8 @@ import NodeList from './NodeList';
 import NodeFormModal from './NodeFormModal';
 import { setMessageInstance } from '@/utils/messageBus';
 import { HttpUtil } from '@/utils';
-import type { PanelUpdateInfo } from '../index/PanelUpdateModal';
+import { usePanelUpdateInfo } from '@/api/queries/usePanelUpdateInfo';
+import { DEV_CHANNEL_AVAILABLE } from '@/lib/netron';
 
 // Confirm-dialog body that lets the operator pick the stable or dev channel for
 // a node panel update. Reports changes via onChange so the imperative
@@ -46,15 +46,17 @@ function UpdateChannelChoice({ onChange }: { onChange: (dev: boolean) => void })
   return (
     <div>
       <p>{t('pages.nodes.updateConfirmContent')}</p>
-      <Checkbox
-        checked={dev}
-        onChange={(e) => {
-          setDev(e.target.checked);
-          onChange(e.target.checked);
-        }}
-      >
-        {t('pages.nodes.updateDevChannel')}
-      </Checkbox>
+      {DEV_CHANNEL_AVAILABLE && (
+        <Checkbox
+          checked={dev}
+          onChange={(e) => {
+            setDev(e.target.checked);
+            onChange(e.target.checked);
+          }}
+        >
+          {t('pages.nodes.updateDevChannel')}
+        </Checkbox>
+      )}
       {dev && (
         <Alert
           type="info"
@@ -90,14 +92,7 @@ export default function NodesPage() {
     updatePanels,
   } = useNodeMutations();
 
-  const { data: latestVersion = '' } = useQuery({
-    queryKey: ['server', 'panelUpdateInfo'],
-    queryFn: async () => {
-      const msg = await HttpUtil.get<PanelUpdateInfo>('/panel/api/server/getPanelUpdateInfo');
-      return msg?.obj?.latestVersion || '';
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  const latestVersion = usePanelUpdateInfo().info?.latestVersion ?? '';
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');

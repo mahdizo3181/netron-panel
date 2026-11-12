@@ -5,6 +5,7 @@ import { CloudDownloadOutlined } from '@ant-design/icons';
 
 import { HttpUtil, PromiseUtil } from '@/utils';
 import { formatPanelVersion } from '@/lib/panel-version';
+import { DEV_CHANNEL_AVAILABLE } from '@/lib/netron';
 import type { PanelUpdateStatus } from '@/generated/types';
 import './PanelUpdateModal.css';
 
@@ -27,6 +28,7 @@ interface BusyEvent {
 interface PanelUpdateModalProps {
   open: boolean;
   info: PanelUpdateInfo;
+  checkError?: string;
   devChannelEnable?: boolean;
   onChannelChange?: (dev: boolean) => void | Promise<void>;
   onClose: () => void;
@@ -36,6 +38,7 @@ interface PanelUpdateModalProps {
 export default function PanelUpdateModal({
   open,
   info,
+  checkError,
   devChannelEnable,
   onChannelChange,
   onClose,
@@ -141,19 +144,21 @@ export default function PanelUpdateModal({
           />
         )}
 
-        <div className="version-list">
-          <div className="version-list-item">
-            <span>{t('pages.index.devChannel')}</span>
-            <Switch
-              aria-label={t('pages.index.devChannel')}
-              checked={!!devChannelEnable}
-              loading={channelBusy}
-              onChange={handleChannel}
-            />
+        {DEV_CHANNEL_AVAILABLE && (
+          <div className="version-list">
+            <div className="version-list-item">
+              <span>{t('pages.index.devChannel')}</span>
+              <Switch
+                aria-label={t('pages.index.devChannel')}
+                checked={!!devChannelEnable}
+                loading={channelBusy}
+                onChange={handleChannel}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {devChannelEnable && (
+        {DEV_CHANNEL_AVAILABLE && devChannelEnable && (
           <Alert
             type="info"
             className="mb-12"
@@ -182,6 +187,8 @@ export default function PanelUpdateModal({
               </span>
               <Tag color="purple">{(isDev ? info.latestCommit : info.latestVersion) || '-'}</Tag>
             </div>
+          ) : checkError ? (
+            <Alert type="warning" showIcon title={checkError} />
           ) : (
             <div className="version-list-item">
               <span>{t('pages.index.panelUpToDate')}</span>
