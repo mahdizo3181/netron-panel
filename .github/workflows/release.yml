@@ -214,10 +214,16 @@ jobs:
             kind=(--prerelease --latest=false)
           fi
           notes="netron-panel ${TAG} (fork of MHSanaei/3x-ui). Install: bash <(curl -Ls https://raw.githubusercontent.com/${GH_REPO}/main/install.sh) ${TAG}"
+          notes_file="docs/releases/${TAG}.md"
+          if [[ -f "$notes_file" ]]; then
+            notes_args=(--notes-file "$notes_file")
+          else
+            notes_args=(--notes "$notes")
+          fi
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" dist/* --clobber
           else
-            gh release create "$TAG" dist/* --verify-tag --title "netron-panel ${TAG}" --notes "$notes" "${kind[@]}"
+            gh release create "$TAG" dist/* --verify-tag --title "netron-panel ${TAG}" "${notes_args[@]}" "${kind[@]}"
           fi
 
   # =================================
