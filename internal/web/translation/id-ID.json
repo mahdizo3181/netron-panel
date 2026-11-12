@@ -156,6 +156,7 @@
       "currentPanelVersion": "Versi panel saat ini",
       "latestPanelVersion": "Versi panel terbaru",
       "panelUpToDate": "Panel sudah terbaru",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Kanal dev",
       "devChannelWarning": "Build dev mengikuti setiap commit di main dan bukan rilis stabil — tidak ada penurunan versi otomatis.",
       "currentCommit": "Commit saat ini",

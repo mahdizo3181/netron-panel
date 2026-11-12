@@ -156,6 +156,7 @@
       "currentPanelVersion": "Current panel version",
       "latestPanelVersion": "Latest panel version",
       "panelUpToDate": "Panel is up to date",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Dev channel",
       "devChannelWarning": "Dev builds track every commit on main and aren't stable releases — there is no automatic downgrade.",
       "currentCommit": "Current commit",

@@ -156,6 +156,7 @@
       "currentPanelVersion": "Versión actual del panel",
       "latestPanelVersion": "Última versión del panel",
       "panelUpToDate": "El panel está actualizado",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Canal de desarrollo",
       "devChannelWarning": "Las compilaciones de desarrollo siguen cada commit en main y no son versiones estables; no hay reversión automática.",
       "currentCommit": "Commit actual",

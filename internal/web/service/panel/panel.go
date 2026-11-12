@@ -130,6 +130,10 @@ func (s *PanelService) RestartPanel(delay time.Duration) error {
 // is enabled on a dev build it compares commits against the rolling dev release;
 // otherwise it compares versions against the latest stable tag.
 func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
+	return cachedUpdateInfo(fetchUpdateInfo)
+}
+
+func fetchUpdateInfo() (*PanelUpdateInfo, error) {
 	if devChannelActive() {
 		return getDevUpdateInfo()
 	}
@@ -153,7 +157,7 @@ func (s *PanelService) GetUpdateInfo() (*PanelUpdateInfo, error) {
 // binary with the toggle off stays on the stable channel.
 func devChannelActive() bool {
 	enabled, err := (&service.SettingService{}).GetDevChannelEnable()
-	return err == nil && enabled
+	return devReleasePublished && err == nil && enabled
 }
 
 // getDevUpdateInfo compares the running commit against the commit recorded in the
@@ -243,7 +247,7 @@ func (s *PanelService) startUpdate(useDev bool) (int64, error) {
 
 	mainFolder, serviceFolder := resolveUpdateFolders()
 	updateTag := ""
-	if useDev {
+	if useDev && devReleasePublished {
 		updateTag = devReleaseTag
 	}
 	updateScript := fmt.Sprintf("set -e; trap 'rm -f %s' EXIT; %s %s", shellQuote(scriptPath), shellQuote(bash), shellQuote(scriptPath))
@@ -431,9 +435,9 @@ func fetchLatestPanelVersion() (string, error) {
 // fetchPanelRelease fetches a release from GitHub. An empty tag resolves the
 // latest stable release; a non-empty tag (e.g. dev-latest) resolves that tag.
 func fetchPanelRelease(tag string) (*service.Release, error) {
-	url := "https://api.github.com/repos/" + panelRepo + "/releases/latest"
+	url := githubAPIBase + "/repos/" + panelRepo + "/releases/latest"
 	if tag != "" {
-		url = "https://api.github.com/repos/" + panelRepo + "/releases/tags/" + tag
+		url = githubAPIBase + "/repos/" + panelRepo + "/releases/tags/" + tag
 	}
 	client := (&service.SettingService{}).NewProxiedHTTPClient(10 * time.Second)
 	req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
@@ -446,7 +450,14 @@ func fetchPanelRelease(tag string) (*service.Release, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, resp.Status)
+		var apiErr struct {
+			Message string `json:"message"`
+		}
+		_ = json.NewDecoder(io.LimitReader(resp.Body, 4<<10)).Decode(&apiErr)
+		if apiErr.Message == "" {
+			apiErr.Message = resp.Status
+		}
+		return nil, fmt.Errorf("GitHub API returned status %d: %s", resp.StatusCode, apiErr.Message)
 	}
 
 	var release service.Release

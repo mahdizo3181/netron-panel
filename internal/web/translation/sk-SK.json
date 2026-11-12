@@ -156,6 +156,7 @@
       "currentPanelVersion": "Aktuálna verzia panelu",
       "latestPanelVersion": "Najnovšia verzia panelu",
       "panelUpToDate": "Panel je aktuálny",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Vývojové vydania",
       "devChannelWarning": "Vývojové zostavy sledujú každú zmenu vo vetve main a nie sú stabilnými vydaniami. Automatický návrat na staršiu verziu nie je dostupný.",
       "currentCommit": "Aktuálny commit",

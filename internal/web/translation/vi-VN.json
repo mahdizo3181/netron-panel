@@ -156,6 +156,7 @@
       "currentPanelVersion": "Phiên bản panel hiện tại",
       "latestPanelVersion": "Phiên bản panel mới nhất",
       "panelUpToDate": "Panel đã được cập nhật",
+      "panelUpdateCheckFailed": "Could not check for updates",
       "devChannel": "Kênh phát triển",
       "devChannelWarning": "Bản dev bám theo từng commit trên main và không phải bản ổn định — không có hạ cấp tự động.",
       "currentCommit": "Commit hiện tại",
