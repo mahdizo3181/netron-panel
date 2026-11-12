@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 
 import UsageMultiplierSetting from '@/pages/settings/UsageMultiplierSetting';
 import { AllSetting } from '@/models/setting';
@@ -22,25 +22,14 @@ function renderSetting() {
 }
 
 describe('UsageMultiplierSetting', () => {
-  it('offers the forced restart, with the drop warning, while the saved mode is not live', async () => {
-    const post = mockStatus({ configured: true, active: false, nodes: [] });
+  // The page's generic Restart Panel notice is the only restart prompt; a panel
+  // restart applies the saved mode (ApplySavedUsageMultiplierMode).
+  it('shows the saved and running mode, with no restart banner, while a change is pending', async () => {
+    mockStatus({ configured: true, active: false, nodes: [] });
     renderSetting();
-    await screen.findByText('Pending: restart Xray to apply');
-    expect(screen.getByText('Saved: on · Running: off')).toBeTruthy();
-
-    fireEvent.click(screen.getByRole('button', { name: /Restart Xray/ }));
-    expect(
-      await screen.findByText('Restart Xray now? All connections will drop once.'),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
-    await waitFor(() => expect(post).toHaveBeenCalledWith('/panel/api/server/restartXrayService'));
-  });
-
-  it('shows no pending prompt once the running mode matches the saved one', async () => {
-    mockStatus({ configured: true, active: true, nodes: [] });
-    renderSetting();
-    await screen.findByText('Saved: on · Running: on');
-    expect(screen.queryByText('Pending: restart Xray to apply')).toBeNull();
+    await screen.findByText('Saved: on · Running: off');
+    expect(document.querySelector('.ant-alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Restart/ })).toBeNull();
   });
 
   it('warns about nodes that would count weighted inbounds at x1', async () => {
