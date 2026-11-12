@@ -723,6 +723,7 @@
         "usageMultiplier": "Usage multiplier",
         "usageMultiplierHelp": "Traffic on this inbound is multiplied by this factor before it is added to each client's single quota. 1 = normal, 0 = free, up to 10.",
         "usageMultiplierFutureOnly": "Applies to future traffic only",
+        "usageMultiplierEnableInSettings": "Enable the per-inbound multiplier in Settings first",
         "usageMultiplierUnsupported": "Not available for this protocol: its traffic is not counted per client by Xray, so it stays x1.",
         "disableFlow": "禁用 XTLS flow",
         "disableFlowHelp": "让此入站跳过自动注入 xtls-rprx-vision，即使其传输支持 flow（例如启用 VLESS 加密的隧道化 XHTTP 入站）。客户端在同一订阅中的其他可用入站上仍保留 Vision。仅限 VLESS。",

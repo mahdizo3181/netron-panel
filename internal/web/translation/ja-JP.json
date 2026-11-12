@@ -724,6 +724,7 @@
         "usageMultiplier": "Usage multiplier",
         "usageMultiplierHelp": "Traffic on this inbound is multiplied by this factor before it is added to each client's single quota. 1 = normal, 0 = free, up to 10.",
         "usageMultiplierFutureOnly": "Applies to future traffic only",
+        "usageMultiplierEnableInSettings": "Enable the per-inbound multiplier in Settings first",
         "usageMultiplierUnsupported": "Not available for this protocol: its traffic is not counted per client by Xray, so it stays x1.",
         "disableFlow": "XTLS フローを無効化",
         "disableFlowHelp": "トランスポートが flow に対応している場合でも（例: VLESS 暗号化付きのトンネル化された XHTTP インバウンド）、このインバウンドを xtls-rprx-vision の自動付与から除外します。クライアントは同じサブスクリプション内の他の対応インバウンドでは Vision を維持します。VLESS のみ。",

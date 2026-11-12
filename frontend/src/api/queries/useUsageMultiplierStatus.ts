@@ -23,3 +23,15 @@ export function useUsageMultiplierStatus() {
     refetchInterval: 5_000,
   });
 }
+
+// The saved switch from the same cache, without polling: one fetch per app load,
+// refreshed when the Settings page polls or settings are saved. Undefined while loading.
+export function useSavedUsageMultiplierEnable(): boolean | undefined {
+  return useQuery({
+    queryKey: keys.settings.usageMultiplierStatus(),
+    queryFn: fetchStatus,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    select: (status) => status.configured,
+  }).data;
+}

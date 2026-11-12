@@ -726,6 +726,7 @@
         "usageMultiplier": "Usage multiplier",
         "usageMultiplierHelp": "Traffic on this inbound is multiplied by this factor before it is added to each client's single quota. 1 = normal, 0 = free, up to 10.",
         "usageMultiplierFutureOnly": "Applies to future traffic only",
+        "usageMultiplierEnableInSettings": "Enable the per-inbound multiplier in Settings first",
         "usageMultiplierUnsupported": "Not available for this protocol: its traffic is not counted per client by Xray, so it stays x1.",
         "disableFlow": "Disable XTLS flow",
         "disableFlowHelp": "Opt this inbound out of automatic xtls-rprx-vision injection, even when its transport is flow-capable (e.g. a tunneled XHTTP inbound with VLESS encryption). Clients keep Vision on your other capable inbounds in the same subscription. VLESS only.",
