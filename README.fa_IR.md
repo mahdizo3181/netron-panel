@@ -103,7 +103,6 @@ netron-panel ایمیج داکر **منتشر نمی‌کند** (`ghcr.io/mhsana
 - [MHSanaei/3x-ui](https://github.com/MHSanaei/3x-ui) و مشارکت‌کنندگان آن، پروژه‌ای که این فورک بر پایه‌ی آن ساخته شده.
 - [alireza0](https://github.com/alireza0/)
 - [Iran v2ray rules](https://github.com/chocolate4u/Iran-v2ray-rules) و [Russia v2ray rules](https://github.com/runetfreedom/russia-v2ray-rules-dat) (هر دو GPL-3.0)
-- ایده‌ی هویت آماری جداگانه برای هر کلاینت و اینباند از [Heimdall-Panel](https://github.com/HeimdallStudio/Heimdall-Panel) الهام گرفته شده است.
 
 > [!IMPORTANT]
 > این پروژه برای استفاده‌ی شخصی است. از آن برای مقاصد غیرقانونی استفاده نکنید.

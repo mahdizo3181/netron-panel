@@ -212,7 +212,6 @@ Contributions are welcome. Please read the [Contributing Guide](CONTRIBUTING.md)
 - [alireza0](https://github.com/alireza0/), for the original 3x-ui work.
 - [Iran v2ray rules](https://github.com/chocolate4u/Iran-v2ray-rules) (GPL-3.0): routing rules with built-in Iranian domains, security and adblocking.
 - [Russia v2ray rules](https://github.com/runetfreedom/russia-v2ray-rules-dat) (GPL-3.0): automatically updated routing rules for blocked domains and addresses in Russia.
-- The per-inbound multiplier approach (separate Xray stat identity per client and inbound) was inspired by [Heimdall-Panel](https://github.com/HeimdallStudio/Heimdall-Panel).
 
 ## Community Tools (for 3x-ui)
 
