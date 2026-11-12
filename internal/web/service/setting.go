@@ -1982,6 +1982,8 @@ func (s *SettingService) GetDefaultSettings(host string) (any, error) {
 		"subDomain":        func() (any, error) { return s.GetSubDomain() },
 		"devChannelEnable": func() (any, error) { return s.GetDevChannelEnable() },
 		"isDevBuild":       func() (any, error) { return config.IsDevBuild(), nil },
+
+		"usageMultiplierEnable": func() (any, error) { return s.GetUsageMultiplierEnable() },
 	}
 
 	result := make(map[string]any)

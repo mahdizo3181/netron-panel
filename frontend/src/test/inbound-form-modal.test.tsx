@@ -4,10 +4,12 @@ import { screen, act, render, cleanup, fireEvent, waitFor } from '@testing-libra
 import InboundFormModal from '@/pages/inbounds/form/InboundFormModal';
 import { DBInbound } from '@/models/dbinbound';
 import { ThemeProvider } from '@/hooks/useTheme';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { HttpUtil } from '@/utils';
 import { Protocols } from '@/schemas/primitives';
 import {
   renderWithProviders,
+  makeTestQueryClient,
   fieldLabels,
   listSelectOptions,
   chooseSelectOption,
@@ -55,6 +57,12 @@ function chooseVirtualizedProtocol(optionText: string) {
   for (let i = 0; i < steps; i++) fireEvent.keyDown(input, { key: 'ArrowDown', keyCode: 40 });
   fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
 }
+
+// The form also reads defaultSettings; only /inbounds/ calls are saves.
+const inboundSaves = () =>
+  vi
+    .mocked(HttpUtil.post)
+    .mock.calls.filter(([url]) => String(url).startsWith('/panel/api/inbounds/'));
 
 function primaryButton(): HTMLElement {
   const button = document.querySelector('.ant-modal-footer .ant-btn-primary');
@@ -242,19 +250,22 @@ describe('InboundFormModal', () => {
     };
     const strategyItem = (title: string) =>
       document.querySelector(`.ant-select-content[title="${title}"]`);
+    const queryClient = makeTestQueryClient();
     const modal = (nodes: never[], fetched: boolean) => (
-      <ThemeProvider>
-        <InboundFormModal
-          open
-          mode="edit"
-          dbInbound={buildInbound()}
-          dbInbounds={[]}
-          availableNodes={nodes}
-          availableNodesFetched={fetched}
-          onClose={() => {}}
-          onSaved={() => {}}
-        />
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <InboundFormModal
+            open
+            mode="edit"
+            dbInbound={buildInbound()}
+            dbInbounds={[]}
+            availableNodes={nodes}
+            availableNodesFetched={fetched}
+            onClose={() => {}}
+            onSaved={() => {}}
+          />
+        </ThemeProvider>
+      </QueryClientProvider>
     );
 
     // Baseline: nodes already loaded, so the node option is offered and selected.
@@ -289,7 +300,7 @@ describe('InboundFormModal', () => {
     expect(messageError).toHaveBeenCalledWith(
       expect.stringContaining('REALITY target must include a port'),
     );
-    expect(post).not.toHaveBeenCalled();
+    expect(inboundSaves()).toHaveLength(0);
   });
 
   it('blocks adding TLS without a certificate and directs the user to Security', async () => {
@@ -317,7 +328,7 @@ describe('InboundFormModal', () => {
       'TLS certificate 1: Import a TLS certificate or enter its file path before saving',
       'TLS certificate 1: Import the TLS private key or enter its file path before saving',
     ]);
-    expect(post).not.toHaveBeenCalled();
+    expect(inboundSaves()).toHaveLength(0);
   });
 
   it('submits a valid clone-like Reality inbound', async () => {
@@ -575,9 +586,45 @@ describe('InboundFormModal', () => {
 
     fireEvent.click(primaryButton());
 
-    await waitFor(() => expect(post).toHaveBeenCalled());
-    const payload = post.mock.calls[0][1] as { settings: string };
+    const isUpdate = ([url]: unknown[]) => url === '/panel/api/inbounds/update/42';
+    await waitFor(() => expect(post.mock.calls.some(isUpdate)).toBe(true));
+    const payload = post.mock.calls.find(isUpdate)![1] as { settings: string };
     expect(JSON.parse(payload.settings)).not.toHaveProperty('clients');
+  });
+
+  // The default post mock's defaultSettings has no usageMultiplierEnable, i.e. the
+  // switch is OFF: the field is locked and must still submit the stored value.
+  it('edit save keeps a stored x1.5 multiplier while the multiplier switch is OFF', async () => {
+    const post = vi.mocked(HttpUtil.post);
+    post.mockClear();
+    const dbInbound = cloneLikeVlessInbound('example.com:443');
+    renderCloneLikeEdit(new DBInbound({ ...dbInbound, usageMultiplier: 1.5 }));
+    await waitFor(() =>
+      expect(document.querySelector('.ant-input-number-disabled')).not.toBeNull(),
+    );
+
+    fireEvent.click(primaryButton());
+
+    const isUpdate = ([url]: unknown[]) => url === '/panel/api/inbounds/update/42';
+    await waitFor(() => expect(post.mock.calls.some(isUpdate)).toBe(true));
+    const payload = post.mock.calls.find(isUpdate)![1] as { usageMultiplier: unknown };
+    expect(payload.usageMultiplier).toBe(1.5);
+  });
+
+  it('add save sends the default x1 while the multiplier switch is OFF', async () => {
+    const post = vi.mocked(HttpUtil.post);
+    post.mockClear();
+    renderModal();
+    await waitFor(() =>
+      expect(document.querySelector('.ant-input-number-disabled')).not.toBeNull(),
+    );
+
+    fireEvent.click(primaryButton());
+
+    const isAdd = ([url]: unknown[]) => url === '/panel/api/inbounds/add';
+    await waitFor(() => expect(post.mock.calls.some(isAdd)).toBe(true));
+    const payload = post.mock.calls.find(isAdd)![1] as { usageMultiplier: unknown };
+    expect(payload.usageMultiplier).toBe(1);
   });
 
   it('offers the enable switch when adding an inbound but not when editing one', () => {

@@ -91,3 +91,23 @@ func TestApplySavedUsageMultiplierModeLeavesManuallyStoppedXrayDown(t *testing.T
 		t.Fatalf("manually stopped core was restarted: stopped=%v active=%v", isManuallyStopped.Load(), usagemult.Active())
 	}
 }
+
+// The inbound form locks the multiplier field from defaultSettings, so it must
+// carry the saved switch, not a fixed default.
+func TestDefaultSettingsCarrySavedUsageMultiplierSwitch(t *testing.T) {
+	initHappTestDB(t)
+	s := &SettingService{}
+	for _, want := range []bool{true, false} {
+		if err := s.setBool(usageMultiplierEnableKey, want); err != nil {
+			t.Fatal(err)
+		}
+		defaults, err := s.GetDefaultSettings("panel.example")
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, ok := defaults.(map[string]any)["usageMultiplierEnable"].(bool)
+		if !ok || got != want {
+			t.Fatalf("defaultSettings usageMultiplierEnable = %#v, want %v", defaults.(map[string]any)["usageMultiplierEnable"], want)
+		}
+	}
+}

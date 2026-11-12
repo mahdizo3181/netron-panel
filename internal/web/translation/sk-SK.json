@@ -727,6 +727,7 @@
         "usageMultiplier": "Usage multiplier",
         "usageMultiplierHelp": "Traffic on this inbound is multiplied by this factor before it is added to each client's single quota. 1 = normal, 0 = free, up to 10.",
         "usageMultiplierFutureOnly": "Applies to future traffic only",
+        "usageMultiplierLocked": "Turn on 'Enable per-inbound multiplier' in Settings to edit this.",
         "usageMultiplierUnsupported": "Not available for this protocol: its traffic is not counted per client by Xray, so it stays x1.",
         "disableFlow": "Vypnúť režim XTLS flow",
         "disableFlowHelp": "Nepridávať tomuto vstupu automaticky xtls-rprx-vision, ani keď ho prenos podporuje (napr. tunelovaný vstup XHTTP so šifrovaním VLESS). Ostatné podporované vstupy v rovnakom odbere si Vision ponechajú. Iba pre VLESS.",

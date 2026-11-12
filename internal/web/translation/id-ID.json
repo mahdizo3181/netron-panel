@@ -674,6 +674,7 @@
         "usageMultiplier": "Usage multiplier",
         "usageMultiplierHelp": "Traffic on this inbound is multiplied by this factor before it is added to each client's single quota. 1 = normal, 0 = free, up to 10.",
         "usageMultiplierFutureOnly": "Applies to future traffic only",
+        "usageMultiplierLocked": "Turn on 'Enable per-inbound multiplier' in Settings to edit this.",
         "usageMultiplierUnsupported": "Not available for this protocol: its traffic is not counted per client by Xray, so it stays x1.",
         "disableFlow": "Nonaktifkan flow XTLS",
         "disableFlowHelp": "Kecualikan inbound ini dari injeksi otomatis xtls-rprx-vision, meskipun transport-nya mendukung flow (mis. inbound XHTTP yang dituneling dengan enkripsi VLESS). Klien tetap memakai Vision pada inbound lain yang mendukung dalam langganan yang sama. Hanya VLESS.",
