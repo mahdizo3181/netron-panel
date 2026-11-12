@@ -32,6 +32,8 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/web/middleware/config_envelope.go` | caps header value `usagemult.NodeCaps(wirecodec.NodeCaps)` | a node advertises `usage-mult` only while its running mode is ON |
 | `internal/web/job/node_traffic_sync_job.go` | `syncOne`: `j.inboundService.WarnUsageMultiplierNode(n, rt)` after a successful snapshot | log warning (once per change) for a node counting weighted inbounds at x1 |
 | `internal/web/controller/setting.go` | `g.POST("/usageMultiplierStatus", a.usageMultiplierStatus)` | status endpoint for the UI |
+| `internal/web/web.go` | `startTask`: `else if err := s.xrayService.ApplySavedUsageMultiplierMode()` after the `restartXray` branch | a panel-only restart (Settings → Restart Panel, SIGHUP) applies a pending saved mode |
+| `internal/web/service/discord/gateway.go`, `gateway_test.go` | `restartXray`: `RestartXray(true)` (was `false`); `TestGatewayRestartAppliesSavedUsageMultiplierMode` | `!restart` is a real restart, like the Telegram bot, so it applies the saved mode |
 | `internal/web/node_contract_test.go` | `"UsageMultiplierApplied"` in `remoteMethodsOutsideContract` | accessor reads caps already received, no node call |
 | `tools/openapigen/main.go` | `UsageMultiplierStatus`, `UsageMultiplierNodeStatus` in the service `StructAllow` | schemas/examples for the new endpoint |
 | `frontend/src/pages/api-docs/endpoints.ts` | entry for `POST /panel/api/setting/usageMultiplierStatus` | route registry (pinned by `TestRouteRegistryContract`) |
@@ -99,10 +101,12 @@ New files (no rebase conflict): `frontend/src/lib/xray/usage-multiplier.ts`,
 | `frontend/src/models/dbinbound.ts` | `usageMultiplier` in `DBInboundInit`, class field, default 1 | row model |
 | `frontend/src/pages/inbounds/form/InboundFormModal.tsx` | `<UsageMultiplierField protocol={protocol} />` before the Traffic Reset field, plus import | Basic tab field |
 | `frontend/src/pages/inbounds/list/useInboundColumns.tsx`, `list/types.ts` | gold `xN` tag in the protocol column when the multiplier is not 1; `usageMultiplier?` on `DBInboundRecord` | table badge |
-| `frontend/src/pages/settings/GeneralTab.tsx` | `<UsageMultiplierSetting .../>` after the "restart Xray on client disable" row, plus import | kill switch, pending restart, node warnings |
+| `frontend/src/pages/settings/GeneralTab.tsx` | `<UsageMultiplierSetting .../>` after the "restart Xray on client disable" row, plus import | kill switch, saved/running status, node warnings |
 | `frontend/src/models/setting.ts`, `schemas/setting.ts` | `usageMultiplierEnable` | setting |
 | `frontend/src/api/queryKeys.ts` | `settings.usageMultiplierStatus` | status query key |
-| `internal/web/translation/*.json` (14) | `pages.inbounds.form.usageMultiplier*` (4 keys) after `excludeFromSubHelp`; `pages.settings.usageMultiplier*` (12 keys) after `restartXrayOnClientDisableDesc`; real en-US and fa-IR text, English elsewhere; interpolation is `{name}`, not `{{name}}` | i18n (dead-key/parity test) |
+| `frontend/src/api/queries/useAllSettings.ts` | save `onSuccess` also invalidates `keys.settings.usageMultiplierStatus()` | the inbound form's no-poll saved switch refreshes on save |
+| `frontend/src/test/inbound-form-modal.test.tsx` | `inboundSaves()` filter for the "no save sent" assertions; `QueryClientProvider` in the #5375 test; two multiplier save tests | the form now reads the status query |
+| `internal/web/translation/*.json` (14) | `pages.inbounds.form.usageMultiplier*` (5 keys) after `excludeFromSubHelp`; `pages.settings.usageMultiplier*` (8 keys) after `restartXrayOnClientDisableDesc`; real en-US and fa-IR text, English elsewhere; interpolation is `{name}`, not `{{name}}` | i18n (dead-key/parity test) |
 | `frontend/src/generated/*`, `frontend/public/openapi.json`, `docs/public/openapi.json`, `docs/content/docs/en/reference/api/settings.mdx` | regenerated (`make gen`, copy, `pnpm gen:api`) | `usageMultiplierEnable`, `Inbound.usageMultiplier`, `UsageMultiplierStatus` |
 
 ## Upstream files modified: in-place upgrade from stock

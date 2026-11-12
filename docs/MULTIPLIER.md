@@ -153,11 +153,17 @@ Settings → **Enable per-inbound multiplier** (`usageMultiplierEnable`, default
 **OFF**).
 
 - **OFF** = stock 3x-ui behaviour: the same Xray config and the same emails.
-  Multipliers can be stored but have no effect.
-- Saving the switch does **not** apply it. It goes live on the next **forced
-  Xray restart**: the "Restart Xray" button, the bot's restart command or a
-  panel start. **All connections drop once** at that restart. A hot apply
-  never switches emails under a running core.
+  Multipliers can be stored but have no effect. The inbound form shows the
+  multiplier field greyed out with a hint to enable it in Settings; saving an
+  inbound keeps its stored multiplier unchanged.
+- Saving the switch does **not** apply it. It goes live on the next **Restart
+  Panel** (the Settings page's own restart prompt), "Restart Xray" button,
+  Telegram/Discord bot restart command or panel start. A Restart Panel
+  restarts Xray only when the saved mode differs from the running one. **All
+  connections drop once** at that restart. A hot apply never switches emails
+  under a running core.
+- Settings shows `Saved: on/off · Running: on/off` under the switch; the two
+  differ until that restart.
 - The new Xray process re-baselines its counters, so nothing is counted twice
   across the switch. Like any stock Xray restart, bytes moved between the last
   5 s poll and the restart are not counted.
@@ -223,15 +229,15 @@ anyway:
 1. Upgrade **the nodes first**, one at a time (back up each node DB as above).
    Leave their switch OFF for now.
 2. Upgrade **the master**.
-3. On each node: Settings → enable the switch → Restart Xray (connections drop once).
-4. On the master: enable the switch → Restart Xray.
+3. On each node: Settings → enable the switch → Save → Restart Panel (connections drop once).
+4. On the master: enable the switch → Save → Restart Panel.
 5. Only then set multipliers ≠ 1. The master warns for any node that does not
    apply them yet.
 
 ## Upgrade and rollback
 
 - **Upgrade** is additive; existing counters are untouched.
-- **Turn it off**: switch OFF → Restart Xray. Xray gets the plain emails again;
+- **Turn it off**: switch OFF → Save → Restart Panel. Xray gets the plain emails again;
   multipliers stay stored but unused.
 - **Roll back to stock 3x-ui**: switch OFF and restart first, then install the
   stock binary. The extra column and table are harmless to stock 3x-ui, which
@@ -245,8 +251,8 @@ Use a test panel, not production.
 1. Create client `mt-user` with a **16 GB** quota.
 2. Create inbound **A** (VLESS, multiplier 1) and inbound **B** (VLESS,
    multiplier 1.2); attach `mt-user` to both.
-3. Settings → enable the per-inbound multiplier → Restart Xray (confirm the
-   warning that connections drop).
+3. Settings → enable the per-inbound multiplier → Save → Restart Panel
+   (connections drop once). The status line reads `Saved: on · Running: on`.
 4. From a client app, download about **1 GB** through A, then about **1 GB** through B.
 5. Panel → Clients → `mt-user`: usage ≈ 1 GB + 1.2 GB = **2.2 GB**.
 6. Fetch the subscription with headers: `curl -sI https://<sub-host>/<subPath>/<subId>`.
@@ -255,7 +261,7 @@ Use a test panel, not production.
 7. Optional: set B to `0`, move 1 GB through B, and usage stays the same.
 8. Optional: lower the quota to just above the current usage, move a little
    traffic through B, and the client is disabled when the weighted total crosses it.
-9. Switch OFF → Restart Xray: new traffic on B now counts x1.
+9. Switch OFF → Save → Restart Panel: new traffic on B now counts x1.
 
 ## Automated tests
 
