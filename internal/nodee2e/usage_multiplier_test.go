@@ -74,9 +74,8 @@ func enrollNode(t *testing.T, master, node *panel) int {
 	return view.Id
 }
 
-// setUsageMultiplierSwitch round-trips the full settings object, as the UI does,
-// then force-restarts Xray, the only point where the saved mode goes live.
-func setUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
+// saveUsageMultiplierSwitch round-trips the full settings object, as the UI does.
+func saveUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
 	t.Helper()
 	var all map[string]any
 	if err := json.Unmarshal(p.call(http.MethodPost, "/panel/api/setting/all", nil), &all); err != nil {
@@ -84,6 +83,12 @@ func setUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
 	}
 	all["usageMultiplierEnable"] = on
 	p.call(http.MethodPost, "/panel/api/setting/update", all)
+}
+
+// setUsageMultiplierSwitch saves the switch, then force-restarts Xray so it goes live.
+func setUsageMultiplierSwitch(t *testing.T, p *panel, on bool) {
+	t.Helper()
+	saveUsageMultiplierSwitch(t, p, on)
 	// No Xray binary in the harness: the restart fails after the mode latches.
 	_, _ = p.try(http.MethodPost, "/panel/api/server/restartXrayService", nil)
 }
@@ -153,4 +158,31 @@ func TestOldNodeKeepsMasterMultiplierAndIsFlagged(t *testing.T) {
 		known, applies := nodeApplies(t, master, nodeID)
 		return known && !applies, fmt.Sprintf("known=%v applies=%v", known, applies)
 	})
+}
+
+func multiplierStatus(t *testing.T, p *panel) (st multStatus, err error) {
+	t.Helper()
+	env, err := p.try(http.MethodPost, "/panel/api/setting/usageMultiplierStatus", nil)
+	if err != nil {
+		return st, err
+	}
+	return st, json.Unmarshal(env.Obj, &st)
+}
+
+// The Settings page's Restart Panel is a SIGHUP panel-only restart; it must
+// still bring the saved mode live, as `systemctl restart x-ui` does.
+func TestRestartPanelAppliesSavedUsageMultiplierMode(t *testing.T) {
+	p := newPanel(t, panelBinary(t), "mult-restart-panel")
+	p.start()
+	for _, on := range []bool{true, false} {
+		saveUsageMultiplierSwitch(t, p, on)
+		p.call(http.MethodPost, "/panel/api/setting/restartPanel", nil)
+		eventually(t, settleTimeout, fmt.Sprintf("running mode follows saved %v after Restart Panel", on), func() (bool, string) {
+			st, err := multiplierStatus(t, p)
+			if err != nil {
+				return false, err.Error()
+			}
+			return st.Configured == on && st.Active == on, fmt.Sprintf("configured=%v active=%v", st.Configured, st.Active)
+		})
+	}
 }
