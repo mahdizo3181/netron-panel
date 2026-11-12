@@ -40,6 +40,14 @@ Base: upstream tag `v3.11.0` (commit `c621ba90`).
 | `internal/config/version` | `3.11.0-netron.1` | panel version = release tag without `v`; `release.yml` refuses a mismatching tag |
 | `internal/util/version/version.go` | `parse` returns 4 parts; base/revision via `splitNetronRevision` (new `netron.go`) | `-netron.N` tags compare correctly in the update notifier and node version gates |
 | `internal/web/service/panel/panel.go` | updater script and release API URLs built from `panelRepo` (new `netron_repo.go`) | the panel's update check and Update button install this fork, never stock 3x-ui |
+| `internal/web/service/panel/panel.go` (2) | release API URLs from `githubAPIBase`; `GetUpdateInfo` returns `cachedUpdateInfo(fetchUpdateInfo)` (old body renamed `fetchUpdateInfo`, cache in new `netron_update_info.go`); `devChannelActive` and `startUpdate`'s `updateTag` also require `devReleasePublished`; non-200 error carries GitHub's `message` | 10 min cache keeps the last good answer and logs each failure once; the fork publishes no `dev-latest`, so a saved dev switch fell back to a silent 404 forever |
+| `internal/web/controller/server.go` | `getPanelUpdateInfo` error: `entity.Msg{Success: false, Msg: I18nWeb(..."pages.index.panelUpdateCheckFailed") + " (" + err + ")"}` (was a Debug log and an empty message) | the UI says why the check failed |
+| `frontend/src/pages/index/IndexPage.tsx` | update info from `usePanelUpdateInfo()` (new hook) instead of a one-shot `useEffect` fetch; `updateCheckError` to the action bar and modal; modal `onClose` refetches | refresh on tab focus, every 30 min and after the modal |
+| `frontend/src/pages/index/OverviewActionBar.tsx` | `updateCheckError` prop: warning icon + tooltip on the version button | failed check is visible |
+| `frontend/src/pages/index/PanelUpdateModal.tsx` | `checkError` prop replaces the "up to date" row with a warning; dev switch/warning behind `DEV_CHANNEL_AVAILABLE` (new `lib/netron.ts`) | no false "up to date", no dead dev channel |
+| `frontend/src/pages/nodes/NodesPage.tsx` | `latestVersion` from `usePanelUpdateInfo()` (same `['server','panelUpdateInfo']` key, now one shape); dev checkbox behind `DEV_CHANNEL_AVAILABLE` | shared cache, no dead dev channel |
+| `frontend/src/api/queryKeys.ts` (2) | `server.panelUpdateInfo` | update-info query key |
+| `internal/web/translation/*.json` (14) | `pages.index.panelUpdateCheckFailed` after `panelUpToDate` (fa-IR translated, others English) | i18n parity |
 | `install.sh`, `update.sh`, `x-ui.sh` | `xui_repo="mahdizo3181/netron-panel"` after the colour block; every `MHSanaei/3x-ui` URL uses `${xui_repo}`; amd64/arm64 guard in `install_x-ui` / `update_x-ui`; `x-ui.sh`: version regex accepts `-netron.N`, legacy-version prompt, uninstall hint uses `main` | one-command install/update from this fork |
 | `deploy/cloud-init/cloud-init.yaml` | installer URL | cloud-init installs this fork |
 | `.github/workflows/release.yml` | tags `v*.*.*-netron.*` + dispatch only; matrix amd64/arm64; tag-vs-version check; `npm run gen:zod` before the frontend build; per-platform upload replaced by one `publish` job (`gh release`, latest vs pre-release); Windows and dev-channel jobs guarded upstream-only | fork releases |
@@ -69,7 +77,8 @@ upstream files only pick the link type and call them.
 - `docs/MULTIPLIER.md`, `docs/NETRON_UPSTREAM_CHANGES.md`, `docs/INFO_CONFIG.md`
 - `internal/sub/info_link.go` (+ `info_link_test.go`): info entry link/outbound builders
 - `internal/web/service/sub_info_link_setting.go` (+ test): link type constants, getter, validation
-- `internal/util/version/netron.go` (+ test), `internal/web/service/panel/netron_repo.go`, `netron_update_test.go`
+- `internal/util/version/netron.go` (+ test), `internal/web/service/panel/netron_repo.go`, `netron_update_test.go`, `netron_update_info.go` (+ test)
+- `frontend/src/api/queries/usePanelUpdateInfo.ts`, `frontend/src/lib/netron.ts`, `frontend/src/test/panel-update-info.test.tsx`
 - `internal/database/model/usage_multiplier.go` (+ test)
 - `internal/database/usage_multiplier_migration_test.go`, `usage_multiplier_postgres_test.go`
 - `internal/web/service/usage_multiplier_postgres_test.go` (run: `XUI_DB_TYPE=postgres XUI_DB_DSN=... go test ./internal/web/service -run ^TestUsageMultiplierPostgres$`)
