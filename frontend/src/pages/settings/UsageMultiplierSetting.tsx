@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Popconfirm, Switch, Typography } from 'antd';
+import { Alert, Switch, Typography } from 'antd';
 
-import { HttpUtil } from '@/utils';
 import { SettingListItem } from '@/components/ui';
 import { useUsageMultiplierStatus } from '@/api/queries/useUsageMultiplierStatus';
 import type { AllSetting } from '@/models/setting';
@@ -14,24 +12,12 @@ interface Props {
 
 export default function UsageMultiplierSetting({ allSetting, updateSetting }: Props) {
   const { t } = useTranslation();
-  const { data: status, refetch } = useUsageMultiplierStatus();
-  const [restarting, setRestarting] = useState(false);
+  const { data: status } = useUsageMultiplierStatus();
 
   const onOff = (on: boolean) =>
     t(on ? 'pages.settings.usageMultiplierOn' : 'pages.settings.usageMultiplierOff');
-  const pending = status != null && status.configured !== status.active;
   const staleNodes = (status?.nodes ?? []).filter((n) => n.known && !n.applies);
   const unknownNodes = (status?.nodes ?? []).filter((n) => !n.known);
-
-  async function restartXray() {
-    setRestarting(true);
-    try {
-      await HttpUtil.post('/panel/api/server/restartXrayService');
-      await refetch();
-    } finally {
-      setRestarting(false);
-    }
-  }
 
   return (
     <>
@@ -54,26 +40,6 @@ export default function UsageMultiplierSetting({ allSetting, updateSetting }: Pr
               running: onOff(status.active),
             })}
           </Typography.Paragraph>
-        )}
-
-        {pending && (
-          <Alert
-            type="warning"
-            showIcon
-            style={{ marginBottom: 8 }}
-            title={t('pages.settings.usageMultiplierPending')}
-            description={t('pages.settings.usageMultiplierPendingDesc')}
-            action={
-              <Popconfirm
-                title={t('pages.settings.usageMultiplierRestartConfirm')}
-                onConfirm={restartXray}
-              >
-                <Button size="small" danger loading={restarting}>
-                  {t('pages.settings.usageMultiplierRestart')}
-                </Button>
-              </Popconfirm>
-            }
-          />
         )}
 
         {staleNodes.length > 0 && (
