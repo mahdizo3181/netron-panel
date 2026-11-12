@@ -14,8 +14,6 @@ const MULTIPLIER_PROTOCOLS: ReadonlySet<string> = new Set([
   Protocols.MASQUE,
 ]);
 
-export const USAGE_MULTIPLIER_CHIPS = [1, 1.2, 1.5, 2] as const;
-
 export function supportsUsageMultiplier(protocol: string): boolean {
   return MULTIPLIER_PROTOCOLS.has(protocol);
 }

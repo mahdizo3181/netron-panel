@@ -5,7 +5,7 @@ import InboundFormModal from '@/pages/inbounds/form/InboundFormModal';
 import { DBInbound } from '@/models/dbinbound';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { HttpUtil } from '@/utils';
+import { HttpUtil, Msg } from '@/utils';
 import { Protocols } from '@/schemas/primitives';
 import {
   renderWithProviders,
@@ -609,6 +609,34 @@ describe('InboundFormModal', () => {
     await waitFor(() => expect(post.mock.calls.some(isUpdate)).toBe(true));
     const payload = post.mock.calls.find(isUpdate)![1] as { usageMultiplier: unknown };
     expect(payload.usageMultiplier).toBe(1.5);
+  });
+
+  it('edit save sends a typed x1.2 while the multiplier switch is ON', async () => {
+    const post = vi.mocked(HttpUtil.post);
+    post.mockClear();
+    post.mockImplementation(async (url: string) =>
+      url.endsWith('/setting/defaultSettings')
+        ? new Msg(true, '', { usageMultiplierEnable: true })
+        : new Msg(true, '', {}),
+    );
+    onTestFinished(() => {
+      post.mockResolvedValue({ success: true, obj: {} } as never);
+    });
+    renderCloneLikeEdit(cloneLikeVlessInbound('example.com:443'));
+    const multiplier = (await screen.findByRole('spinbutton', {
+      name: /Usage multiplier/,
+    })) as HTMLInputElement;
+    await waitFor(() => expect(multiplier.disabled).toBe(false));
+    fireEvent.focus(multiplier);
+    fireEvent.change(multiplier, { target: { value: '1.2' } });
+    fireEvent.blur(multiplier);
+
+    fireEvent.click(primaryButton());
+
+    const isUpdate = ([url]: unknown[]) => url === '/panel/api/inbounds/update/42';
+    await waitFor(() => expect(post.mock.calls.some(isUpdate)).toBe(true));
+    const payload = post.mock.calls.find(isUpdate)![1] as { usageMultiplier: unknown };
+    expect(payload.usageMultiplier).toBe(1.2);
   });
 
   it('add save sends the default x1 while the multiplier switch is OFF', async () => {
