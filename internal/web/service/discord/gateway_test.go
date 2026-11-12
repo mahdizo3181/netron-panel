@@ -14,7 +14,9 @@ import (
 
 	"github.com/gorilla/websocket"
 
+	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/usagemult"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
 )
@@ -527,5 +529,31 @@ func TestGatewayCommandsRequireListedAdmin(t *testing.T) {
 				t.Fatalf("author %q with admin list %q: restarted = %v, want %v", tc.author, tc.adminIDs, restarter.restarted, tc.wantRestart)
 			}
 		})
+	}
+}
+
+// !restart must restart Xray for real, as the Telegram bot and panel do, so a
+// saved per-inbound multiplier mode goes live.
+func TestGatewayRestartAppliesSavedUsageMultiplierMode(t *testing.T) {
+	settingService := setupTestDB(t)
+	_ = settingService.SetDiscordChannelId("ch-1")
+	_ = settingService.SetDiscordAdminIds("111")
+	if err := database.GetDB().Create(&model.Setting{Key: "usageMultiplierEnable", Value: "true"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { usagemult.SetActive(false) })
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	defer server.Close()
+	svc := NewDiscordService(settingService)
+	svc.SetBaseURL(server.URL)
+	svc.SetHTTPClient(server.Client())
+
+	msg := MessageCreateData{ChannelID: "ch-1", Content: "!restart"}
+	msg.Author.ID = "111"
+	NewGatewayClient(svc, settingService, nil, nil, &service.XrayService{}).handleMessage(context.Background(), msg)
+
+	if !usagemult.Active() {
+		t.Fatal("!restart left the saved multiplier mode pending")
 	}
 }

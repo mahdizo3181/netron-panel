@@ -743,7 +743,7 @@ func (g *GatewayClient) restartXray(ctx context.Context) {
 	}
 
 	_ = g.discordService.SendMessage(ctx, MessagePayload{Content: tr("discord.commands.restarting")})
-	if err := g.xrayService.RestartXray(false); err != nil {
+	if err := g.xrayService.RestartXray(true); err != nil {
 		_ = g.discordService.SendMessage(ctx, MessagePayload{Content: tr("discord.commands.restartFailed", "Error=="+err.Error())})
 	} else {
 		_ = g.discordService.SendMessage(ctx, MessagePayload{Content: tr("discord.commands.restartSuccess")})
