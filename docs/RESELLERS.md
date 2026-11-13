@@ -1,6 +1,6 @@
 # Resellers ("نمایندگی"): design
 
-Status: **approved; stages A, B and C implemented** (see §11). File and function
+Status: **approved; stages A to D implemented** (see §11). File and function
 names below are the ones in this repository at `main` = `c97d9f41` (v3.11.0-netron.7); verify
 them again before each stage, because upstream rebases move code.
 
@@ -858,7 +858,8 @@ The open questions of the first draft, as answered by the owner:
 | A — model, migration, admin CRUD               | implemented | Tables, the two `clients` columns, `ResellerService`, `GET/POST /panel/api/resellers*`. The reseller cannot log in yet and no client can be owned through the API. |
 | B — actor, route policy, scope, reseller login | implemented | Resellers log in and reach only `/reseller/me` and their own 2FA routes; every other route is refused.                                                             |
 | C — client operations with limits, owner field | implemented | Resellers manage their own clients on allowed inbounds; the admin sees and reassigns owners.                                                                       |
-| D–E                                            | not started |                                                                                                                                                                    |
+| D — UI                                         | implemented | Admin reseller page, owner badge and filter, reseller home and clients view, self password and 2FA.                                                                |
+| E                                              | not started |                                                                                                                                                                    |
 
 Stage A details that refine the text above:
 
@@ -950,3 +951,31 @@ Stage C details and corrections found while re-checking the references:
   `reverse`, `adTag`, `nodeId`, `nodeAddress`, `listen`, `shareAddr`, `shareAddrStrategy`,
   `awgServer`, `tuicServer`, `wgPublicKey`, `wgMtu`, `wgDns`, `mtprotoDomain`, `usageMultiplier`.
   Link building for resellers (stage D) will need a deliberate look at `shareAddr`.
+
+Stage D details and corrections:
+
+- **Navigation** is one list: `PANEL_ROUTES` (`frontend/src/routes/panelRoutes.tsx`) feeds the
+  router, the sidebar, page titles and the command palette. `panelRoutesFor(reseller)` returns
+  `RESELLER_ROUTES` (Home and Clients) for a reseller, and `buildRoutes(true)` adds a catch-all
+  that sends any other path to Home. The doc's `roles` field on every route was not needed.
+- **How the SPA knows the role**: the server adds `window.X_UI_ROLE="reseller"` to a reseller's
+  page (`controller/dist.go`), so no admin request fires before the UI knows. It is a UI hint
+  only; the API decides.
+- **Separate reseller pages, not the admin `ClientsPage`**: `ResellerHome` and
+  `ResellerClientsPage` are their own components. The admin page calls many admin-only routes
+  (groups, onlines, links, HWIDs, bulk tools), so reusing it would mean gating dozens of calls
+  inside it; separate pages leave the admin page as it was.
+- **WebSocket**: the reseller layout does not open it and has no command palette; reseller pages
+  poll `/reseller/me` and the paged list every 15 s and refetch after each change. The §3.5
+  audience filter is therefore not built; the WebSocket stays admin-only.
+- **Links and QR**: a reseller gets its clients' subscription link (`subURI + subId`) and its QR.
+  `POST /setting/defaultSettings` is open to resellers with only subEnable, subURI, subJsonEnable,
+  subJsonURI, subClashEnable, subClashURI, subTitle, datepicker, pageSize, expireDiff and
+  trafficDiff. Per-inbound share links stay admin-only, so `StripForReseller` is unchanged and
+  `shareAddr` stays hidden: a reseller sees no server address beyond what the subscription serves.
+- **Self password change**: `POST /reseller/me/password` (current password required) ends the
+  reseller's other sessions and keeps the current one by re-stamping its epoch.
+- **Owner badge and filter** on the admin client list appear only once a reseller exists, so a
+  panel without resellers looks exactly as before.
+- **Not unit-testable**: RTL, phone width and dark theme; see the stage D report for what was
+  looked at in a real browser.

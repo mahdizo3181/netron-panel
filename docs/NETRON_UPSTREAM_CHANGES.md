@@ -200,6 +200,32 @@ New files (no rebase conflict): `internal/web/service/client_scoped.go`,
 | `frontend/src/pages/api-docs/endpoints.ts` | `POST /clients/:email/owner` entry; `owner` param on `/clients/list/paged` | route registry |
 | `internal/web/translation/*.json` (14) | `pages.resellers.toasts.owner` | toast |
 
+## Upstream files modified: resellers (stage D)
+
+New files (no rebase conflict): `frontend/src/lib/role.ts`, `frontend/src/api/queries/useResellers.ts`,
+`frontend/src/components/resellers/` (PoolUsage, OwnerTag + stories), `frontend/src/pages/resellers/`,
+`frontend/src/pages/reseller-home/`, `frontend/src/pages/reseller-clients/`,
+`frontend/src/test/reseller-ui.test.tsx`, `frontend/src/test/client-owner.test.tsx`,
+`internal/web/reseller_stage_d_test.go`.
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `internal/web/controller/dist.go` | `window.X_UI_ROLE="reseller"` for a reseller session | the SPA picks the reseller UI without an admin request |
+| `internal/web/controller/spa.go` | `g.GET("/resellers", a.panelSPA)` | admin reseller page |
+| `internal/web/controller/setting.go` | `getDefaultSettings`: `resellerDefaultSettings(result)` for a reseller | subscription keys only |
+| `frontend/src/routes/panelRoutes.tsx` | `/resellers` route; `RESELLER_ROUTES`, `panelRoutesFor` | role-aware navigation |
+| `frontend/src/routes.tsx` | `buildRoutes(reseller)` with a catch-all redirect for resellers | admin URLs send a reseller Home |
+| `frontend/src/layouts/PanelLayout.tsx` | split into admin and reseller layouts | no WebSocket or command palette for resellers |
+| `frontend/src/layouts/AppSidebar.tsx` | `panelRoutesFor(isResellerUi())`; command palette trigger hidden for resellers | reseller sidebar |
+| `frontend/src/components/command-palette/CommandPalette.tsx` | `'/resellers'` keywords | navigation contract |
+| `frontend/src/pages/clients/ClientsPage.tsx` | `useResellerList`; `OwnerTag` next to the email (table and card); `owner` in `setQuery`; `resellers` to `FilterDrawer` | owner badge and filter |
+| `frontend/src/pages/clients/FilterDrawer.tsx` | owner `Select` when resellers exist | owner filter |
+| `frontend/src/pages/clients/filters.ts`, `frontend/src/hooks/useClients.ts` | `owner` filter field and query param | owner filter |
+| `frontend/src/schemas/client.ts` | `owner` on `ClientRecordSchema` | typed owner |
+| `frontend/src/api/queryKeys.ts` | `resellers` keys | queries |
+| `frontend/src/env.d.ts` | `X_UI_ROLE` | role hint |
+| `internal/web/translation/*.json` (14) | `menu.resellers`, `pages.resellers.*`, `pages.resellerHome.*`, `pages.resellerClients.*` | UI text |
+
 ## Deliberately not hooked
 
 - Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes
