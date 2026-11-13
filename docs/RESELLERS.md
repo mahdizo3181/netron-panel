@@ -1,6 +1,6 @@
 # Resellers ("نمایندگی"): design
 
-Status: **approved; stages A and B implemented** (see §11). File and function
+Status: **approved; stages A, B and C implemented** (see §11). File and function
 names below are the ones in this repository at `main` = `c97d9f41` (v3.11.0-netron.7); verify
 them again before each stage, because upstream rebases move code.
 
@@ -857,7 +857,8 @@ The open questions of the first draft, as answered by the owner:
 | ---------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A — model, migration, admin CRUD               | implemented | Tables, the two `clients` columns, `ResellerService`, `GET/POST /panel/api/resellers*`. The reseller cannot log in yet and no client can be owned through the API. |
 | B — actor, route policy, scope, reseller login | implemented | Resellers log in and reach only `/reseller/me` and their own 2FA routes; every other route is refused.                                                             |
-| C–E                                            | not started |                                                                                                                                                                    |
+| C — client operations with limits, owner field | implemented | Resellers manage their own clients on allowed inbounds; the admin sees and reassigns owners.                                                                       |
+| D–E                                            | not started |                                                                                                                                                                    |
 
 Stage A details that refine the text above:
 
@@ -903,3 +904,49 @@ Stage B details that refine the text above:
   The limiter is the existing per-IP-and-username one. A reseller with 2FA on whose password
   matched but who sent no code gets `{"success":false,"obj":{"twoFactorRequired":true}}`, and the
   login page then shows the code field; a wrong code reads like a wrong password.
+
+Stage C details and corrections found while re-checking the references:
+
+- **Corrections.** `ImportClients` is in `service/client_portable.go`, not `client_crud.go`.
+  `GetInboundOptions` filters by the admin's user id, so a reseller's options are read with the
+  first admin's id (as token logins already do) and then filtered to its allowed list.
+- **A hijack the design did not name.** `ClientService.Create` treats an existing email with the
+  same subId as "re-add this identity", reusing its UUID and attaching it to the new inbounds. A
+  reseller who knew another tenant's email and subId (both appear in subscription links) could
+  have attached that client to its own inbound. The reseller path refuses any email it does not
+  own, case-insensitively, with Create's own "email already in use" message.
+- **Reseller routes** (`controller.RoutePolicies`, `PolicyReseller`): `GET /clients/list/paged`,
+  `GET /clients/get/:email`, `POST /clients/add`, `/clients/bulkCreate`, `/clients/update/:email`,
+  `/clients/del/:email`, `/clients/bulkEnable`, `/clients/bulkDisable`,
+  `/clients/resetTraffic/:email`, and `GET /inbounds/options` (needed to create a client). Expiry
+  is set through update. Everything else from the §3.4 "S" list (links, IPs, HWIDs, onlines,
+  export, renewal preview, attach/detach, bulk adjust, `defaultSettings`) stays admin-only until
+  stage D needs it, each with its own scope check then.
+- **One service entry per operation**: the `*For(scope, …)` methods in
+  `service/client_scoped.go`. The admin passes straight to the existing method; a reseller is
+  checked by `Scope` and the gate in `service/reseller_gate.go`, then the existing method runs, so
+  every write still goes through `runtime.Runtime`. Handlers pass `actorScope(c)` and answer with
+  `jsonObjFor`, which runs `StripForReseller` for a reseller.
+- **The gate** (`gateNewClients`, `resellerBlocked`): blocked = disabled, expired, `cutoff_reason`
+  set, or `used_traffic >= pool_bytes`. Blocked refuses create, bulk create, enabling (bulk enable,
+  update false→true) and reset traffic (a reset re-enables a depleted client); edit, disable and
+  delete stay allowed. Client limit and the quota rule apply to single and bulk create; a bulk
+  create over the limit creates nothing.
+- **Concurrency**: one in-process mutex per reseller around count-and-create. A second panel
+  process writing the same database is not a supported setup; it would need a row lock.
+- **Auto-renew** (`autoRenewClients`) skips clients with `pool_disabled` and clients of a
+  blocked reseller. Renewals done by a node itself for node-hosted clients are not covered; that
+  is part of stage E's node cut-off.
+- **Owner field**: `owner` (`{id, name}` or `null`) on `/clients/list/paged` rows and on
+  `/clients/get/:email` for the admin; removed by `StripForReseller` for resellers. The legacy
+  full `GET /clients/list` is unchanged. Filter: `owner=admin|<reseller id>` on the paged list.
+- **Reassignment** `POST /clients/:email/owner` (admin only): checks the new owner's client
+  limit, clears `pool_disabled`, lists attached inbounds outside the new owner's allowed list,
+  and never touches `used_traffic`. Disabling a client moved to a cut-off reseller is stage E.
+- **Input stripping**: on create a reseller's `group`, `clientHostRuleIds` and `reverse` are
+  dropped; on update they keep their stored values. Restored usage (`traffic`) is only read by
+  the admin-only import, so it needs no stripping.
+- **`StripForReseller`** removes, at any depth: `owner`, `group`, `groups`, `clientHostRuleIds`,
+  `reverse`, `adTag`, `nodeId`, `nodeAddress`, `listen`, `shareAddr`, `shareAddrStrategy`,
+  `awgServer`, `tuicServer`, `wgPublicKey`, `wgMtu`, `wgDns`, `mtprotoDomain`, `usageMultiplier`.
+  Link building for resellers (stage D) will need a deliberate look at `shareAddr`.

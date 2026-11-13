@@ -182,6 +182,24 @@ binaries there run with stubbed system commands, an empty bin folder and refused
 | `frontend/src/pages/api-docs/endpoints.ts` | 4 entries in the `resellers` section | route registry |
 | `internal/web/translation/*.json` (14) | `pages.login.toasts.twoFactorRequired`, `pages.resellers.toasts.forbidden`, `pages.resellers.toasts.totp` | new messages |
 
+## Upstream files modified: resellers (stage C)
+
+New files (no rebase conflict): `internal/web/service/client_scoped.go`,
+`internal/web/service/reseller_gate.go`, `internal/web/service/reseller_clients_test.go`,
+`internal/web/reseller_clients_http_test.go`, `internal/sub/reseller_ownership_test.go`,
+`internal/sub/main_test.go`.
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `internal/web/controller/client.go` | handlers for list/paged, get, add, bulkCreate, update, del, bulkEnable/Disable, resetTraffic call the `*For(actorScope(c), …)` service methods and answer with `jsonObjFor`; `buildClientPayload` adds `owner`; `POST /:email/owner` (`setOwner`) | scoped client operations, owner field, reassignment |
+| `internal/web/controller/inbound.go` | `getInboundOptions`: first admin's id for a reseller session, `GetInboundOptionsFor`, `jsonObjFor` | a reseller sees only its allowed inbounds |
+| `internal/web/service/client_paging.go` | `clientQuery.scope` applied in `from()` and `onlineEmails`; `ListPaged` delegates to `ListPagedFor`; total, summary and group names scoped; `owner` param in `applyParams`; `ClientSlim.Owner` filled in `pageRows` | scoped list, owner field and filter |
+| `internal/web/service/inbound_traffic.go` | `autoRenewClients`: `email NOT IN` clients with `pool_disabled` or of a blocked reseller | a renewal cannot re-enable a blocked reseller's client |
+| `internal/web/service/xray_config_inject_test.go` | `TestMain` runs the tests through `testsafety.Run` | the service test binary runs under the guard |
+| `tools/openapigen/main.go` | `"ClientOwner"`, `"OwnerChange"` in the service `StructAllow` | schemas |
+| `frontend/src/pages/api-docs/endpoints.ts` | `POST /clients/:email/owner` entry; `owner` param on `/clients/list/paged` | route registry |
+| `internal/web/translation/*.json` (14) | `pages.resellers.toasts.owner` | toast |
+
 ## Deliberately not hooked
 
 - Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes
