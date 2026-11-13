@@ -1018,6 +1018,10 @@ type ClientRecord struct {
 	// Owned solely by the node-snapshot sweep, which soft-orphans instead of
 	// deleting; orphans from any other cause stay at zero and are never reaped.
 	SyncOrphanedAt int64 `json:"-" gorm:"column:sync_orphaned_at;default:0"`
+	// Owner and cut-off marker of the reseller feature; never bound from or
+	// written to JSON, so no client endpoint can set them (docs/RESELLERS.md).
+	ResellerID   *int `json:"-" gorm:"column:reseller_id;index:idx_clients_reseller"`
+	PoolDisabled bool `json:"-" gorm:"column:pool_disabled;default:false"`
 }
 
 func (ClientRecord) TableName() string { return "clients" }
