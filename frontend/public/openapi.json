@@ -4523,6 +4523,95 @@
         ],
         "type": "object"
       },
+      "ResellerMe": {
+        "description": "ResellerMe answers \"who am I\": role \"admin\", or \"reseller\" with its own numbers.",
+        "properties": {
+          "reseller": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ResellerSelfView"
+              }
+            ],
+            "nullable": true
+          },
+          "role": {
+            "example": "reseller",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "type": "object"
+      },
+      "ResellerSelfView": {
+        "description": "ResellerSelfView is what a reseller sees about its own account.",
+        "properties": {
+          "clientCount": {
+            "example": 42,
+            "format": "int64",
+            "type": "integer"
+          },
+          "expiryTime": {
+            "example": 0,
+            "format": "int64",
+            "type": "integer"
+          },
+          "maxClients": {
+            "example": 100,
+            "type": "integer"
+          },
+          "name": {
+            "example": "Shop A",
+            "type": "string"
+          },
+          "poolBytes": {
+            "example": 1073741824000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "remainingBytes": {
+            "example": 1020054732800,
+            "format": "int64",
+            "type": "integer"
+          },
+          "requireClientQuota": {
+            "example": false,
+            "type": "boolean"
+          },
+          "state": {
+            "example": "ok",
+            "type": "string"
+          },
+          "twoFactorEnabled": {
+            "example": false,
+            "type": "boolean"
+          },
+          "usedTraffic": {
+            "example": 53687091200,
+            "format": "int64",
+            "type": "integer"
+          },
+          "username": {
+            "example": "shop-a",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientCount",
+          "expiryTime",
+          "maxClients",
+          "name",
+          "poolBytes",
+          "remainingBytes",
+          "requireClientQuota",
+          "state",
+          "twoFactorEnabled",
+          "usedTraffic",
+          "username"
+        ],
+        "type": "object"
+      },
       "ResellerView": {
         "description": "ResellerView is a reseller as the admin sees it; RemainingBytes is -1 without a pool limit.",
         "properties": {
@@ -5252,7 +5341,7 @@
     },
     {
       "name": "Resellers",
-      "description": "Admin management of reseller accounts: a second kind of panel login that will manage only its own clients inside a volume pool and client limit. Admin only. See docs/RESELLERS.md."
+      "description": "Reseller accounts: a second kind of panel login that will manage only its own clients inside a volume pool and client limit. /resellers routes are admin only; a reseller session may call only /reseller/me and its 2FA routes, and gets 403 everywhere else. See docs/RESELLERS.md."
     },
     {
       "name": "Subscription Server",
@@ -16404,6 +16493,189 @@
               },
               "example": {
                 "clients": "transfer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/resellers/{id}/resetTotp": {
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Turn off a reseller's two-factor authentication, for a reseller who lost its authenticator.",
+        "operationId": "post_panel_api_resellers_id_resetTotp",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reseller id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/reseller/me": {
+      "get": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Who am I. An admin gets {\"role\": \"admin\"}; a reseller session gets role \"reseller\" with its own pool, used traffic, remaining bytes, client count and limit, expiry, state (ok, pool, expired, disabled) and whether its 2FA is on. The only data route a reseller may call in this release.",
+        "operationId": "get_panel_api_reseller_me",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ResellerMe"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "reseller": null,
+                    "role": "reseller"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/reseller/me/totp": {
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Turn on the calling reseller's own two-factor authentication. secret is a base32 TOTP secret (16+ characters) and code a current code for it. Refused while 2FA is already on. Reseller sessions only.",
+        "operationId": "post_panel_api_reseller_me_totp",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "secret": {
+                    "type": "string",
+                    "description": "Base32 TOTP secret."
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Current 6-digit code."
+                  }
+                },
+                "required": [
+                  "secret",
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/reseller/me/totp/disable": {
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Turn off the calling reseller's own two-factor authentication with a current code. Reseller sessions only.",
+        "operationId": "post_panel_api_reseller_me_totp_disable",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Current 6-digit code."
+                  }
+                },
+                "required": [
+                  "code"
+                ]
               }
             }
           }

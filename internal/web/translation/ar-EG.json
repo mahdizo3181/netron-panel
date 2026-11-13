@@ -137,7 +137,8 @@
         "emptyUsername": "اسم المستخدم مطلوب",
         "emptyPassword": "الباسورد مطلوب",
         "wrongUsernameOrPassword": "اسم المستخدم أو كلمة المرور أو كود المصادقة الثنائية غير صحيح.",
-        "successLogin": "لقد تم تسجيل الدخول إلى حسابك بنجاح."
+        "successLogin": "لقد تم تسجيل الدخول إلى حسابك بنجاح.",
+        "twoFactorRequired": "Enter your two-factor code."
       }
     },
     "index": {
@@ -2527,7 +2528,9 @@
         "create": "Reseller created",
         "update": "Reseller updated",
         "password": "Reseller password changed",
-        "delete": "Reseller deleted"
+        "delete": "Reseller deleted",
+        "forbidden": "This is not available to reseller accounts.",
+        "totp": "Reseller two-factor authentication"
       }
     }
   },

@@ -137,7 +137,8 @@
         "emptyUsername": "Zadajte používateľské meno",
         "emptyPassword": "Zadajte heslo",
         "wrongUsernameOrPassword": "Nesprávne používateľské meno, heslo alebo kód dvojfaktorového overenia.",
-        "successLogin": "Úspešne ste sa prihlásili."
+        "successLogin": "Úspešne ste sa prihlásili.",
+        "twoFactorRequired": "Enter your two-factor code."
       }
     },
     "index": {
@@ -2527,7 +2528,9 @@
         "create": "Reseller created",
         "update": "Reseller updated",
         "password": "Reseller password changed",
-        "delete": "Reseller deleted"
+        "delete": "Reseller deleted",
+        "forbidden": "This is not available to reseller accounts.",
+        "totp": "Reseller two-factor authentication"
       }
     }
   },

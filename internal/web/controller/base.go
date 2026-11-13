@@ -17,7 +17,8 @@ type BaseController struct{}
 
 // checkLogin is a middleware that verifies user authentication and handles unauthorized access.
 func (a *BaseController) checkLogin(c *gin.Context) {
-	if !session.IsLogin(c) {
+	// A reseller gets the SPA shell too; every API call behind it is still policy-checked.
+	if !session.IsLogin(c) && session.GetLoginReseller(c) == nil {
 		if isAjax(c) {
 			pureJsonMsg(c, http.StatusUnauthorized, false, I18nWeb(c, "pages.login.loginAgain"))
 		} else {

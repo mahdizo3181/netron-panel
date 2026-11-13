@@ -137,7 +137,8 @@
         "emptyUsername": "请输入用户名",
         "emptyPassword": "请输入密码",
         "wrongUsernameOrPassword": "用户名、密码或双重验证码无效。",
-        "successLogin": "您已成功登录您的账户。"
+        "successLogin": "您已成功登录您的账户。",
+        "twoFactorRequired": "Enter your two-factor code."
       }
     },
     "index": {
@@ -2527,7 +2528,9 @@
         "create": "Reseller created",
         "update": "Reseller updated",
         "password": "Reseller password changed",
-        "delete": "Reseller deleted"
+        "delete": "Reseller deleted",
+        "forbidden": "This is not available to reseller accounts.",
+        "totp": "Reseller two-factor authentication"
       }
     }
   },

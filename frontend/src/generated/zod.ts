@@ -15,6 +15,9 @@ export type ProcessState = z.infer<typeof ProcessStateSchema>;
 export const ProtocolSchema = z.string();
 export type Protocol = z.infer<typeof ProtocolSchema>;
 
+export const RoutePolicySchema = z.number().int();
+export type RoutePolicy = z.infer<typeof RoutePolicySchema>;
+
 export const addrFamilySchema = z.number().int();
 export type addrFamily = z.infer<typeof addrFamilySchema>;
 
@@ -1078,6 +1081,27 @@ export const RealityScanResultSchema = z.object({
   x25519: z.boolean(),
 });
 export type RealityScanResult = z.infer<typeof RealityScanResultSchema>;
+
+export const ResellerMeSchema = z.object({
+  reseller: z.lazy(() => ResellerSelfViewSchema).nullable().optional(),
+  role: z.string(),
+});
+export type ResellerMe = z.infer<typeof ResellerMeSchema>;
+
+export const ResellerSelfViewSchema = z.object({
+  clientCount: z.number().int(),
+  expiryTime: z.number().int(),
+  maxClients: z.number().int(),
+  name: z.string(),
+  poolBytes: z.number().int(),
+  remainingBytes: z.number().int(),
+  requireClientQuota: z.boolean(),
+  state: z.string(),
+  twoFactorEnabled: z.boolean(),
+  usedTraffic: z.number().int(),
+  username: z.string(),
+});
+export type ResellerSelfView = z.infer<typeof ResellerSelfViewSchema>;
 
 export const ResellerViewSchema = z.object({
   clientCount: z.number().int(),

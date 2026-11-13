@@ -137,7 +137,8 @@
         "emptyUsername": "Por favor ingresa el nombre de usuario.",
         "emptyPassword": "Por favor ingresa la contraseña.",
         "wrongUsernameOrPassword": "Nombre de usuario, contraseña o código de dos factores incorrecto.",
-        "successLogin": "Has iniciado sesión en tu cuenta correctamente."
+        "successLogin": "Has iniciado sesión en tu cuenta correctamente.",
+        "twoFactorRequired": "Enter your two-factor code."
       }
     },
     "index": {
@@ -2527,7 +2528,9 @@
         "create": "Reseller created",
         "update": "Reseller updated",
         "password": "Reseller password changed",
-        "delete": "Reseller deleted"
+        "delete": "Reseller deleted",
+        "forbidden": "This is not available to reseller accounts.",
+        "totp": "Reseller two-factor authentication"
       }
     }
   },

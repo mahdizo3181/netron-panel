@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"text/template"
 	"time"
 
+	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/entity"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/middleware"
@@ -27,10 +29,11 @@ type LoginForm struct {
 type IndexController struct {
 	BaseController
 
-	settingService service.SettingService
-	userService    panel.UserService
-	panelService   panel.PanelService
-	tgbot          tgbot.Tgbot
+	settingService  service.SettingService
+	userService     panel.UserService
+	resellerService service.ResellerService
+	panelService    panel.PanelService
+	tgbot           tgbot.Tgbot
 }
 
 // NewIndexController creates a new IndexController and initializes its routes.
@@ -119,8 +122,22 @@ func (a *IndexController) login(c *gin.Context) {
 	}
 
 	user, checkErr := a.userService.CheckUser(form.Username, form.Password, form.TwoFactorCode)
-
+	// Names are disjoint across admins and resellers, so trying a reseller only
+	// after the admin lookup failed cannot change who an admin login reaches.
+	var reseller *model.Reseller
 	if user == nil {
+		var resellerErr error
+		reseller, resellerErr = a.resellerService.CheckLogin(form.Username, form.Password, form.TwoFactorCode, time.Now())
+		if errors.Is(resellerErr, service.ErrResellerTwoFactorRequired) {
+			c.JSON(http.StatusOK, entity.Msg{Success: false, Msg: I18nWeb(c, "pages.login.toasts.twoFactorRequired"), Obj: gin.H{"twoFactorRequired": true}})
+			return
+		}
+		if errors.Is(resellerErr, service.ErrResellerTotpCode) {
+			checkErr = resellerErr
+		}
+	}
+
+	if user == nil && reseller == nil {
 		reason := loginFailureReason(checkErr)
 		if blockedUntil, blocked := defaultLoginLimiter.registerFailure(remoteIP, form.Username); blocked {
 			logger.Warningf("failed login: username=%q, IP=%q, reason=%q, blocked_until=%s", form.Username, remoteIP, reason, blockedUntil.Format(time.RFC3339))
@@ -147,7 +164,12 @@ func (a *IndexController) login(c *gin.Context) {
 		Status:   tgbot.LoginSuccess,
 	})
 
-	if err := session.SetLoginUser(c, user); err != nil {
+	if reseller != nil {
+		if err := session.SetLoginReseller(c, reseller); err != nil {
+			logger.Warning("Unable to save session:", err)
+			return
+		}
+	} else if err := session.SetLoginUser(c, user); err != nil {
 		logger.Warning("Unable to save session:", err)
 		return
 	}

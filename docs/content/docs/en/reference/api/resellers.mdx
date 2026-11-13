@@ -1,8 +1,9 @@
 ---
 title: Resellers
-description: 'Admin management of reseller accounts: a second kind of panel
-  login that will manage only its own clients inside a volume pool and client
-  limit. Admin only. See docs/RESELLERS.md.'
+description: 'Reseller accounts: a second kind of panel login that will manage
+  only its own clients inside a volume pool and client limit. /resellers routes
+  are admin only; a reseller session may call only /reseller/me and its 2FA
+  routes, and gets 403 everywhere else. See docs/RESELLERS.md.'
 full: true
 _openapi:
   preload:
@@ -37,6 +38,25 @@ _openapi:
         the admin unchanged; "delete" removes them through the normal client
         delete path first.
       url: '#delete-a-reseller-clients--transfer-default-hands-its-clients-to-the-admin-unchanged-delete-removes-them-through-the-normal-client-delete-path-first'
+    - depth: 2
+      title: Turn off a reseller's two-factor authentication, for a reseller who lost
+        its authenticator.
+      url: '#turn-off-a-resellers-two-factor-authentication-for-a-reseller-who-lost-its-authenticator'
+    - depth: 2
+      title: 'Who am I. An admin gets {"role": "admin"}; a reseller session gets role
+        "reseller" with its own pool, used traffic, remaining bytes, client
+        count and limit, expiry, state (ok, pool, expired, disabled) and whether
+        its 2FA is on. The only data route a reseller may call in this release.'
+      url: '#who-am-i-an-admin-gets-role-admin-a-reseller-session-gets-role-reseller-with-its-own-pool-used-traffic-remaining-bytes-client-count-and-limit-expiry-state-ok-pool-expired-disabled-and-whether-its-2fa-is-on-the-only-data-route-a-reseller-may-call-in-this-release'
+    - depth: 2
+      title: Turn on the calling reseller's own two-factor authentication. secret is a
+        base32 TOTP secret (16+ characters) and code a current code for it.
+        Refused while 2FA is already on. Reseller sessions only.
+      url: '#turn-on-the-calling-resellers-own-two-factor-authentication-secret-is-a-base32-totp-secret-16-characters-and-code-a-current-code-for-it-refused-while-2fa-is-already-on-reseller-sessions-only'
+    - depth: 2
+      title: Turn off the calling reseller's own two-factor authentication with a
+        current code. Reseller sessions only.
+      url: '#turn-off-the-calling-resellers-own-two-factor-authentication-with-a-current-code-reseller-sessions-only'
   structuredData:
     headings:
       - content: List every reseller with its pool, used traffic, remaining bytes (-1
@@ -62,6 +82,22 @@ _openapi:
           the admin unchanged; "delete" removes them through the normal client
           delete path first.
         id: delete-a-reseller-clients--transfer-default-hands-its-clients-to-the-admin-unchanged-delete-removes-them-through-the-normal-client-delete-path-first
+      - content: Turn off a reseller's two-factor authentication, for a reseller who
+          lost its authenticator.
+        id: turn-off-a-resellers-two-factor-authentication-for-a-reseller-who-lost-its-authenticator
+      - content: 'Who am I. An admin gets {"role": "admin"}; a reseller session gets
+          role "reseller" with its own pool, used traffic, remaining bytes,
+          client count and limit, expiry, state (ok, pool, expired, disabled)
+          and whether its 2FA is on. The only data route a reseller may call in
+          this release.'
+        id: who-am-i-an-admin-gets-role-admin-a-reseller-session-gets-role-reseller-with-its-own-pool-used-traffic-remaining-bytes-client-count-and-limit-expiry-state-ok-pool-expired-disabled-and-whether-its-2fa-is-on-the-only-data-route-a-reseller-may-call-in-this-release
+      - content: Turn on the calling reseller's own two-factor authentication. secret is
+          a base32 TOTP secret (16+ characters) and code a current code for it.
+          Refused while 2FA is already on. Reseller sessions only.
+        id: turn-on-the-calling-resellers-own-two-factor-authentication-secret-is-a-base32-totp-secret-16-characters-and-code-a-current-code-for-it-refused-while-2fa-is-already-on-reseller-sessions-only
+      - content: Turn off the calling reseller's own two-factor authentication with a
+          current code. Reseller sessions only.
+        id: turn-off-the-calling-resellers-own-two-factor-authentication-with-a-current-code-reseller-sessions-only
     contents: []
 ---
 
@@ -72,7 +108,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"}]} showTitle />
+      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
     </>
   );
 }

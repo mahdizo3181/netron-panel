@@ -1113,6 +1113,23 @@ export const EXAMPLES: Record<string, unknown> = {
     "tlsVersion": "1.3",
     "x25519": true
   },
+  "ResellerMe": {
+    "reseller": null,
+    "role": "reseller"
+  },
+  "ResellerSelfView": {
+    "clientCount": 42,
+    "expiryTime": 0,
+    "maxClients": 100,
+    "name": "Shop A",
+    "poolBytes": 1073741824000,
+    "remainingBytes": 1020054732800,
+    "requireClientQuota": false,
+    "state": "ok",
+    "twoFactorEnabled": false,
+    "usedTraffic": 53687091200,
+    "username": "shop-a"
+  },
   "ResellerView": {
     "clientCount": 42,
     "createdAt": 1735000000000,

@@ -65,6 +65,11 @@ func (a *APIController) checkAPIAuth(c *gin.Context) {
 		return
 	}
 	if !session.IsLogin(c) {
+		if r := session.GetLoginReseller(c); r != nil {
+			c.Set(resellerActorKey, r.Id)
+			c.Next()
+			return
+		}
 		// A presented Bearer token is not an anonymous scan: return 401 so
 		// callers can distinguish a bad/disabled token from a wrong base path
 		// (NoRoute still 404s). XHR keeps 401; bare unauthenticated stays 404.
@@ -195,6 +200,7 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	api := g.Group("/panel/api")
 	api.Use(a.checkAPIAuth)
 	api.Use(a.enforceTokenScope)
+	api.Use(enforceActorPolicy)
 	// Decode + verify the node config envelope (zstd + X-Config-Sha256) and
 	// advertise support, before CSRF/handlers read the body.
 	api.Use(middleware.ConfigEnvelopeMiddleware())
@@ -231,8 +237,9 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	// Subscription balancers — client-side balancers for the JSON sub output
 	NewSubBalancerController(api)
 
-	// Reseller accounts — admin management (docs/RESELLERS.md)
+	// Reseller accounts — admin management and the reseller's own routes (docs/RESELLERS.md)
 	NewResellerController(api)
+	NewResellerSelfController(api)
 
 	// Extra routes
 	api.POST("/backuptotgbot", a.BackuptoTgbot)

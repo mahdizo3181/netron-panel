@@ -27,6 +27,7 @@ func NewResellerController(g *gin.RouterGroup) *ResellerController {
 	g.POST("/:id", a.update)
 	g.POST("/:id/password", a.setPassword)
 	g.POST("/:id/del", a.del)
+	g.POST("/:id/resetTotp", a.resetTotp)
 	return a
 }
 
@@ -129,4 +130,13 @@ func (a *ResellerController) del(c *gin.Context) {
 		a.xrayService.SetToNeedRestart()
 	}
 	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.delete"), err)
+}
+
+// resetTotp turns off a reseller's 2FA when it lost its authenticator.
+func (a *ResellerController) resetTotp(c *gin.Context) {
+	id, err := resellerID(c)
+	if err == nil {
+		err = a.resellerService.ResetTotp(id)
+	}
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.totp"), err)
 }

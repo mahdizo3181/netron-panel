@@ -137,7 +137,8 @@
         "emptyUsername": "請輸入使用者名稱",
         "emptyPassword": "請輸入密碼",
         "wrongUsernameOrPassword": "用戶名、密碼或雙重驗證碼無效。",
-        "successLogin": "您已成功登入您的帳戶。"
+        "successLogin": "您已成功登入您的帳戶。",
+        "twoFactorRequired": "Enter your two-factor code."
       }
     },
     "index": {
@@ -2527,7 +2528,9 @@
         "create": "Reseller created",
         "update": "Reseller updated",
         "password": "Reseller password changed",
-        "delete": "Reseller deleted"
+        "delete": "Reseller deleted",
+        "forbidden": "This is not available to reseller accounts.",
+        "totp": "Reseller two-factor authentication"
       }
     }
   },

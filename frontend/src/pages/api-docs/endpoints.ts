@@ -2726,7 +2726,7 @@ export const sections: readonly Section[] = [
     id: 'resellers',
     title: 'Resellers',
     description:
-      'Admin management of reseller accounts: a second kind of panel login that will manage only its own clients inside a volume pool and client limit. Admin only. See docs/RESELLERS.md.',
+      'Reseller accounts: a second kind of panel login that will manage only its own clients inside a volume pool and client limit. /resellers routes are admin only; a reseller session may call only /reseller/me and its 2FA routes, and gets 403 everywhere else. See docs/RESELLERS.md.',
     endpoints: [
       {
         method: 'GET',
@@ -2775,6 +2775,39 @@ export const sections: readonly Section[] = [
           'Delete a reseller. clients = "transfer" (default) hands its clients to the admin unchanged; "delete" removes them through the normal client delete path first.',
         params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
         body: '{\n  "clients": "transfer"\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/resetTotp',
+        summary:
+          "Turn off a reseller's two-factor authentication, for a reseller who lost its authenticator.",
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/reseller/me',
+        summary:
+          'Who am I. An admin gets {"role": "admin"}; a reseller session gets role "reseller" with its own pool, used traffic, remaining bytes, client count and limit, expiry, state (ok, pool, expired, disabled) and whether its 2FA is on. The only data route a reseller may call in this release.',
+        responseSchema: 'ResellerMe',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/reseller/me/totp',
+        summary:
+          "Turn on the calling reseller's own two-factor authentication. secret is a base32 TOTP secret (16+ characters) and code a current code for it. Refused while 2FA is already on. Reseller sessions only.",
+        params: [
+          { name: 'secret', in: 'body (form)', type: 'string', desc: 'Base32 TOTP secret.' },
+          { name: 'code', in: 'body (form)', type: 'string', desc: 'Current 6-digit code.' },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/reseller/me/totp/disable',
+        summary:
+          "Turn off the calling reseller's own two-factor authentication with a current code. Reseller sessions only.",
+        params: [
+          { name: 'code', in: 'body (form)', type: 'string', desc: 'Current 6-digit code.' },
+        ],
       },
     ],
   },

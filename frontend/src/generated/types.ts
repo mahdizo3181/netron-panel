@@ -4,6 +4,7 @@ export type GeoKind = string;
 export type OnlineAPISupport = number;
 export type ProcessState = string;
 export type Protocol = string;
+export type RoutePolicy = number;
 export type addrFamily = number;
 export type staticEgressResolver = string;
 export type trafficLocalApplyAction = number;
@@ -1012,6 +1013,25 @@ export interface RealityScanResult {
   tls13: boolean;
   tlsVersion: string;
   x25519: boolean;
+}
+
+export interface ResellerMe {
+  reseller?: ResellerSelfView | null;
+  role: string;
+}
+
+export interface ResellerSelfView {
+  clientCount: number;
+  expiryTime: number;
+  maxClients: number;
+  name: string;
+  poolBytes: number;
+  remainingBytes: number;
+  requireClientQuota: boolean;
+  state: string;
+  twoFactorEnabled: boolean;
+  usedTraffic: number;
+  username: string;
 }
 
 export interface ResellerView {

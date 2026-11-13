@@ -4497,6 +4497,95 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ResellerMe": {
+    "description": "ResellerMe answers \"who am I\": role \"admin\", or \"reseller\" with its own numbers.",
+    "properties": {
+      "reseller": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResellerSelfView"
+          }
+        ],
+        "nullable": true
+      },
+      "role": {
+        "example": "reseller",
+        "type": "string"
+      }
+    },
+    "required": [
+      "role"
+    ],
+    "type": "object"
+  },
+  "ResellerSelfView": {
+    "description": "ResellerSelfView is what a reseller sees about its own account.",
+    "properties": {
+      "clientCount": {
+        "example": 42,
+        "format": "int64",
+        "type": "integer"
+      },
+      "expiryTime": {
+        "example": 0,
+        "format": "int64",
+        "type": "integer"
+      },
+      "maxClients": {
+        "example": 100,
+        "type": "integer"
+      },
+      "name": {
+        "example": "Shop A",
+        "type": "string"
+      },
+      "poolBytes": {
+        "example": 1073741824000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "remainingBytes": {
+        "example": 1020054732800,
+        "format": "int64",
+        "type": "integer"
+      },
+      "requireClientQuota": {
+        "example": false,
+        "type": "boolean"
+      },
+      "state": {
+        "example": "ok",
+        "type": "string"
+      },
+      "twoFactorEnabled": {
+        "example": false,
+        "type": "boolean"
+      },
+      "usedTraffic": {
+        "example": 53687091200,
+        "format": "int64",
+        "type": "integer"
+      },
+      "username": {
+        "example": "shop-a",
+        "type": "string"
+      }
+    },
+    "required": [
+      "clientCount",
+      "expiryTime",
+      "maxClients",
+      "name",
+      "poolBytes",
+      "remainingBytes",
+      "requireClientQuota",
+      "state",
+      "twoFactorEnabled",
+      "usedTraffic",
+      "username"
+    ],
+    "type": "object"
+  },
   "ResellerView": {
     "description": "ResellerView is a reseller as the admin sees it; RemainingBytes is -1 without a pool limit.",
     "properties": {
