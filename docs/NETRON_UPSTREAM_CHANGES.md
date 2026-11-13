@@ -139,6 +139,28 @@ made with the stock binaries), `internal/web/service/upgrade_from_stock_test.go`
 `MIN_VERIFIED_VERSION` in the script is the oldest stock fixture; add a fixture
 (run `make-stock-fixture.sh` with that stock binary) before lowering it.
 
+## Upstream files modified: resellers (stage A)
+
+See `docs/RESELLERS.md`. New files (no rebase conflict): `internal/database/model/reseller.go`,
+`internal/database/reseller_migration_test.go`, `internal/web/service/reseller.go` (+ test),
+`internal/web/controller/reseller.go` (+ test),
+`internal/web/service/panel/netron_reseller_username.go` (+ test),
+`docs/content/docs/en/reference/api/resellers.mdx` (generated).
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `internal/database/model/model.go` | `ClientRecord.ResellerID *int` and `PoolDisabled bool`, both `json:"-"`, after `SyncOrphanedAt` | client owner and cut-off marker; unreachable from any JSON body |
+| `internal/database/db.go` | `&model.Reseller{}`, `&model.ResellerInbound{}`, `&model.ResellerAuditLog{}` at the end of `allModels()` | AutoMigrate creates the tables |
+| `internal/database/migrate_data.go` | the same three at the end of `migrationModels()` | `migrate-db` copies them; `TestMigrationModelsMatchPanelModels` |
+| `internal/web/service/client_link.go` | `DetachInbound`: delete `ResellerInbound` rows for the inbound before the `ClientInbound` delete | every inbound delete path drops the inbound from allowed lists |
+| `internal/web/service/panel/user.go` | `UpdateUser` and `UpdateFirstUser`: `refuseResellerUsername(username)` before hashing | an admin cannot take a reseller's login name |
+| `internal/web/controller/api.go` | `NewResellerController(api)` after `NewSubBalancerController(api)` | `/panel/api/resellers*` routes |
+| `tools/openapigen/main.go` | `"ResellerView"` in the service `StructAllow` | schema/example for the new endpoints |
+| `frontend/src/pages/api-docs/endpoints.ts` | section `resellers` (6 endpoints) before `subscription` | route registry (`TestRouteRegistryContract`) |
+| `internal/web/translation/*.json` (14) | `pages.resellers.toasts.*` (5 keys) at the end of `pages`; fa-IR translated, English elsewhere | toasts returned by the controller |
+| `docs/content/docs/en/reference/api/meta.json` | `"resellers"` after `"nodes"` | API reference navigation |
+| `frontend/src/generated/*`, `frontend/public/openapi.json`, `docs/public/openapi.json` | regenerated | `ResellerView` and the new paths |
+
 ## Deliberately not hooked
 
 - Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes

@@ -1,6 +1,6 @@
 # Resellers ("نمایندگی"): design
 
-Status: **design only, awaiting approval.** No feature code exists yet. File and function
+Status: **approved; stage A implemented** (see §11). File and function
 names below are the ones in this repository at `main` = `c97d9f41` (v3.11.0-netron.7); verify
 them again before each stage, because upstream rebases move code.
 
@@ -829,37 +829,42 @@ built in parallel with D.
 
 ---
 
-## 10. Open questions (the code cannot decide these)
+## 10. Decisions (approved)
 
-1. **Where do reseller accounts live?** Recommendation: the separate `resellers` table (§0). The
-   alternative, a `role` column on `users`, is less code but makes a rollback to stock 3x-ui turn
-   every reseller into a full admin.
-2. **Does a reseller's own 2FA exist in v1?** Recommendation: yes, optional, self-service; the
-   global 2FA setting remains admin-only.
-3. **Reseller API tokens.** Recommendation: defer to after stage E; build only if a reseller needs
-   automation. The design slot is §5.4.
-4. **Client groups for resellers.** `ClientGroup` rows and group names are global. Recommendation:
-   hide groups from resellers in v1 (routes F, `group` stripped from their input). Per-reseller
-   groups would need a `reseller_id` on groups — a separate change.
-5. **Client import for resellers.** Recommendation: admin-only in v1. The import payload restores
-   traffic and arbitrary fields; opening it needs its own review even with the gate.
-6. **AmneziaWG / TUIC / MTProto inbounds for resellers.** `/inbounds/options` carries server
-   blocks for these. Recommendation: allow only VLESS / VMess / Trojan / Shadowsocks / Hysteria
-   inbounds in the allowed list for v1, and open the others after confirming the option payload
-   exposes no server secret. (These are also the protocols the usage multiplier supports, so
-   pool billing is exact for them.)
-7. **May a reseller set a client's Telegram id (`tgId`)?** It lets that end user query the bot.
-   Recommendation: allow; it exposes only that client's own usage.
-8. **Email prefix per reseller** (e.g. `shopa_`), to avoid collisions and make ownership visible
-   in logs. Recommendation: optional per-reseller prefix, off by default.
-9. **Deleting a reseller.** Recommendation: default `transfer` (clients become the admin's and
-   keep working), with `delete` as an explicit choice.
-10. **Is the pool usage counter split up/down?** Recommendation: one total (`used_traffic`); the
-    pool is a volume, and per-direction numbers already exist per client.
-11. **Traffic of non-multiplier protocols** (WireGuard, AmneziaWG, TUIC…) is billed at x1 and does
-    count into the pool. Confirm that is intended (it follows from "weighted = what
-    `client_traffics` receives").
-12. **`resellerPoolEnforce` soft-launch switch** (stage E). Recommendation: keep it for one
-    release, then remove it.
-13. **Overshoot.** Accepted as stated in §4.4: at most one poll interval (5 s) of traffic, plus
-    one node sync interval for node-hosted traffic, and unbounded only while a node is offline.
+The open questions of the first draft, as answered by the owner:
+
+1. **Account storage:** separate `resellers` table.
+2. **Reseller 2FA:** yes, optional and self-service; the global 2FA setting stays the admin's.
+3. **Reseller API tokens:** deferred until after stage E (§5.4 stays a design slot).
+4. **Client groups:** hidden from resellers (routes F, `group` stripped from their input).
+5. **Client import:** admin-only.
+6. **Inbound protocols for resellers:** only VLESS, VMess, Trojan, Shadowsocks and Hysteria may be
+   in an allowed list. Enforced since stage A in `replaceResellerInbounds`
+   (`internal/web/service/reseller.go`).
+7. **`tgId`:** a reseller may set it on its clients.
+8. **Email prefix per reseller:** optional, off by default. The column arrives with stage C, where
+   it is enforced.
+9. **Deleting a reseller:** `transfer` (clients go to the admin) is the default; `delete` is an
+   explicit choice.
+10. **Pool counter:** one total, `used_traffic`.
+11. **Non-multiplier protocols** are billed at x1 into the pool.
+12. **`resellerPoolEnforce`:** kept for one release after stage E, then removed.
+13. **Overshoot:** accepted as stated in §4.4.
+
+## 11. Implementation status
+
+| Stage                            | State       | Notes                                                                                                                                                              |
+| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A — model, migration, admin CRUD | implemented | Tables, the two `clients` columns, `ResellerService`, `GET/POST /panel/api/resellers*`. The reseller cannot log in yet and no client can be owned through the API. |
+| B–E                              | not started |                                                                                                                                                                    |
+
+Stage A details that refine the text above:
+
+- `POST /resellers/:id` is a full-row edit of name, limits, expiry, `requireClientQuota` and
+  `inboundIds`; an omitted `enable` keeps its value. The username cannot be changed after create.
+- Usernames are compared case-insensitively across `users` and `resellers`. The admin side is
+  guarded in `UserService.UpdateUser` and `UpdateFirstUser` (`refuseResellerUsername`).
+- Allowed-inbound rows are removed in `ClientService.DetachInbound`, which all three inbound
+  delete paths call (`delInbound`, the depleted-client purge, the node sync sweep).
+- Editing limits or `enable` only stores the values; cut-off and release arrive with stage E.
+- `reseller_audit_logs` and `clients.pool_disabled` exist but nothing writes them before stage E.
