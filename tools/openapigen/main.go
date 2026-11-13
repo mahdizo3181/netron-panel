@@ -116,6 +116,7 @@ func run(root, outDir string) error {
 				"HwidSlotStatus",
 				"UsageMultiplierStatus",
 				"UsageMultiplierNodeStatus",
+				"ResellerView",
 			),
 		},
 		{

@@ -4523,6 +4523,101 @@
         ],
         "type": "object"
       },
+      "ResellerView": {
+        "description": "ResellerView is a reseller as the admin sees it; RemainingBytes is -1 without a pool limit.",
+        "properties": {
+          "clientCount": {
+            "example": 42,
+            "format": "int64",
+            "type": "integer"
+          },
+          "createdAt": {
+            "example": 1735000000000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "cutoffReason": {
+            "type": "string"
+          },
+          "enable": {
+            "example": true,
+            "type": "boolean"
+          },
+          "expiryTime": {
+            "example": 0,
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "example": 3,
+            "type": "integer"
+          },
+          "inboundIds": {
+            "example": [
+              3,
+              5
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "maxClients": {
+            "example": 100,
+            "type": "integer"
+          },
+          "name": {
+            "example": "Shop A",
+            "type": "string"
+          },
+          "poolBytes": {
+            "example": 1073741824000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "remainingBytes": {
+            "example": 1020054732800,
+            "format": "int64",
+            "type": "integer"
+          },
+          "requireClientQuota": {
+            "example": false,
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "example": 1735100000000,
+            "format": "int64",
+            "type": "integer"
+          },
+          "usedTraffic": {
+            "example": 53687091200,
+            "format": "int64",
+            "type": "integer"
+          },
+          "username": {
+            "example": "shop-a",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientCount",
+          "createdAt",
+          "cutoffReason",
+          "enable",
+          "expiryTime",
+          "id",
+          "inboundIds",
+          "maxClients",
+          "name",
+          "poolBytes",
+          "remainingBytes",
+          "requireClientQuota",
+          "updatedAt",
+          "usedTraffic",
+          "username"
+        ],
+        "type": "object"
+      },
       "ServerSettings": {
         "description": "ServerSettings is the \"server\" block of an AmneziaWG inbound's Settings\nJSON: the interface-level configuration shared by every client/peer. The\nlisten port is deliberately not duplicated here — it lives on the inbound\nrow itself (Inbound.Port), like every other protocol.",
         "properties": {
@@ -5154,6 +5249,10 @@
     {
       "name": "Subscription Balancers",
       "description": "Client-side balancers for the JSON subscription: each enabled balancer is emitted as one extra config document whose members are the proxy outbounds of the selected inbounds (routing.balancers + burstObservatory). Managed in Settings → Sub Balancers."
+    },
+    {
+      "name": "Resellers",
+      "description": "Admin management of reseller accounts: a second kind of panel login that will manage only its own clients inside a volume pool and client limit. Admin only. See docs/RESELLERS.md."
     },
     {
       "name": "Subscription Server",
@@ -15925,6 +16024,405 @@
                     "sortOrder": 1,
                     "strategy": "random",
                     "updatedAt": 1710000000000
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/resellers": {
+      "get": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "List every reseller with its pool, used traffic, remaining bytes (-1 without a pool limit), client count and allowed inbound ids.",
+        "operationId": "get_panel_api_resellers",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResellerView"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": [
+                    {
+                      "clientCount": 42,
+                      "createdAt": 1735000000000,
+                      "cutoffReason": "",
+                      "enable": true,
+                      "expiryTime": 0,
+                      "id": 3,
+                      "inboundIds": [
+                        3,
+                        5
+                      ],
+                      "maxClients": 100,
+                      "name": "Shop A",
+                      "poolBytes": 1073741824000,
+                      "remainingBytes": 1020054732800,
+                      "requireClientQuota": false,
+                      "updatedAt": 1735100000000,
+                      "usedTraffic": 53687091200,
+                      "username": "shop-a"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Create a reseller. The username must be 3-32 characters (letters, digits, dot, dash, underscore) and unique across admins and resellers; the password needs at least 10 characters. poolBytes 0 = no pool limit, maxClients 0 = unlimited, expiryTime 0 = never. inboundIds may only name VLESS, VMess, Trojan, Shadowsocks or Hysteria inbounds.",
+        "operationId": "post_panel_api_resellers",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "username": "shop-a",
+                "password": "a-long-password",
+                "name": "Shop A",
+                "enable": true,
+                "poolBytes": 1073741824000,
+                "maxClients": 100,
+                "expiryTime": 0,
+                "requireClientQuota": false,
+                "inboundIds": [
+                  3,
+                  5
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ResellerView"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "clientCount": 42,
+                    "createdAt": 1735000000000,
+                    "cutoffReason": "",
+                    "enable": true,
+                    "expiryTime": 0,
+                    "id": 3,
+                    "inboundIds": [
+                      3,
+                      5
+                    ],
+                    "maxClients": 100,
+                    "name": "Shop A",
+                    "poolBytes": 1073741824000,
+                    "remainingBytes": 1020054732800,
+                    "requireClientQuota": false,
+                    "updatedAt": 1735100000000,
+                    "usedTraffic": 53687091200,
+                    "username": "shop-a"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/resellers/{id}": {
+      "get": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Return one reseller.",
+        "operationId": "get_panel_api_resellers_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reseller id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ResellerView"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "clientCount": 42,
+                    "createdAt": 1735000000000,
+                    "cutoffReason": "",
+                    "enable": true,
+                    "expiryTime": 0,
+                    "id": 3,
+                    "inboundIds": [
+                      3,
+                      5
+                    ],
+                    "maxClients": 100,
+                    "name": "Shop A",
+                    "poolBytes": 1073741824000,
+                    "remainingBytes": 1020054732800,
+                    "requireClientQuota": false,
+                    "updatedAt": 1735100000000,
+                    "usedTraffic": 53687091200,
+                    "username": "shop-a"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Edit a reseller: a full-row update of name, limits, expiry, requireClientQuota and inboundIds. An omitted enable keeps its value. username and password in the body are ignored. Removing an inbound from inboundIds does not detach existing clients.",
+        "operationId": "post_panel_api_resellers_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reseller id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "username": "shop-a",
+                "password": "a-long-password",
+                "name": "Shop A",
+                "enable": true,
+                "poolBytes": 1073741824000,
+                "maxClients": 100,
+                "expiryTime": 0,
+                "requireClientQuota": false,
+                "inboundIds": [
+                  3,
+                  5
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ResellerView"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "clientCount": 42,
+                    "createdAt": 1735000000000,
+                    "cutoffReason": "",
+                    "enable": true,
+                    "expiryTime": 0,
+                    "id": 3,
+                    "inboundIds": [
+                      3,
+                      5
+                    ],
+                    "maxClients": 100,
+                    "name": "Shop A",
+                    "poolBytes": 1073741824000,
+                    "remainingBytes": 1020054732800,
+                    "requireClientQuota": false,
+                    "updatedAt": 1735100000000,
+                    "usedTraffic": 53687091200,
+                    "username": "shop-a"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/resellers/{id}/password": {
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Set a reseller's password (at least 10 characters, different from the username). Ends the reseller's open sessions.",
+        "operationId": "post_panel_api_resellers_id_password",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reseller id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "password": "a-new-long-password"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/resellers/{id}/del": {
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Delete a reseller. clients = \"transfer\" (default) hands its clients to the admin unchanged; \"delete\" removes them through the normal client delete path first.",
+        "operationId": "post_panel_api_resellers_id_del",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Reseller id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "clients": "transfer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
                   }
                 }
               }

@@ -2520,6 +2520,15 @@
       "visit": "Visitar",
       "yourBrand": "Sua marca aqui",
       "yourBrandText": "Coloque sua empresa diante de milhares de administradores de servidores que abrem o 3X-UI todos os dias."
+    },
+    "resellers": {
+      "toasts": {
+        "obtain": "Load resellers",
+        "create": "Reseller created",
+        "update": "Reseller updated",
+        "password": "Reseller password changed",
+        "delete": "Reseller deleted"
+      }
     }
   },
   "tgbot": {

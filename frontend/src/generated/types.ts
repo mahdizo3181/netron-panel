@@ -1014,6 +1014,24 @@ export interface RealityScanResult {
   x25519: boolean;
 }
 
+export interface ResellerView {
+  clientCount: number;
+  createdAt: number;
+  cutoffReason: string;
+  enable: boolean;
+  expiryTime: number;
+  id: number;
+  inboundIds: number[];
+  maxClients: number;
+  name: string;
+  poolBytes: number;
+  remainingBytes: number;
+  requireClientQuota: boolean;
+  updatedAt: number;
+  usedTraffic: number;
+  username: string;
+}
+
 export interface ServerSettings {
   contentPaddingAddition?: string;
   disableCookies: boolean;

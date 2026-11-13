@@ -2520,6 +2520,15 @@
       "visit": "訪問",
       "yourBrand": "ここにあなたのブランドを",
       "yourBrandText": "毎日 3X-UI を開く何千人ものサーバー管理者に御社をアピールできます。"
+    },
+    "resellers": {
+      "toasts": {
+        "obtain": "Load resellers",
+        "create": "Reseller created",
+        "update": "Reseller updated",
+        "password": "Reseller password changed",
+        "delete": "Reseller deleted"
+      }
     }
   },
   "tgbot": {

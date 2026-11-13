@@ -1,0 +1,78 @@
+---
+title: Resellers
+description: 'Admin management of reseller accounts: a second kind of panel
+  login that will manage only its own clients inside a volume pool and client
+  limit. Admin only. See docs/RESELLERS.md.'
+full: true
+_openapi:
+  preload:
+    - ./public/openapi.json
+  toc:
+    - depth: 2
+      title: List every reseller with its pool, used traffic, remaining bytes (-1
+        without a pool limit), client count and allowed inbound ids.
+      url: '#list-every-reseller-with-its-pool-used-traffic-remaining-bytes--1-without-a-pool-limit-client-count-and-allowed-inbound-ids'
+    - depth: 2
+      title: Create a reseller. The username must be 3-32 characters (letters, digits,
+        dot, dash, underscore) and unique across admins and resellers; the
+        password needs at least 10 characters. poolBytes 0 = no pool limit,
+        maxClients 0 = unlimited, expiryTime 0 = never. inboundIds may only name
+        VLESS, VMess, Trojan, Shadowsocks or Hysteria inbounds.
+      url: '#create-a-reseller-the-username-must-be-3-32-characters-letters-digits-dot-dash-underscore-and-unique-across-admins-and-resellers-the-password-needs-at-least-10-characters-poolbytes-0--no-pool-limit-maxclients-0--unlimited-expirytime-0--never-inboundids-may-only-name-vless-vmess-trojan-shadowsocks-or-hysteria-inbounds'
+    - depth: 2
+      title: Return one reseller.
+      url: '#return-one-reseller'
+    - depth: 2
+      title: 'Edit a reseller: a full-row update of name, limits, expiry,
+        requireClientQuota and inboundIds. An omitted enable keeps its value.
+        username and password in the body are ignored. Removing an inbound from
+        inboundIds does not detach existing clients.'
+      url: '#edit-a-reseller-a-full-row-update-of-name-limits-expiry-requireclientquota-and-inboundids-an-omitted-enable-keeps-its-value-username-and-password-in-the-body-are-ignored-removing-an-inbound-from-inboundids-does-not-detach-existing-clients'
+    - depth: 2
+      title: Set a reseller's password (at least 10 characters, different from the
+        username). Ends the reseller's open sessions.
+      url: '#set-a-resellers-password-at-least-10-characters-different-from-the-username-ends-the-resellers-open-sessions'
+    - depth: 2
+      title: Delete a reseller. clients = "transfer" (default) hands its clients to
+        the admin unchanged; "delete" removes them through the normal client
+        delete path first.
+      url: '#delete-a-reseller-clients--transfer-default-hands-its-clients-to-the-admin-unchanged-delete-removes-them-through-the-normal-client-delete-path-first'
+  structuredData:
+    headings:
+      - content: List every reseller with its pool, used traffic, remaining bytes (-1
+          without a pool limit), client count and allowed inbound ids.
+        id: list-every-reseller-with-its-pool-used-traffic-remaining-bytes--1-without-a-pool-limit-client-count-and-allowed-inbound-ids
+      - content: Create a reseller. The username must be 3-32 characters (letters,
+          digits, dot, dash, underscore) and unique across admins and resellers;
+          the password needs at least 10 characters. poolBytes 0 = no pool
+          limit, maxClients 0 = unlimited, expiryTime 0 = never. inboundIds may
+          only name VLESS, VMess, Trojan, Shadowsocks or Hysteria inbounds.
+        id: create-a-reseller-the-username-must-be-3-32-characters-letters-digits-dot-dash-underscore-and-unique-across-admins-and-resellers-the-password-needs-at-least-10-characters-poolbytes-0--no-pool-limit-maxclients-0--unlimited-expirytime-0--never-inboundids-may-only-name-vless-vmess-trojan-shadowsocks-or-hysteria-inbounds
+      - content: Return one reseller.
+        id: return-one-reseller
+      - content: 'Edit a reseller: a full-row update of name, limits, expiry,
+          requireClientQuota and inboundIds. An omitted enable keeps its value.
+          username and password in the body are ignored. Removing an inbound
+          from inboundIds does not detach existing clients.'
+        id: edit-a-reseller-a-full-row-update-of-name-limits-expiry-requireclientquota-and-inboundids-an-omitted-enable-keeps-its-value-username-and-password-in-the-body-are-ignored-removing-an-inbound-from-inboundids-does-not-detach-existing-clients
+      - content: Set a reseller's password (at least 10 characters, different from the
+          username). Ends the reseller's open sessions.
+        id: set-a-resellers-password-at-least-10-characters-different-from-the-username-ends-the-resellers-open-sessions
+      - content: Delete a reseller. clients = "transfer" (default) hands its clients to
+          the admin unchanged; "delete" removes them through the normal client
+          delete path first.
+        id: delete-a-reseller-clients--transfer-default-hands-its-clients-to-the-admin-unchanged-delete-removes-them-through-the-normal-client-delete-path-first
+    contents: []
+---
+
+{/* This file was generated by Fumadocs. Do not edit this file directly. Any changes should be made by running the generation command again. */}
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"}]} showTitle />
+    </>
+  );
+}

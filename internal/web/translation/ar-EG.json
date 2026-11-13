@@ -2520,6 +2520,15 @@
       "visit": "زيارة",
       "yourBrand": "علامتك التجارية هنا",
       "yourBrandText": "ضع شركتك أمام آلاف مسؤولي الخوادم الذين يفتحون 3X-UI كل يوم."
+    },
+    "resellers": {
+      "toasts": {
+        "obtain": "Load resellers",
+        "create": "Reseller created",
+        "update": "Reseller updated",
+        "password": "Reseller password changed",
+        "delete": "Reseller deleted"
+      }
     }
   },
   "tgbot": {

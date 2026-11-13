@@ -2520,6 +2520,15 @@
       "visit": "Truy cập",
       "yourBrand": "Thương hiệu của bạn ở đây",
       "yourBrandText": "Đưa công ty bạn đến hàng nghìn quản trị viên máy chủ mở 3X-UI mỗi ngày."
+    },
+    "resellers": {
+      "toasts": {
+        "obtain": "Load resellers",
+        "create": "Reseller created",
+        "update": "Reseller updated",
+        "password": "Reseller password changed",
+        "delete": "Reseller deleted"
+      }
     }
   },
   "tgbot": {

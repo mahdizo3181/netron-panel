@@ -2520,6 +2520,15 @@
       "visit": "Kunjungi",
       "yourBrand": "Merek Anda di sini",
       "yourBrandText": "Tampilkan perusahaan Anda kepada ribuan admin server yang membuka 3X-UI setiap hari."
+    },
+    "resellers": {
+      "toasts": {
+        "obtain": "Load resellers",
+        "create": "Reseller created",
+        "update": "Reseller updated",
+        "password": "Reseller password changed",
+        "delete": "Reseller deleted"
+      }
     }
   },
   "tgbot": {

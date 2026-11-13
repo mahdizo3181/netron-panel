@@ -2520,6 +2520,15 @@
       "visit": "访问",
       "yourBrand": "您的品牌展示位",
       "yourBrandText": "让每天打开 3X-UI 的数千名服务器管理员看到您的公司。"
+    },
+    "resellers": {
+      "toasts": {
+        "obtain": "Load resellers",
+        "create": "Reseller created",
+        "update": "Reseller updated",
+        "password": "Reseller password changed",
+        "delete": "Reseller deleted"
+      }
     }
   },
   "tgbot": {

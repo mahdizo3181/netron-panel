@@ -1079,6 +1079,25 @@ export const RealityScanResultSchema = z.object({
 });
 export type RealityScanResult = z.infer<typeof RealityScanResultSchema>;
 
+export const ResellerViewSchema = z.object({
+  clientCount: z.number().int(),
+  createdAt: z.number().int(),
+  cutoffReason: z.string(),
+  enable: z.boolean(),
+  expiryTime: z.number().int(),
+  id: z.number().int(),
+  inboundIds: z.array(z.number().int()),
+  maxClients: z.number().int(),
+  name: z.string(),
+  poolBytes: z.number().int(),
+  remainingBytes: z.number().int(),
+  requireClientQuota: z.boolean(),
+  updatedAt: z.number().int(),
+  usedTraffic: z.number().int(),
+  username: z.string(),
+});
+export type ResellerView = z.infer<typeof ResellerViewSchema>;
+
 export const ServerSettingsSchema = z.object({
   contentPaddingAddition: z.string().optional(),
   disableCookies: z.boolean(),

@@ -2723,6 +2723,63 @@ export const sections: readonly Section[] = [
   },
 
   {
+    id: 'resellers',
+    title: 'Resellers',
+    description:
+      'Admin management of reseller accounts: a second kind of panel login that will manage only its own clients inside a volume pool and client limit. Admin only. See docs/RESELLERS.md.',
+    endpoints: [
+      {
+        method: 'GET',
+        path: '/panel/api/resellers',
+        summary:
+          'List every reseller with its pool, used traffic, remaining bytes (-1 without a pool limit), client count and allowed inbound ids.',
+        responseSchema: 'ResellerView',
+        responseSchemaArray: true,
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/resellers/:id',
+        summary: 'Return one reseller.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+        responseSchema: 'ResellerView',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers',
+        summary:
+          'Create a reseller. The username must be 3-32 characters (letters, digits, dot, dash, underscore) and unique across admins and resellers; the password needs at least 10 characters. poolBytes 0 = no pool limit, maxClients 0 = unlimited, expiryTime 0 = never. inboundIds may only name VLESS, VMess, Trojan, Shadowsocks or Hysteria inbounds.',
+        body: '{\n  "username": "shop-a",\n  "password": "a-long-password",\n  "name": "Shop A",\n  "enable": true,\n  "poolBytes": 1073741824000,\n  "maxClients": 100,\n  "expiryTime": 0,\n  "requireClientQuota": false,\n  "inboundIds": [3, 5]\n}',
+        responseSchema: 'ResellerView',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id',
+        summary:
+          'Edit a reseller: a full-row update of name, limits, expiry, requireClientQuota and inboundIds. An omitted enable keeps its value. username and password in the body are ignored. Removing an inbound from inboundIds does not detach existing clients.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+        body: '{\n  "username": "shop-a",\n  "password": "a-long-password",\n  "name": "Shop A",\n  "enable": true,\n  "poolBytes": 1073741824000,\n  "maxClients": 100,\n  "expiryTime": 0,\n  "requireClientQuota": false,\n  "inboundIds": [3, 5]\n}',
+        responseSchema: 'ResellerView',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/password',
+        summary:
+          "Set a reseller's password (at least 10 characters, different from the username). Ends the reseller's open sessions.",
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+        body: '{\n  "password": "a-new-long-password"\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/del',
+        summary:
+          'Delete a reseller. clients = "transfer" (default) hands its clients to the admin unchanged; "delete" removes them through the normal client delete path first.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+        body: '{\n  "clients": "transfer"\n}',
+      },
+    ],
+  },
+
+  {
     id: 'subscription',
     title: 'Subscription Server',
     description:

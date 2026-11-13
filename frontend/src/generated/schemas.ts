@@ -4497,6 +4497,101 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ResellerView": {
+    "description": "ResellerView is a reseller as the admin sees it; RemainingBytes is -1 without a pool limit.",
+    "properties": {
+      "clientCount": {
+        "example": 42,
+        "format": "int64",
+        "type": "integer"
+      },
+      "createdAt": {
+        "example": 1735000000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "cutoffReason": {
+        "type": "string"
+      },
+      "enable": {
+        "example": true,
+        "type": "boolean"
+      },
+      "expiryTime": {
+        "example": 0,
+        "format": "int64",
+        "type": "integer"
+      },
+      "id": {
+        "example": 3,
+        "type": "integer"
+      },
+      "inboundIds": {
+        "example": [
+          3,
+          5
+        ],
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "maxClients": {
+        "example": 100,
+        "type": "integer"
+      },
+      "name": {
+        "example": "Shop A",
+        "type": "string"
+      },
+      "poolBytes": {
+        "example": 1073741824000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "remainingBytes": {
+        "example": 1020054732800,
+        "format": "int64",
+        "type": "integer"
+      },
+      "requireClientQuota": {
+        "example": false,
+        "type": "boolean"
+      },
+      "updatedAt": {
+        "example": 1735100000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "usedTraffic": {
+        "example": 53687091200,
+        "format": "int64",
+        "type": "integer"
+      },
+      "username": {
+        "example": "shop-a",
+        "type": "string"
+      }
+    },
+    "required": [
+      "clientCount",
+      "createdAt",
+      "cutoffReason",
+      "enable",
+      "expiryTime",
+      "id",
+      "inboundIds",
+      "maxClients",
+      "name",
+      "poolBytes",
+      "remainingBytes",
+      "requireClientQuota",
+      "updatedAt",
+      "usedTraffic",
+      "username"
+    ],
+    "type": "object"
+  },
   "ServerSettings": {
     "description": "ServerSettings is the \"server\" block of an AmneziaWG inbound's Settings\nJSON: the interface-level configuration shared by every client/peer. The\nlisten port is deliberately not duplicated here — it lives on the inbound\nrow itself (Inbound.Port), like every other protocol.",
     "properties": {
