@@ -161,6 +161,25 @@ See `docs/RESELLERS.md`. New files (no rebase conflict): `internal/database/mode
 | `docs/content/docs/en/reference/api/meta.json` | `"resellers"` after `"nodes"` | API reference navigation |
 | `frontend/src/generated/*`, `frontend/public/openapi.json`, `docs/public/openapi.json` | regenerated | `ResellerView` and the new paths |
 
+## Upstream files modified: resellers (stage B)
+
+New files (no rebase conflict): `internal/web/controller/route_policy.go`,
+`internal/web/controller/reseller_self.go`, `internal/web/session/reseller.go`,
+`internal/web/service/scope.go`, `internal/web/service/reseller_auth.go` (+ tests),
+`internal/web/reseller_session_test.go`, `internal/web/route_policy_contract_test.go`,
+`internal/sub/route_policy_contract_test.go`, `frontend/src/test/login-reseller-2fa.test.tsx`.
+
+| File | Hook | Why |
+| ---- | ---- | --- |
+| `internal/web/controller/api.go` | `checkAPIAuth`: before the 401/404 branch, `if r := session.GetLoginReseller(c); r != nil { c.Set(resellerActorKey, r.Id); c.Next(); return }`; `api.Use(enforceActorPolicy)` after `enforceTokenScope`; `NewResellerSelfController(api)` | reseller sessions reach the API only through the policy table |
+| `internal/web/controller/base.go` | `checkLogin`: `!session.IsLogin(c) && session.GetLoginReseller(c) == nil` | the SPA shell is served to resellers |
+| `internal/web/controller/index.go` | `login`: reseller check after a failed `CheckUser`, 2FA prompt, `SetLoginReseller` on success; `resellerService` field | reseller login on the shared form |
+| `internal/web/session/session.go` | `SetLoginUser`: `dropResellerLogin(s)` first | an admin login replaces a reseller login in the same cookie |
+| `frontend/src/pages/login/LoginPage.tsx` | `onSubmit`: show the code field when `obj.twoFactorRequired` | reseller 2FA prompt |
+| `tools/openapigen/main.go` | `"ResellerMe"`, `"ResellerSelfView"` in the service `StructAllow` | schemas for `/reseller/me` |
+| `frontend/src/pages/api-docs/endpoints.ts` | 4 entries in the `resellers` section | route registry |
+| `internal/web/translation/*.json` (14) | `pages.login.toasts.twoFactorRequired`, `pages.resellers.toasts.forbidden`, `pages.resellers.toasts.totp` | new messages |
+
 ## Deliberately not hooked
 
 - Inbound deletion keeps that inbound's `client_inbound_traffics` rows: the bytes

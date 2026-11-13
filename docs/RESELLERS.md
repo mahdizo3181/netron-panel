@@ -1,6 +1,6 @@
 # Resellers ("نمایندگی"): design
 
-Status: **approved; stage A implemented** (see §11). File and function
+Status: **approved; stages A and B implemented** (see §11). File and function
 names below are the ones in this repository at `main` = `c97d9f41` (v3.11.0-netron.7); verify
 them again before each stage, because upstream rebases move code.
 
@@ -853,10 +853,11 @@ The open questions of the first draft, as answered by the owner:
 
 ## 11. Implementation status
 
-| Stage                            | State       | Notes                                                                                                                                                              |
-| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A — model, migration, admin CRUD | implemented | Tables, the two `clients` columns, `ResellerService`, `GET/POST /panel/api/resellers*`. The reseller cannot log in yet and no client can be owned through the API. |
-| B–E                              | not started |                                                                                                                                                                    |
+| Stage                                          | State       | Notes                                                                                                                                                              |
+| ---------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A — model, migration, admin CRUD               | implemented | Tables, the two `clients` columns, `ResellerService`, `GET/POST /panel/api/resellers*`. The reseller cannot log in yet and no client can be owned through the API. |
+| B — actor, route policy, scope, reseller login | implemented | Resellers log in and reach only `/reseller/me` and their own 2FA routes; every other route is refused.                                                             |
+| C–E                                            | not started |                                                                                                                                                                    |
 
 Stage A details that refine the text above:
 
@@ -868,3 +869,37 @@ Stage A details that refine the text above:
   delete paths call (`delInbound`, the depleted-client purge, the node sync sweep).
 - Editing limits or `enable` only stores the values; cut-off and release arrive with stage E.
 - `reseller_audit_logs` and `clients.pool_disabled` exist but nothing writes them before stage E.
+
+Stage B details that refine the text above:
+
+- The policy table is `controller.RoutePolicies` (`internal/web/controller/route_policy.go`). It
+  lists every route on the panel engine, including the non-API ones, with one of three classes:
+  `PolicyPublic`, `PolicyReseller`, `PolicyAdminOnly`. `TestRoutePolicyContract`
+  (`internal/web/route_policy_contract_test.go`) fails on an unclassified route and on an entry
+  for a removed route. The subscription server is classified separately in
+  `internal/sub/route_policy_contract_test.go` (all public, keyed by subId).
+- The gate is one middleware, `enforceActorPolicy`, on the `/panel/api` group after
+  `enforceTokenScope`. A reseller gets 403 on any API route not classified `PolicyReseller`.
+  Non-API routes keep their own checks, which only know the admin session, so a reseller gets
+  exactly the stranger's answer there. The one exception is the SPA shell (`checkLogin`), which
+  serves resellers the page markup; all data behind it is still refused.
+- Reseller-reachable API routes in this stage: `GET /reseller/me`, `POST /reseller/me/totp`,
+  `POST /reseller/me/totp/disable`. `/reseller/me` answers `{"role":"admin"}` for an admin.
+  The admin also gets `POST /resellers/:id/resetTotp`.
+- **WebSocket:** refused to resellers in stage B (`HandleWebSocket` checks the admin session). The
+  audience filter of §3.5 item 6 moves to stage D, when the reseller UI needs invalidations.
+- **Self password change** (`/reseller/me/password`, §2.3) moves to stage D with the UI. Until then
+  the admin sets reseller passwords.
+- `Scope` (`internal/web/service/scope.go`) has `ClientFilter`, `RequireOwnEmails` (case
+  insensitive), `RequireOwnClientIDs`, `RequireOwnSubID` and `RequireAllowedInbounds`. Foreign and
+  missing objects both give `ErrScopeNotFound`. `StripForReseller` moves to stage C, which
+  introduces the fields it strips. No client or inbound operation uses `Scope` yet.
+- Sessions: `session.SetLoginReseller` / `GetLoginReseller` use their own keys
+  (`LOGIN_RESELLER`, `RESELLER_EPOCH`). Setting either identity drops the other. The reseller row
+  is reloaded on every request, so a disable, expiry, delete or password change ends the session
+  on its next request.
+- Login: the admin check runs first and is unchanged. A refused login reads the same for an
+  admin, a reseller, an unknown name, and a disabled or expired reseller with the right password.
+  The limiter is the existing per-IP-and-username one. A reseller with 2FA on whose password
+  matched but who sent no code gets `{"success":false,"obj":{"twoFactorRequired":true}}`, and the
+  login page then shows the code field; a wrong code reads like a wrong password.
