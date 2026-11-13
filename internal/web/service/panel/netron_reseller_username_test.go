@@ -8,6 +8,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/dbtest"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/testpg"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
 )
 
@@ -24,6 +25,11 @@ func TestAdminCannotTakeAResellersUsername(t *testing.T) {
 	}
 	for name, do := range rename {
 		t.Run(name, func(t *testing.T) {
+			cleanup, err := testpg.IsolatePackage("reseller_panel")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(cleanup)
 			dbtest.InitDB(t, filepath.Join(t.TempDir(), "x-ui.db"))
 			if _, err := (&service.ResellerService{}).Create(service.ResellerPayload{Username: "shop-a", Password: "correct-horse-battery"}); err != nil {
 				t.Fatal(err)

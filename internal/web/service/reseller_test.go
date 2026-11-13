@@ -8,10 +8,22 @@ import (
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/testpg"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/crypto"
 )
 
 const resellerTestPassword = "correct-horse-battery"
+
+// setupResellerDB is setupBulkDB with a fresh schema per test on PostgreSQL.
+func setupResellerDB(t *testing.T) {
+	t.Helper()
+	cleanup, err := testpg.IsolatePackage("reseller")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cleanup)
+	setupBulkDB(t)
+}
 
 func resellerPayload(username string, inboundIds ...int) ResellerPayload {
 	return ResellerPayload{Username: username, Password: resellerTestPassword, Name: "Shop " + username, InboundIds: inboundIds}
@@ -35,7 +47,7 @@ func ownClients(t *testing.T, resellerID int, emails []string) {
 }
 
 func TestResellerCreateStoresLimitsAndAllowedInbounds(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	ib := mkInbound(t, 24001, model.VLESS, `{"clients":[]}`)
 	p := resellerPayload("shop-a", ib.Id)
 	p.PoolBytes, p.MaxClients, p.ExpiryTime, p.RequireClientQuota = 1000<<30, 50, 1893456000000, true
@@ -55,7 +67,7 @@ func TestResellerCreateStoresLimitsAndAllowedInbounds(t *testing.T) {
 
 // The login form is shared, so one name must never match an admin and a reseller.
 func TestResellerUsernameIsUniqueAcrossAdminsAndResellers(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	var admin model.User
 	if err := database.GetDB().First(&admin).Error; err != nil {
 		t.Fatalf("seeded admin: %v", err)
@@ -78,7 +90,7 @@ func TestResellerUsernameIsUniqueAcrossAdminsAndResellers(t *testing.T) {
 }
 
 func TestResellerCreateRejectsBadInput(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	wg := mkInbound(t, 24002, model.WireGuard, `{}`)
 	cases := []struct {
 		name   string
@@ -111,7 +123,7 @@ func TestResellerCreateRejectsBadInput(t *testing.T) {
 }
 
 func TestResellerPasswordIsBcryptAndNeverSerialized(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	view := mustCreateReseller(t, resellerPayload("shop-a"))
 
 	var row model.Reseller
@@ -136,7 +148,7 @@ func TestResellerPasswordIsBcryptAndNeverSerialized(t *testing.T) {
 }
 
 func TestResellerSetPasswordReplacesHashAndEndsSessions(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	view := mustCreateReseller(t, resellerPayload("shop-a"))
 	svc := &ResellerService{}
 	if err := svc.SetPassword(view.Id, "short"); !errors.Is(err, ErrResellerPassword) {
@@ -159,7 +171,7 @@ func TestResellerSetPasswordReplacesHashAndEndsSessions(t *testing.T) {
 // Update is a full-row edit of the admin-set fields; it must not touch the
 // login name, the credentials or the usage counter.
 func TestResellerUpdateEditsLimitsOnly(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	a := mkInbound(t, 24003, model.VLESS, `{"clients":[]}`)
 	b := mkInbound(t, 24004, model.Trojan, `{"clients":[]}`)
 	view := mustCreateReseller(t, resellerPayload("shop-a", a.Id))
@@ -191,7 +203,7 @@ func TestResellerUpdateEditsLimitsOnly(t *testing.T) {
 }
 
 func TestResellerListCountsOwnClientsAndRemaining(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	a := mustCreateReseller(t, resellerPayload("shop-a"))
 	p := resellerPayload("shop-b")
 	p.PoolBytes = 500
@@ -216,7 +228,7 @@ func TestResellerListCountsOwnClientsAndRemaining(t *testing.T) {
 }
 
 func TestResellerDeleteTransferKeepsClientsWithAdmin(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	svc := &ResellerService{}
 	emails := seedEnabledClientsForReset(t, &ClientService{}, 24006, 3, "tr")
 	var ib model.Inbound
@@ -247,7 +259,7 @@ func TestResellerDeleteTransferKeepsClientsWithAdmin(t *testing.T) {
 }
 
 func TestResellerDeleteWithClientsRemovesOnlyItsClients(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	emails := seedEnabledClientsForReset(t, &ClientService{}, 24007, 3, "rm")
 	view := mustCreateReseller(t, resellerPayload("shop-a"))
 	ownClients(t, view.Id, emails[:2])
@@ -269,7 +281,7 @@ func TestResellerDeleteWithClientsRemovesOnlyItsClients(t *testing.T) {
 }
 
 func TestDeletingAnInboundDropsItFromAllowedLists(t *testing.T) {
-	setupBulkDB(t)
+	setupResellerDB(t)
 	a := mkInbound(t, 24008, model.VLESS, `{"clients":[]}`)
 	b := mkInbound(t, 24009, model.VLESS, `{"clients":[]}`)
 	view := mustCreateReseller(t, resellerPayload("shop-a", a.Id, b.Id))

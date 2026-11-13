@@ -13,11 +13,17 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/dbtest"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
+	"github.com/mhsanaei/3x-ui/v3/internal/testpg"
 )
 
 func setupResellerRouter(t *testing.T) *gin.Engine {
 	t.Helper()
 	t.Setenv("XUI_DB_FOLDER", t.TempDir())
+	cleanup, err := testpg.IsolatePackage("reseller_api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(cleanup)
 	dbtest.InitDB(t, filepath.Join(t.TempDir(), "x-ui.db"))
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
