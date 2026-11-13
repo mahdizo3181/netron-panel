@@ -401,6 +401,9 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB, mutationBatch *trafficMut
 			Joins("JOIN clients c ON c.id = ci.client_id").
 			Joins("JOIN inbounds i ON i.id = ci.inbound_id").
 			Where("i.node_id IS NULL")).
+		// A renewal re-enables; never for a client its blocked reseller may not run (docs §4.2).
+		Where("email NOT IN (?)", tx.Model(&model.ClientRecord{}).Select("email").
+			Where("pool_disabled = ? OR reseller_id IN (?)", true, blockedResellerIDs(tx, now))).
 		Find(&traffics).Error
 	if err != nil {
 		return false, 0, err

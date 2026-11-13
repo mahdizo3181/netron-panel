@@ -36,6 +36,8 @@ type ClientSlim struct {
 	Traffic      *xray.ClientTraffic `json:"traffic,omitempty"`
 	CreatedAt    int64               `json:"createdAt" example:"1735000000000"`
 	UpdatedAt    int64               `json:"updatedAt" example:"1735100000000"`
+	// Owner is null for the admin's own clients; StripForReseller removes it for resellers.
+	Owner *ClientOwner `json:"owner"`
 }
 
 // ClientPageParams are the query params accepted by /panel/api/clients/list/paged.
@@ -63,6 +65,8 @@ type ClientPageParams struct {
 	HasTgID    string `form:"hasTgId"`
 	HasComment string `form:"hasComment"`
 	Group      string `form:"group"`
+	// Owner is "admin" (unowned), a reseller id, or empty for everyone; admin only.
+	Owner string `form:"owner"`
 }
 
 // ClientPageResponse is the shape returned by ListPaged. `Total` is the
@@ -164,6 +168,7 @@ func clientSearchCond(variants []string) (string, []any) {
 // 5 seconds, which is what made the table feel stuck on large panels.
 type clientQuery struct {
 	db               *gorm.DB
+	scope            Scope
 	joins            []clientQueryJoin
 	usedExpr         string
 	nowMs            int64
@@ -210,6 +215,9 @@ func (q clientQuery) from() *gorm.DB {
 	for _, j := range q.joins {
 		tx = tx.Joins(j.sql, j.args...)
 	}
+	if !q.scope.IsAdmin() {
+		tx = tx.Where("c.reseller_id = ?", *q.scope.ResellerID)
+	}
 	return tx
 }
 
@@ -243,6 +251,15 @@ func (q clientQuery) deactiveExpr() string {
 // request can reuse the total count instead of scanning for it again.
 func (q clientQuery) applyParams(tx *gorm.DB, params ClientPageParams, onlines []string) (*gorm.DB, bool) {
 	narrowed := false
+	if owner := strings.TrimSpace(params.Owner); owner != "" && q.scope.IsAdmin() {
+		narrowed = true
+		if owner == "admin" {
+			tx = tx.Where("c.reseller_id IS NULL")
+		} else {
+			id, _ := strconv.Atoi(owner)
+			tx = tx.Where("c.reseller_id = ?", id)
+		}
+	}
 	where := func(cond string, args ...any) {
 		narrowed = true
 		tx = tx.Where(cond, args...)
@@ -371,6 +388,11 @@ func (q clientQuery) applyOrder(tx *gorm.DB, sortKey, order string) *gorm.DB {
 // page header needs. Every predicate runs in SQL, so the cost tracks the page
 // size rather than the number of clients on the panel.
 func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *SettingService, params ClientPageParams) (*ClientPageResponse, error) {
+	return s.ListPagedFor(AdminScope(), inboundSvc, settingSvc, params)
+}
+
+// ListPagedFor limits the page, its totals, summary and group names to the scope.
+func (s *ClientService) ListPagedFor(scope Scope, inboundSvc *InboundService, settingSvc *SettingService, params ClientPageParams) (*ClientPageResponse, error) {
 	db := database.GetDB()
 
 	pageSize := params.PageSize
@@ -397,9 +419,10 @@ func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *Settin
 
 	onlines := inboundSvc.GetOnlineClients()
 	q := newClientQuery(db, time.Now().UnixMilli(), expireDiffMs, trafficDiffBytes)
+	q.scope = scope
 
 	var total int64
-	if err := db.Model(&model.ClientRecord{}).Count(&total).Error; err != nil {
+	if err := db.Model(&model.ClientRecord{}).Scopes(scope.ClientFilter).Count(&total).Error; err != nil {
 		return nil, err
 	}
 
@@ -424,9 +447,12 @@ func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *Settin
 		}
 	}
 
-	groups, err := s.listGroupNames()
-	if err != nil {
-		return nil, err
+	// Group names are global rows; resellers have no groups (docs §10 Q4).
+	groups := []string{}
+	if scope.IsAdmin() {
+		if groups, err = s.listGroupNames(); err != nil {
+			return nil, err
+		}
 	}
 
 	return &ClientPageResponse{
@@ -490,17 +516,32 @@ func (q clientQuery) pageRows(params ClientPageParams, onlines []string, offset,
 		}
 	}
 
+	var ownerIds []int
+	for _, rec := range records {
+		if rec.ResellerID != nil {
+			ownerIds = append(ownerIds, *rec.ResellerID)
+		}
+	}
+	owners, err := ClientOwners(ownerIds)
+	if err != nil {
+		return nil, err
+	}
+
 	items := make([]ClientSlim, 0, len(ids))
 	for _, id := range ids {
 		rec := byId[id]
 		if rec == nil {
 			continue
 		}
-		items = append(items, toClientSlim(ClientWithAttachments{
+		item := toClientSlim(ClientWithAttachments{
 			ClientRecord: *rec,
 			InboundIds:   attachments[rec.Id],
 			Traffic:      trafficByEmail[rec.Email],
-		}))
+		})
+		if rec.ResellerID != nil {
+			item.Owner = owners[*rec.ResellerID]
+		}
+		items = append(items, item)
 	}
 	return items, nil
 }
@@ -578,7 +619,7 @@ func (q clientQuery) onlineEmails(onlines []string) ([]string, int, error) {
 	count := 0
 	for _, batch := range chunkStrings(onlines, sqlInChunk) {
 		var page []string
-		if err := q.db.Model(&model.ClientRecord{}).
+		if err := q.db.Model(&model.ClientRecord{}).Scopes(q.scope.ClientFilter).
 			Where("COALESCE(enable, FALSE) = TRUE AND email IN ?", batch).
 			Order("id ASC").
 			Pluck("email", &page).Error; err != nil {
