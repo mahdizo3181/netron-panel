@@ -33,13 +33,13 @@ type Guard struct {
 
 var active *Guard
 
-// Main installs the guard, runs the tests and fails the binary on any blocked side
-// effect, including ones from goroutines that outlive their test. Use it from TestMain.
-func Main(m *testing.M, setup func(*Guard)) {
+// Run installs the guard, runs the tests and returns a failing code on any blocked
+// side effect, including ones from goroutines that outlive their test. Call from TestMain.
+func Run(m *testing.M, setup func(*Guard)) int {
 	g, err := install()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "testsafety:", err)
-		os.Exit(2)
+		return 2
 	}
 	active = g
 	if setup != nil {
@@ -55,7 +55,7 @@ func Main(m *testing.M, setup func(*Guard)) {
 	}
 	_ = g.ln.Close()
 	_ = os.RemoveAll(g.dir)
-	os.Exit(code)
+	return code
 }
 
 func install() (*Guard, error) {
@@ -70,8 +70,11 @@ func install() (*Guard, error) {
 			return nil, err
 		}
 	}
+	// Read-only probes get "not available" unrecorded; anything else is recorded.
 	// The stub's own interpreter is an absolute path, so shadowing sh does not loop.
-	stub := "#!/bin/sh\nprintf 'exec: %s %s\\n' \"$(basename \"$0\")\" \"$*\" >> '" + g.execLog + "'\nexit 97\n"
+	stub := "#!/bin/sh\ncase \"$(basename \"$0\") $*\" in\n" +
+		"  'modprobe --dry-run '*|'fail2ban-client -h'|*' --version') exit 97 ;;\n" +
+		"esac\nprintf 'exec: %s %s\\n' \"$(basename \"$0\")\" \"$*\" >> '" + g.execLog + "'\nexit 97\n"
 	for _, name := range shadowed {
 		if err := os.WriteFile(filepath.Join(pathDir, name), []byte(stub), 0o755); err != nil {
 			return nil, err
@@ -146,7 +149,7 @@ func (g *Guard) collectExecLocked() {
 	g.execSeen = len(lines)
 }
 
-// Watch fails t for every side effect blocked while it ran; a no-op without Main.
+// Watch fails t for every side effect blocked while it ran; a no-op without Run.
 func Watch(t testing.TB) {
 	t.Helper()
 	g := active

@@ -13,7 +13,9 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	xuilogger "github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/testpg"
+	"github.com/mhsanaei/3x-ui/v3/internal/testsafety"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/json_util"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/global"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
 
 	"github.com/op/go-logging"
@@ -35,7 +37,10 @@ func TestMain(m *testing.M) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	code := m.Run()
+	// The reseller tests drive real client services; any host side effect fails the binary.
+	code := testsafety.Run(m, func(g *testsafety.Guard) {
+		global.SetRestartHook(func() { g.Record("panel restart requested (would send SIGHUP)") })
+	})
 	cleanup()
 	os.Exit(code)
 }
