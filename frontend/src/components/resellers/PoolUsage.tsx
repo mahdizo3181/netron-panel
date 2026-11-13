@@ -48,7 +48,7 @@ export default function PoolUsage({ poolBytes, usedTraffic, state, compact }: Po
         format={() => (limited ? `${percent}%` : t('unlimited'))}
         aria-label={t('pages.resellers.poolUsed')}
       />
-      <Descriptions size="small" column={compact ? 1 : 3}>
+      <Descriptions size="small" column={compact ? 1 : { xs: 1, sm: 3 }}>
         <Descriptions.Item label={t('pages.resellers.poolTotal')}>
           {limited ? SizeFormatter.sizeFormat(poolBytes) : t('unlimited')}
         </Descriptions.Item>

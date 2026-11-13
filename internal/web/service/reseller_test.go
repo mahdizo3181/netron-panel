@@ -297,3 +297,20 @@ func TestDeletingAnInboundDropsItFromAllowedLists(t *testing.T) {
 		t.Fatalf("allowed inbounds after deleting %d = %v, want [%d]", a.Id, got.InboundIds, b.Id)
 	}
 }
+
+// GORM writes the column default back into the struct after insert, so a stored
+// false must be read from the payload, not from the inserted row.
+func TestResellerCreatedDisabledStaysDisabled(t *testing.T) {
+	setupResellerDB(t)
+	off := false
+	p := resellerPayload("shop-off")
+	p.Enable = &off
+	created := mustCreateReseller(t, p)
+	got, err := (&ResellerService{}).Get(created.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Enable || created.Enable {
+		t.Fatalf("created with enable=false, stored enable=%v view enable=%v", got.Enable, created.Enable)
+	}
+}

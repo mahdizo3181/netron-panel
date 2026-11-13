@@ -225,16 +225,17 @@ func (s *ResellerService) Create(p ResellerPayload) (*ResellerView, error) {
 				return ErrResellerUsernameTaken
 			}
 		}
+		enable := p.Enable == nil || *p.Enable
 		row := model.Reseller{
 			Username: p.Username, Password: hash, Name: strings.TrimSpace(p.Name),
-			Enable: p.Enable == nil || *p.Enable, PoolBytes: p.PoolBytes, MaxClients: p.MaxClients,
+			Enable: enable, PoolBytes: p.PoolBytes, MaxClients: p.MaxClients,
 			ExpiryTime: p.ExpiryTime, RequireClientQuota: p.RequireClientQuota,
 		}
 		if err := tx.Create(&row).Error; err != nil {
 			return err
 		}
-		// gorm writes the column default (true) for a zero bool on insert.
-		if !row.Enable {
+		// gorm inserts the column default (true) for a zero bool and copies it back into row.
+		if !enable {
 			if err := tx.Model(&row).Update("enable", false).Error; err != nil {
 				return err
 			}
