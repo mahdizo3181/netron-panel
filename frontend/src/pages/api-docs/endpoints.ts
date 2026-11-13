@@ -1983,7 +1983,7 @@ export const sections: readonly Section[] = [
         method: 'POST',
         path: '/panel/api/setting/defaultSettings',
         summary:
-          'Return the computed default settings based on the request host. Useful to preview what a fresh install would use.',
+          'Return the computed default settings based on the request host. Useful to preview what a fresh install would use. A reseller session gets only the subscription and display keys (subEnable, subURI, subJsonEnable, subJsonURI, subClashEnable, subClashURI, subTitle, datepicker, pageSize, expireDiff, trafficDiff).',
       },
       {
         method: 'POST',
@@ -2805,6 +2805,21 @@ export const sections: readonly Section[] = [
         summary:
           'Who am I. An admin gets {"role": "admin"}; a reseller session gets role "reseller" with its own pool, used traffic, remaining bytes, client count and limit, expiry, state (ok, pool, expired, disabled) and whether its 2FA is on. The only data route a reseller may call in this release.',
         responseSchema: 'ResellerMe',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/reseller/me/password',
+        summary:
+          "Change the calling reseller's own password. currentPassword must match; newPassword needs at least 10 characters and must differ from the username. Ends the reseller's other sessions and keeps this one. Reseller sessions only.",
+        params: [
+          {
+            name: 'currentPassword',
+            in: 'body (form)',
+            type: 'string',
+            desc: 'The current password.',
+          },
+          { name: 'newPassword', in: 'body (form)', type: 'string', desc: 'The new password.' },
+        ],
       },
       {
         method: 'POST',

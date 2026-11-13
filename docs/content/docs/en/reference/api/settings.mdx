@@ -13,8 +13,11 @@ _openapi:
       url: '#return-every-panel-setting-web-server-telegram-bot-subscription-security-ldap-the-full-json-blob-that-the-settings-page-edits'
     - depth: 2
       title: Return the computed default settings based on the request host. Useful to
-        preview what a fresh install would use.
-      url: '#return-the-computed-default-settings-based-on-the-request-host-useful-to-preview-what-a-fresh-install-would-use'
+        preview what a fresh install would use. A reseller session gets only the
+        subscription and display keys (subEnable, subURI, subJsonEnable,
+        subJsonURI, subClashEnable, subClashURI, subTitle, datepicker, pageSize,
+        expireDiff, trafficDiff).
+      url: '#return-the-computed-default-settings-based-on-the-request-host-useful-to-preview-what-a-fresh-install-would-use-a-reseller-session-gets-only-the-subscription-and-display-keys-subenable-suburi-subjsonenable-subjsonuri-subclashenable-subclashuri-subtitle-datepicker-pagesize-expirediff-trafficdiff'
     - depth: 2
       title: Return the shipped (factory) default value per browser-safe setting key,
         so clients can tell a stored value apart from the default it would fall
@@ -71,8 +74,11 @@ _openapi:
           security, LDAP. The full JSON blob that the Settings page edits.'
         id: return-every-panel-setting-web-server-telegram-bot-subscription-security-ldap-the-full-json-blob-that-the-settings-page-edits
       - content: Return the computed default settings based on the request host. Useful
-          to preview what a fresh install would use.
-        id: return-the-computed-default-settings-based-on-the-request-host-useful-to-preview-what-a-fresh-install-would-use
+          to preview what a fresh install would use. A reseller session gets
+          only the subscription and display keys (subEnable, subURI,
+          subJsonEnable, subJsonURI, subClashEnable, subClashURI, subTitle,
+          datepicker, pageSize, expireDiff, trafficDiff).
+        id: return-the-computed-default-settings-based-on-the-request-host-useful-to-preview-what-a-fresh-install-would-use-a-reseller-session-gets-only-the-subscription-and-display-keys-subenable-suburi-subjsonenable-subjsonuri-subclashenable-subclashuri-subtitle-datepicker-pagesize-expirediff-trafficdiff
       - content: Return the shipped (factory) default value per browser-safe setting
           key, so clients can tell a stored value apart from the default it
           would fall back to. Per-install material (secret, panelGuid, mTLS

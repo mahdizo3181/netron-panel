@@ -13671,7 +13671,7 @@
         "tags": [
           "Settings"
         ],
-        "summary": "Return the computed default settings based on the request host. Useful to preview what a fresh install would use.",
+        "summary": "Return the computed default settings based on the request host. Useful to preview what a fresh install would use. A reseller session gets only the subscription and display keys (subEnable, subURI, subJsonEnable, subJsonURI, subClashEnable, subClashURI, subTitle, datepicker, pageSize, expireDiff, trafficDiff).",
         "operationId": "post_panel_api_setting_defaultSettings",
         "responses": {
           "200": {
@@ -16726,6 +16726,60 @@
                   "obj": {
                     "reseller": null,
                     "role": "reseller"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/reseller/me/password": {
+      "post": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Change the calling reseller's own password. currentPassword must match; newPassword needs at least 10 characters and must differ from the username. Ends the reseller's other sessions and keeps this one. Reseller sessions only.",
+        "operationId": "post_panel_api_reseller_me_password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "description": "The current password."
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "description": "The new password."
+                  }
+                },
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
                   }
                 }
               }

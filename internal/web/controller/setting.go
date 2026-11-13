@@ -116,6 +116,9 @@ func (a *SettingController) getDefaultSettings(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.settings.toasts.getSettings"), err)
 		return
 	}
+	if _, isReseller := actorResellerID(c); isReseller {
+		result = resellerDefaultSettings(result)
+	}
 	jsonObj(c, result, nil)
 }
 

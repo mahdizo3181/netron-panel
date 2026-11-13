@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/session"
 )
 
 var errNotReseller = errors.New("only reseller accounts can use this")
@@ -22,6 +23,7 @@ func NewResellerSelfController(g *gin.RouterGroup) *ResellerSelfController {
 	g.GET("", a.me)
 	g.POST("/totp", a.setTotp)
 	g.POST("/totp/disable", a.disableTotp)
+	g.POST("/password", a.changePassword)
 	return a
 }
 
@@ -56,4 +58,40 @@ func (a *ResellerSelfController) disableTotp(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.totp"), a.resellerService.DisableTotp(id, c.PostForm("code"), time.Now()))
+}
+
+// changePassword needs the current password; it ends the reseller's other
+// sessions and keeps this one by re-stamping its epoch.
+func (a *ResellerSelfController) changePassword(c *gin.Context) {
+	id, isReseller := actorResellerID(c)
+	if !isReseller {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.password"), errNotReseller)
+		return
+	}
+	r, err := a.resellerService.ChangeOwnPassword(id, c.PostForm("currentPassword"), c.PostForm("newPassword"))
+	if err == nil {
+		err = session.SetLoginReseller(c, r)
+	}
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.password"), err)
+}
+
+// resellerDefaultSettingsKeys are the subscription and display settings a reseller
+// needs to show its clients' subscription links.
+var resellerDefaultSettingsKeys = []string{
+	"subEnable", "subURI", "subJsonEnable", "subJsonURI", "subClashEnable", "subClashURI",
+	"subTitle", "datepicker", "pageSize", "expireDiff", "trafficDiff",
+}
+
+func resellerDefaultSettings(all any) any {
+	m, ok := all.(map[string]any)
+	if !ok {
+		return map[string]any{}
+	}
+	out := make(map[string]any, len(resellerDefaultSettingsKeys))
+	for _, k := range resellerDefaultSettingsKeys {
+		if v, ok := m[k]; ok {
+			out[k] = v
+		}
+	}
+	return out
 }

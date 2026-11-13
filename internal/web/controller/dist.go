@@ -137,6 +137,10 @@ func serveDistPage(c *gin.Context, name string) {
 		escapedVer := jsEscape.Replace(config.GetPanelVersion())
 		script += `;window.X_UI_CUR_VER="` + escapedVer + `"`
 		script += `;window.X_UI_DB_TYPE="` + config.GetDBKind() + `"`
+		// UI hint only: the API decides what a reseller may do.
+		if session.GetLoginReseller(c) != nil {
+			script += `;window.X_UI_ROLE="reseller"`
+		}
 	}
 	script += `;</script>`
 	inject := []byte(script)

@@ -39,6 +39,7 @@ var RoutePolicies = map[string]RoutePolicy{
 	"POST /logout":                                          PolicyPublic,
 	// SPA shell pages (checkLogin): markup only, the data comes from the API below.
 	"GET /panel/":           PolicyReseller,
+	"GET /panel/resellers":  PolicyReseller,
 	"GET /panel/api-docs":   PolicyReseller,
 	"GET /panel/clients":    PolicyReseller,
 	"GET /panel/csrf-token": PolicyReseller,
@@ -54,6 +55,8 @@ var RoutePolicies = map[string]RoutePolicy{
 	"POST /panel/api/reseller/me/totp":         PolicyReseller,
 	"POST /panel/api/reseller/me/totp/disable": PolicyReseller,
 	// Reseller client routes: each handler passes actorScope to a *For service method.
+	"POST /panel/api/setting/defaultSettings":     PolicyReseller,
+	"POST /panel/api/reseller/me/password":        PolicyReseller,
 	"GET /panel/api/clients/get/:email":           PolicyReseller,
 	"GET /panel/api/clients/list/paged":           PolicyReseller,
 	"GET /panel/api/inbounds/options":             PolicyReseller,
@@ -219,7 +222,6 @@ var RoutePolicies = map[string]RoutePolicy{
 	"POST /panel/api/setting/apiTokens/create":                  PolicyAdminOnly,
 	"POST /panel/api/setting/apiTokens/delete/:id":              PolicyAdminOnly,
 	"POST /panel/api/setting/apiTokens/setEnabled/:id":          PolicyAdminOnly,
-	"POST /panel/api/setting/defaultSettings":                   PolicyAdminOnly,
 	"POST /panel/api/setting/factoryDefaults":                   PolicyAdminOnly,
 	"POST /panel/api/setting/restartPanel":                      PolicyAdminOnly,
 	"POST /panel/api/setting/testDiscord":                       PolicyAdminOnly,

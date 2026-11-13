@@ -7,6 +7,7 @@ import (
 	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -52,6 +53,12 @@ func newPanelHarness(t *testing.T, adminName string) *panelHarness {
 	}
 	t.Cleanup(cleanup)
 	t.Setenv("XUI_DB_FOLDER", t.TempDir())
+	// defaultSettings reads Xray's log settings; a stub config keeps it off the guard's empty folder.
+	bin := t.TempDir()
+	t.Setenv("XUI_BIN_FOLDER", bin)
+	if err := os.WriteFile(filepath.Join(bin, "config.json"), []byte(`{"log":{}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	dbtest.InitDB(t, filepath.Join(t.TempDir(), "x-ui.db"))
 	if err := (&panel.UserService{}).UpdateFirstUser(adminName, e2eAdminPassword); err != nil {
 		t.Fatal(err)

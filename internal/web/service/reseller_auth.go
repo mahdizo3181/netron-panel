@@ -161,3 +161,22 @@ func (s *ResellerService) ResetTotp(id int) error {
 	}
 	return db.Model(&model.Reseller{}).Where("id = ?", id).Update("totp_secret", "").Error
 }
+
+var ErrResellerCurrentPassword = errors.New("the current password is wrong")
+
+// ChangeOwnPassword sets a new password after checking the current one, and
+// returns the updated row so the caller can keep its own session.
+func (s *ResellerService) ChangeOwnPassword(id int, current, next string) (*model.Reseller, error) {
+	db := database.GetDB()
+	r, err := loadReseller(db, id)
+	if err != nil {
+		return nil, err
+	}
+	if !crypto.CheckPasswordHash(r.Password, current) {
+		return nil, ErrResellerCurrentPassword
+	}
+	if err := s.SetPassword(id, next); err != nil {
+		return nil, err
+	}
+	return loadReseller(db, id)
+}

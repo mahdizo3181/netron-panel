@@ -111,8 +111,10 @@ func TestResellerReachableRoutesAreExactlyTheListedRoutes(t *testing.T) {
 		"POST /panel/api/clients/del/:email",
 		"POST /panel/api/clients/resetTraffic/:email",
 		"POST /panel/api/clients/update/:email",
+		"POST /panel/api/reseller/me/password",
 		"POST /panel/api/reseller/me/totp",
 		"POST /panel/api/reseller/me/totp/disable",
+		"POST /panel/api/setting/defaultSettings",
 	}
 	if got := sortedJoin(reachable); got != sortedJoin(want) {
 		t.Fatalf("API routes a reseller may call:\n%s\nwant:\n%s", got, sortedJoin(want))

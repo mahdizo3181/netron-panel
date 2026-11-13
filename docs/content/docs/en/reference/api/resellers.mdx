@@ -49,6 +49,12 @@ _openapi:
         its 2FA is on. The only data route a reseller may call in this release.'
       url: '#who-am-i-an-admin-gets-role-admin-a-reseller-session-gets-role-reseller-with-its-own-pool-used-traffic-remaining-bytes-client-count-and-limit-expiry-state-ok-pool-expired-disabled-and-whether-its-2fa-is-on-the-only-data-route-a-reseller-may-call-in-this-release'
     - depth: 2
+      title: Change the calling reseller's own password. currentPassword must match;
+        newPassword needs at least 10 characters and must differ from the
+        username. Ends the reseller's other sessions and keeps this one.
+        Reseller sessions only.
+      url: '#change-the-calling-resellers-own-password-currentpassword-must-match-newpassword-needs-at-least-10-characters-and-must-differ-from-the-username-ends-the-resellers-other-sessions-and-keeps-this-one-reseller-sessions-only'
+    - depth: 2
       title: Turn on the calling reseller's own two-factor authentication. secret is a
         base32 TOTP secret (16+ characters) and code a current code for it.
         Refused while 2FA is already on. Reseller sessions only.
@@ -91,6 +97,11 @@ _openapi:
           and whether its 2FA is on. The only data route a reseller may call in
           this release.'
         id: who-am-i-an-admin-gets-role-admin-a-reseller-session-gets-role-reseller-with-its-own-pool-used-traffic-remaining-bytes-client-count-and-limit-expiry-state-ok-pool-expired-disabled-and-whether-its-2fa-is-on-the-only-data-route-a-reseller-may-call-in-this-release
+      - content: Change the calling reseller's own password. currentPassword must match;
+          newPassword needs at least 10 characters and must differ from the
+          username. Ends the reseller's other sessions and keeps this one.
+          Reseller sessions only.
+        id: change-the-calling-resellers-own-password-currentpassword-must-match-newpassword-needs-at-least-10-characters-and-must-differ-from-the-username-ends-the-resellers-other-sessions-and-keeps-this-one-reseller-sessions-only
       - content: Turn on the calling reseller's own two-factor authentication. secret is
           a base32 TOTP secret (16+ characters) and code a current code for it.
           Refused while 2FA is already on. Reseller sessions only.
@@ -108,7 +119,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
+      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/password","method":"post"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
     </>
   );
 }
