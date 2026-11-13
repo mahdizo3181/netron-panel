@@ -40,3 +40,8 @@ type ResellerAuditLog struct {
 	Detail     string `json:"detail"`
 	Ip         string `json:"ip"`
 }
+
+// Usable reports whether the reseller may log in at now (ms): enabled and not expired.
+func (r *Reseller) Usable(nowMs int64) bool {
+	return r.Enable && (r.ExpiryTime == 0 || r.ExpiryTime > nowMs)
+}
