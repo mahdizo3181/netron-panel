@@ -168,6 +168,8 @@ New files (no rebase conflict): `internal/web/controller/route_policy.go`,
 `internal/web/service/scope.go`, `internal/web/service/reseller_auth.go` (+ tests),
 `internal/web/reseller_session_test.go`, `internal/web/route_policy_contract_test.go`,
 `internal/sub/route_policy_contract_test.go`, `frontend/src/test/login-reseller-2fa.test.tsx`.
+`internal/testsafety/` (+ test) with `TestMain` in `internal/web` and `internal/web/controller`: test
+binaries there run with stubbed system commands, an empty bin folder and refused proxy-aware HTTP.
 
 | File | Hook | Why |
 | ---- | ---- | --- |

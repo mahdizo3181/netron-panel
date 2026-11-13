@@ -21,6 +21,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/dbtest"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/testpg"
+	"github.com/mhsanaei/3x-ui/v3/internal/testsafety"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/controller"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/global"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
@@ -44,6 +45,7 @@ type gin_route struct{ Method, Path string }
 // adminName differs per test so the shared login limiter never couples tests.
 func newPanelHarness(t *testing.T, adminName string) *panelHarness {
 	t.Helper()
+	testsafety.Watch(t)
 	cleanup, err := testpg.IsolatePackage("reseller_web")
 	if err != nil {
 		t.Fatal(err)
