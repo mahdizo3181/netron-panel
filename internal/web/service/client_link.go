@@ -469,6 +469,10 @@ func (s *ClientService) DetachInbound(tx *gorm.DB, inboundId int) error {
 	if tx == nil {
 		tx = database.GetDB()
 	}
+	// Every inbound delete path ends here, so resellers' allowed lists follow too.
+	if err := tx.Where("inbound_id = ?", inboundId).Delete(&model.ResellerInbound{}).Error; err != nil {
+		return err
+	}
 	return tx.Where("inbound_id = ?", inboundId).Delete(&model.ClientInbound{}).Error
 }
 
