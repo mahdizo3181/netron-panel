@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
@@ -105,5 +106,44 @@ func TestScopeAllowedInbounds(t *testing.T) {
 	}
 	if err := AdminScope().RequireAllowedInbounds(tx, []int{inA, inB, 99999}); err != nil {
 		t.Fatalf("admin scope is never limited by allowed lists: %v", err)
+	}
+}
+
+// Everything a reseller receives passes through StripForReseller; it must drop the
+// admin-only and server-side keys wherever they nest, and leave the rest alone.
+func TestStripForResellerRemovesAdminAndServerKeys(t *testing.T) {
+	ownerless := ClientSlim{Email: "a@x", Group: "staff"}
+	page := ClientPageResponse{Items: []ClientSlim{ownerless, {Email: "b@x", Owner: &ClientOwner{Id: 2, Name: "Shop"}}}, Groups: []string{"staff"}}
+	options := []InboundOption{{
+		Id: 1, Remark: "r", Protocol: "vless", NodeId: new(int), NodeAddress: "10.0.0.5",
+		Listen: "10.0.0.1", ShareAddr: "edge.example", WgPublicKey: "pk", MtprotoDomain: "m.example",
+	}}
+	payload := map[string]any{"client": model.ClientRecord{
+		Email: "a@x", Group: "staff", AdTag: "ad", Reverse: `{"tag":"r"}`,
+		ClientHostRuleIds: []int{3}, UUID: "keep-me",
+	}, "inboundIds": []int{1}}
+
+	for name, v := range map[string]any{"page": page, "options": options, "client payload": payload} {
+		raw, err := StripForReseller(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(raw)
+		for _, key := range []string{
+			`"owner"`, `"group"`, `"groups"`, `"nodeId"`, `"nodeAddress"`, `"listen"`,
+			`"shareAddr"`, `"wgPublicKey"`, `"mtprotoDomain"`, `"adTag"`, `"reverse"`, `"clientHostRuleIds"`,
+		} {
+			if strings.Contains(text, key) {
+				t.Errorf("%s still carries %s: %s", name, key, text)
+			}
+		}
+		for _, keep := range map[string][]string{
+			"page": {`"email":"a@x"`, `"email":"b@x"`}, "options": {`"remark":"r"`, `"protocol":"vless"`},
+			"client payload": {`"uuid":"keep-me"`, `"inboundIds":[1]`},
+		}[name] {
+			if !strings.Contains(text, keep) {
+				t.Errorf("%s lost %s: %s", name, keep, text)
+			}
+		}
 	}
 }

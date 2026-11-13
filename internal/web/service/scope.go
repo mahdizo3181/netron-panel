@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
@@ -101,4 +102,45 @@ func (s Scope) RequireAllowedInbounds(tx *gorm.DB, inboundIds []int) error {
 		return ErrScopeInbound
 	}
 	return nil
+}
+
+// resellerHiddenKeys are admin-only client fields (owner, groups, host rules, reverse,
+// MTProto ad tag) and the server's own addresses and keys (docs §8.2).
+var resellerHiddenKeys = map[string]struct{}{
+	"owner": {}, "group": {}, "groups": {}, "clientHostRuleIds": {}, "reverse": {}, "adTag": {},
+	"nodeId": {}, "nodeAddress": {}, "listen": {}, "shareAddr": {}, "shareAddrStrategy": {},
+	"awgServer": {}, "tuicServer": {}, "wgPublicKey": {}, "wgMtu": {}, "wgDns": {}, "mtprotoDomain": {},
+	"usageMultiplier": {},
+}
+
+// StripForReseller returns v as JSON without resellerHiddenKeys at any depth; every
+// response a reseller gets goes through it.
+func StripForReseller(v any) (json.RawMessage, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var tree any
+	if err := json.Unmarshal(raw, &tree); err != nil {
+		return nil, err
+	}
+	return json.Marshal(dropResellerHiddenKeys(tree))
+}
+
+func dropResellerHiddenKeys(node any) any {
+	switch n := node.(type) {
+	case map[string]any:
+		for k, child := range n {
+			if _, hidden := resellerHiddenKeys[k]; hidden {
+				delete(n, k)
+				continue
+			}
+			n[k] = dropResellerHiddenKeys(child)
+		}
+	case []any:
+		for i := range n {
+			n[i] = dropResellerHiddenKeys(n[i])
+		}
+	}
+	return node
 }
