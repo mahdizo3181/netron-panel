@@ -256,22 +256,17 @@ func TestResellerSessionIsRefusedEveryAdminRoute(t *testing.T) {
 	}
 }
 
-func TestResellerReachableRoutesAreExactlyTheSelfRoutes(t *testing.T) {
-	var reachable []string
+func controllerRoutePolicies() map[string]bool {
+	out := map[string]bool{}
 	for route, p := range controller.RoutePolicies {
-		if p == controller.PolicyReseller && strings.HasPrefix(strings.Fields(route)[1], "/panel/api/") {
-			reachable = append(reachable, route)
-		}
+		out[route] = p == controller.PolicyReseller
 	}
-	sort.Strings(reachable)
-	want := []string{
-		"GET /panel/api/reseller/me",
-		"POST /panel/api/reseller/me/totp",
-		"POST /panel/api/reseller/me/totp/disable",
-	}
-	if strings.Join(reachable, ",") != strings.Join(want, ",") {
-		t.Fatalf("API routes a reseller may call = %v, want exactly %v", reachable, want)
-	}
+	return out
+}
+
+func sortedJoin(routes []string) string {
+	sort.Strings(routes)
+	return strings.Join(routes, "\n")
 }
 
 // Admin id 1 and reseller id 1 coexist: neither session may be read as the other.

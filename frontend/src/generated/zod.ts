@@ -490,6 +490,12 @@ export const ClientInboundSchema = z.object({
 });
 export type ClientInbound = z.infer<typeof ClientInboundSchema>;
 
+export const ClientOwnerSchema = z.object({
+  id: z.number().int(),
+  name: z.string(),
+});
+export type ClientOwner = z.infer<typeof ClientOwnerSchema>;
+
 export const ClientPageResponseSchema = z.object({
   filtered: z.number().int(),
   groups: z.array(z.string()),
@@ -577,6 +583,7 @@ export const ClientSlimSchema = z.object({
   inboundIds: z.array(z.number().int()),
   limitHwid: z.number().int(),
   limitIp: z.number().int(),
+  owner: z.lazy(() => ClientOwnerSchema).nullable().optional(),
   reset: z.number().int(),
   resetDay: z.number().int(),
   resetMax: z.number().int(),
@@ -1012,6 +1019,13 @@ export const OutboundTrafficsSchema = z.object({
   up: z.number().int(),
 });
 export type OutboundTraffics = z.infer<typeof OutboundTrafficsSchema>;
+
+export const OwnerChangeSchema = z.object({
+  email: z.string(),
+  outsideInbounds: z.array(z.number().int()),
+  owner: z.lazy(() => ClientOwnerSchema).nullable().optional(),
+});
+export type OwnerChange = z.infer<typeof OwnerChangeSchema>;
 
 export const PanelUpdateStatusSchema = z.object({
   exitCode: z.number().int(),

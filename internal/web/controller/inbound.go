@@ -11,6 +11,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/util/wirecodec"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/middleware"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/service/panel"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/session"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/websocket"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
@@ -138,12 +139,21 @@ func (a *InboundController) getAllInboundLinks(c *gin.Context) {
 // Avoids shipping per-client settings and traffic stats just to fill a dropdown.
 func (a *InboundController) getInboundOptions(c *gin.Context) {
 	user := session.GetLoginUser(c)
-	options, err := a.inboundService.GetInboundOptions(user.Id)
+	if user == nil {
+		// A reseller session has no admin user; inbounds belong to the panel's admin.
+		admin, err := (&panel.UserService{}).GetFirstUser()
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
+			return
+		}
+		user = admin
+	}
+	options, err := a.inboundService.GetInboundOptionsFor(actorScope(c), user.Id)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	jsonObj(c, options, nil)
+	jsonObjFor(c, options)
 }
 
 // getAmneziaWGKernelReadiness reports whether this host can run an AmneziaWG

@@ -2530,7 +2530,8 @@
         "password": "Reseller password changed",
         "delete": "Reseller deleted",
         "forbidden": "This is not available to reseller accounts.",
-        "totp": "Reseller two-factor authentication"
+        "totp": "Reseller two-factor authentication",
+        "owner": "Client owner change"
       }
     }
   },

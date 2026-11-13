@@ -1954,6 +1954,24 @@
         ],
         "type": "object"
       },
+      "ClientOwner": {
+        "description": "ClientOwner is the reseller that owns a client, as the admin sees it.",
+        "properties": {
+          "id": {
+            "example": 3,
+            "type": "integer"
+          },
+          "name": {
+            "example": "Shop A",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
       "ClientPageResponse": {
         "description": "ClientPageResponse is the shape returned by ListPaged. `Total` is the\nrow count in the DB; `Filtered` is the count after Search/Filter/Protocol\nwere applied, before pagination. The page contains at most PageSize items.\nSummary is computed across the full DB row set so dashboard counters\non the clients page stay stable as the user paginates/filters.",
         "properties": {
@@ -2312,6 +2330,15 @@
           "limitIp": {
             "example": 0,
             "type": "integer"
+          },
+          "owner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClientOwner"
+              }
+            ],
+            "description": "Owner is null for the admin's own clients; StripForReseller removes it for resellers.",
+            "nullable": true
           },
           "reset": {
             "example": 0,
@@ -4220,6 +4247,37 @@
           "tag",
           "total",
           "up"
+        ],
+        "type": "object"
+      },
+      "OwnerChange": {
+        "description": "OwnerChange reports a reassignment; OutsideInbounds are attachments outside the new owner's allowed list.",
+        "properties": {
+          "email": {
+            "example": "alice@example.com",
+            "type": "string"
+          },
+          "outsideInbounds": {
+            "example": [
+              7
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "owner": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClientOwner"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "email",
+          "outsideInbounds"
         ],
         "type": "object"
       },
@@ -8884,6 +8942,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "owner",
+            "in": "query",
+            "required": false,
+            "description": "Admin only: \"admin\" for the admin's own clients, or a reseller id. Ignored for a reseller session, which only ever sees its own clients. Each row carries a read-only owner ({ id, name } or null).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8927,6 +8994,7 @@
                         ],
                         "limitHwid": 0,
                         "limitIp": 0,
+                        "owner": null,
                         "reset": 0,
                         "resetDay": 0,
                         "resetMax": 0,
@@ -9546,6 +9614,72 @@
                 },
                 "example": {
                   "success": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/clients/{email}/owner": {
+      "post": {
+        "tags": [
+          "Clients"
+        ],
+        "summary": "Admin only: hand a client to a reseller, or back to the admin with resellerId null. The new owner's client limit applies. The client's inbounds stay as they are; outsideInbounds lists the ones outside the new owner's allowed list. Pool usage is not moved: past traffic stays billed to the old owner.",
+        "operationId": "post_panel_api_clients_email_owner",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "description": "Client email.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "resellerId": 3
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/OwnerChange"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "email": "alice@example.com",
+                    "outsideInbounds": [
+                      7
+                    ],
+                    "owner": null
+                  }
                 }
               }
             }

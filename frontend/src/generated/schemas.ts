@@ -1928,6 +1928,24 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ClientOwner": {
+    "description": "ClientOwner is the reseller that owns a client, as the admin sees it.",
+    "properties": {
+      "id": {
+        "example": 3,
+        "type": "integer"
+      },
+      "name": {
+        "example": "Shop A",
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "name"
+    ],
+    "type": "object"
+  },
   "ClientPageResponse": {
     "description": "ClientPageResponse is the shape returned by ListPaged. `Total` is the\nrow count in the DB; `Filtered` is the count after Search/Filter/Protocol\nwere applied, before pagination. The page contains at most PageSize items.\nSummary is computed across the full DB row set so dashboard counters\non the clients page stay stable as the user paginates/filters.",
     "properties": {
@@ -2286,6 +2304,15 @@ export const SCHEMAS: Record<string, unknown> = {
       "limitIp": {
         "example": 0,
         "type": "integer"
+      },
+      "owner": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientOwner"
+          }
+        ],
+        "description": "Owner is null for the admin's own clients; StripForReseller removes it for resellers.",
+        "nullable": true
       },
       "reset": {
         "example": 0,
@@ -4194,6 +4221,37 @@ export const SCHEMAS: Record<string, unknown> = {
       "tag",
       "total",
       "up"
+    ],
+    "type": "object"
+  },
+  "OwnerChange": {
+    "description": "OwnerChange reports a reassignment; OutsideInbounds are attachments outside the new owner's allowed list.",
+    "properties": {
+      "email": {
+        "example": "alice@example.com",
+        "type": "string"
+      },
+      "outsideInbounds": {
+        "example": [
+          7
+        ],
+        "items": {
+          "type": "integer"
+        },
+        "type": "array"
+      },
+      "owner": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientOwner"
+          }
+        ],
+        "nullable": true
+      }
+    },
+    "required": [
+      "email",
+      "outsideInbounds"
     ],
     "type": "object"
   },

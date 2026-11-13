@@ -464,6 +464,10 @@ export const EXAMPLES: Record<string, unknown> = {
     "flowOverride": "",
     "inboundId": 0
   },
+  "ClientOwner": {
+    "id": 3,
+    "name": "Shop A"
+  },
   "ClientPageResponse": {
     "filtered": 47,
     "groups": [
@@ -484,6 +488,7 @@ export const EXAMPLES: Record<string, unknown> = {
         ],
         "limitHwid": 0,
         "limitIp": 0,
+        "owner": null,
         "reset": 0,
         "resetDay": 0,
         "resetMax": 0,
@@ -588,6 +593,7 @@ export const EXAMPLES: Record<string, unknown> = {
     ],
     "limitHwid": 0,
     "limitIp": 0,
+    "owner": null,
     "reset": 0,
     "resetDay": 0,
     "resetMax": 0,
@@ -1044,6 +1050,13 @@ export const EXAMPLES: Record<string, unknown> = {
     "tag": "",
     "total": 0,
     "up": 0
+  },
+  "OwnerChange": {
+    "email": "alice@example.com",
+    "outsideInbounds": [
+      7
+    ],
+    "owner": null
   },
   "PanelUpdateStatus": {
     "exitCode": 0,

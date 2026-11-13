@@ -1135,6 +1135,13 @@ export const sections: readonly Section[] = [
             desc: 'CSV group names, matched case-insensitively after trimming. Values are ORed.',
             optional: true,
           },
+          {
+            name: 'owner',
+            in: 'query',
+            type: 'string',
+            desc: 'Admin only: "admin" for the admin\'s own clients, or a reseller id. Ignored for a reseller session, which only ever sees its own clients. Each row carries a read-only owner ({ id, name } or null).',
+            optional: true,
+          },
         ],
         responseSchema: 'ClientPageResponse',
       },
@@ -1330,6 +1337,15 @@ export const sections: readonly Section[] = [
         ],
         body: '{\n  "inboundIds": [5]\n}',
         response: '{\n  "success": true\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/clients/:email/owner',
+        summary:
+          "Admin only: hand a client to a reseller, or back to the admin with resellerId null. The new owner's client limit applies. The client's inbounds stay as they are; outsideInbounds lists the ones outside the new owner's allowed list. Pool usage is not moved: past traffic stays billed to the old owner.",
+        params: [{ name: 'email', in: 'path', type: 'string', desc: 'Client email.' }],
+        body: '{\n  "resellerId": 3\n}',
+        responseSchema: 'OwnerChange',
       },
       {
         method: 'POST',

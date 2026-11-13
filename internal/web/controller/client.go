@@ -68,6 +68,7 @@ func (a *ClientController) initRouter(g *gin.RouterGroup) {
 	g.POST("/:email/attach", a.attach)
 	g.POST("/:email/detach", a.detach)
 	g.POST("/:email/externalLinks", a.setExternalLinks)
+	g.POST("/:email/owner", a.setOwner)
 	g.GET("/export", a.export)
 	g.POST("/import", a.importClients)
 	g.POST("/delOrphans", a.delOrphans)
@@ -120,12 +121,12 @@ func (a *ClientController) listPaged(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	resp, err := a.clientService.ListPaged(&a.inboundService, &a.settingService, params)
+	resp, err := a.clientService.ListPagedFor(actorScope(c), &a.inboundService, &a.settingService, params)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	jsonObj(c, resp, nil)
+	jsonObjFor(c, resp)
 }
 
 func (a *ClientController) buildClientPayload(rec *model.ClientRecord) (gin.H, error) {
@@ -150,18 +151,27 @@ func (a *ClientController) buildClientPayload(rec *model.ClientRecord) (gin.H, e
 	if err != nil {
 		return nil, err
 	}
+	var owner *service.ClientOwner
+	if rec.ResellerID != nil {
+		owners, err := service.ClientOwners([]int{*rec.ResellerID})
+		if err != nil {
+			return nil, err
+		}
+		owner = owners[*rec.ResellerID]
+	}
 	return gin.H{
 		"client":           rec,
 		"inboundIds":       inboundIds,
 		"externalLinks":    externalLinks,
 		"usedTraffic":      usedTraffic,
 		"tunnelAllowedIPs": tunnelAllowedIPs,
+		"owner":            owner,
 	}, nil
 }
 
 func (a *ClientController) get(c *gin.Context) {
 	email := c.Param("email")
-	rec, err := a.clientService.GetRecordByEmail(nil, email)
+	rec, err := a.clientService.GetRecordByEmailFor(actorScope(c), email)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -171,7 +181,7 @@ func (a *ClientController) get(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	jsonObj(c, payload, nil)
+	jsonObjFor(c, payload)
 }
 
 func (a *ClientController) getBySubId(c *gin.Context) {
@@ -225,7 +235,7 @@ func (a *ClientController) create(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	needRestart, err := a.clientService.Create(&a.inboundService, &payload)
+	needRestart, err := a.clientService.CreateFor(actorScope(c), &a.inboundService, &payload)
 	// Flagged before the error check: a partly-applied create leaves clients
 	// committed on the inbounds that succeeded, and those still need the restart.
 	if needRestart {
@@ -254,7 +264,7 @@ func (a *ClientController) update(c *gin.Context) {
 		return
 	}
 	inboundFilter := parseInboundIdsQuery(c.Query("inboundIds"))
-	needRestart, err := a.clientService.UpdateByEmail(&a.inboundService, email, req.Client, req.LimitHwid, inboundFilter...)
+	needRestart, err := a.clientService.UpdateByEmailFor(actorScope(c), &a.inboundService, email, req.Client, req.LimitHwid, inboundFilter...)
 	// Flagged before the error check: a partly-applied edit leaves the change
 	// committed on the inbounds that succeeded, and those still need the restart.
 	if needRestart {
@@ -275,7 +285,7 @@ func (a *ClientController) update(c *gin.Context) {
 func (a *ClientController) delete(c *gin.Context) {
 	email := c.Param("email")
 	keepTraffic := c.Query("keepTraffic") == "1"
-	needRestart, err := a.clientService.DeleteByEmail(&a.inboundService, email, keepTraffic)
+	needRestart, err := a.clientService.DeleteByEmailFor(actorScope(c), &a.inboundService, email, keepTraffic)
 	// Flagged before the error check: a partly-applied delete already removed
 	// the client from the inbounds that succeeded, and those need the restart.
 	if needRestart {
@@ -466,7 +476,7 @@ func (a *ClientController) bulkSetEnable(c *gin.Context, enable bool) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	result, needRestart, err := a.clientService.BulkSetEnable(&a.inboundService, req.Emails, enable)
+	result, needRestart, err := a.clientService.BulkSetEnableFor(actorScope(c), &a.inboundService, req.Emails, enable)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
@@ -484,7 +494,7 @@ func (a *ClientController) bulkCreate(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	result, needRestart, err := a.clientService.BulkCreate(&a.inboundService, payloads)
+	result, needRestart, err := a.clientService.BulkCreateFor(actorScope(c), &a.inboundService, payloads)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
@@ -567,7 +577,7 @@ func (a *ClientController) delOrphans(c *gin.Context) {
 
 func (a *ClientController) resetTrafficByEmail(c *gin.Context) {
 	email := c.Param("email")
-	needRestart, err := a.clientService.ResetTrafficByEmail(&a.inboundService, email)
+	needRestart, err := a.clientService.ResetTrafficByEmailFor(actorScope(c), &a.inboundService, email)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
@@ -753,4 +763,24 @@ func (a *ClientController) bulkResetTraffic(c *gin.Context) {
 	jsonObj(c, gin.H{"affected": affected}, nil)
 	a.xrayService.SetToNeedRestart()
 	notifyClientsChanged()
+}
+
+type setOwnerRequest struct {
+	ResellerId *int `json:"resellerId"`
+}
+
+// setOwner hands a client to a reseller or back to the admin (null); admin only.
+func (a *ClientController) setOwner(c *gin.Context) {
+	var req setOwnerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.owner"), err)
+		return
+	}
+	change, err := a.clientService.SetOwner(c.Param("email"), req.ResellerId)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.owner"), err)
+		return
+	}
+	notifyClientsChanged()
+	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.owner"), change, nil)
 }

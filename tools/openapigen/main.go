@@ -119,6 +119,8 @@ func run(root, outDir string) error {
 				"ResellerView",
 				"ResellerMe",
 				"ResellerSelfView",
+				"ClientOwner",
+				"OwnerChange",
 			),
 		},
 		{

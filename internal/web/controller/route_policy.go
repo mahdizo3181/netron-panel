@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
 )
 
 // RoutePolicy says who may reach a panel route (docs/RESELLERS.md §3.2).
@@ -51,20 +53,31 @@ var RoutePolicies = map[string]RoutePolicy{
 	"GET /panel/api/reseller/me":               PolicyReseller,
 	"POST /panel/api/reseller/me/totp":         PolicyReseller,
 	"POST /panel/api/reseller/me/totp/disable": PolicyReseller,
+	// Reseller client routes: each handler passes actorScope to a *For service method.
+	"GET /panel/api/clients/get/:email":           PolicyReseller,
+	"GET /panel/api/clients/list/paged":           PolicyReseller,
+	"GET /panel/api/inbounds/options":             PolicyReseller,
+	"POST /panel/api/clients/add":                 PolicyReseller,
+	"POST /panel/api/clients/bulkCreate":          PolicyReseller,
+	"POST /panel/api/clients/bulkDisable":         PolicyReseller,
+	"POST /panel/api/clients/bulkEnable":          PolicyReseller,
+	"POST /panel/api/clients/del/:email":          PolicyReseller,
+	"POST /panel/api/clients/resetTraffic/:email": PolicyReseller,
+	"POST /panel/api/clients/update/:email":       PolicyReseller,
+
 	// Admin only: the WebSocket and every other API route (resellers get 403).
+	"POST /panel/api/clients/:email/owner":                      PolicyAdminOnly,
 	"DELETE /panel/api/clients/hwids/:email":                    PolicyAdminOnly,
 	"DELETE /panel/api/clients/hwids/:email/:id":                PolicyAdminOnly,
 	"DELETE /panel/api/sub-balancers/:id":                       PolicyAdminOnly,
 	"DELETE /panel/api/xray/outbound-subs/:id":                  PolicyAdminOnly,
 	"GET /panel/api/clients/export":                             PolicyAdminOnly,
-	"GET /panel/api/clients/get/:email":                         PolicyAdminOnly,
 	"GET /panel/api/clients/get/subId/:subId":                   PolicyAdminOnly,
 	"GET /panel/api/clients/get/tgId/:tgId":                     PolicyAdminOnly,
 	"GET /panel/api/clients/groups":                             PolicyAdminOnly,
 	"GET /panel/api/clients/groups/:name/emails":                PolicyAdminOnly,
 	"GET /panel/api/clients/links/:email":                       PolicyAdminOnly,
 	"GET /panel/api/clients/list":                               PolicyAdminOnly,
-	"GET /panel/api/clients/list/paged":                         PolicyAdminOnly,
 	"GET /panel/api/clients/subLinks/:subId":                    PolicyAdminOnly,
 	"GET /panel/api/clients/traffic/:email":                     PolicyAdminOnly,
 	"GET /panel/api/hosts/byInbound/:inboundId":                 PolicyAdminOnly,
@@ -78,7 +91,6 @@ var RoutePolicies = map[string]RoutePolicy{
 	"GET /panel/api/inbounds/get/:id":                           PolicyAdminOnly,
 	"GET /panel/api/inbounds/list":                              PolicyAdminOnly,
 	"GET /panel/api/inbounds/list/slim":                         PolicyAdminOnly,
-	"GET /panel/api/inbounds/options":                           PolicyAdminOnly,
 	"GET /panel/api/nodes/get/:id":                              PolicyAdminOnly,
 	"GET /panel/api/nodes/history/:id/:metric/:bucket":          PolicyAdminOnly,
 	"GET /panel/api/nodes/list":                                 PolicyAdminOnly,
@@ -124,18 +136,13 @@ var RoutePolicies = map[string]RoutePolicy{
 	"POST /panel/api/clients/:email/detach":                     PolicyAdminOnly,
 	"POST /panel/api/clients/:email/externalLinks":              PolicyAdminOnly,
 	"POST /panel/api/clients/activeInbounds":                    PolicyAdminOnly,
-	"POST /panel/api/clients/add":                               PolicyAdminOnly,
 	"POST /panel/api/clients/bulkAdjust":                        PolicyAdminOnly,
 	"POST /panel/api/clients/bulkAttach":                        PolicyAdminOnly,
-	"POST /panel/api/clients/bulkCreate":                        PolicyAdminOnly,
 	"POST /panel/api/clients/bulkDel":                           PolicyAdminOnly,
 	"POST /panel/api/clients/bulkDetach":                        PolicyAdminOnly,
-	"POST /panel/api/clients/bulkDisable":                       PolicyAdminOnly,
-	"POST /panel/api/clients/bulkEnable":                        PolicyAdminOnly,
 	"POST /panel/api/clients/bulkResetTraffic":                  PolicyAdminOnly,
 	"POST /panel/api/clients/clearIps/:email":                   PolicyAdminOnly,
 	"POST /panel/api/clients/clientIpsByGuid":                   PolicyAdminOnly,
-	"POST /panel/api/clients/del/:email":                        PolicyAdminOnly,
 	"POST /panel/api/clients/delDepleted":                       PolicyAdminOnly,
 	"POST /panel/api/clients/delOrphans":                        PolicyAdminOnly,
 	"POST /panel/api/clients/groups/bulkAdd":                    PolicyAdminOnly,
@@ -153,8 +160,6 @@ var RoutePolicies = map[string]RoutePolicy{
 	"POST /panel/api/clients/onlinesByGuid":                     PolicyAdminOnly,
 	"POST /panel/api/clients/renewalPreview":                    PolicyAdminOnly,
 	"POST /panel/api/clients/resetAllTraffics":                  PolicyAdminOnly,
-	"POST /panel/api/clients/resetTraffic/:email":               PolicyAdminOnly,
-	"POST /panel/api/clients/update/:email":                     PolicyAdminOnly,
 	"POST /panel/api/clients/updateTraffic/:email":              PolicyAdminOnly,
 	"POST /panel/api/hosts/add":                                 PolicyAdminOnly,
 	"POST /panel/api/hosts/bulk/add":                            PolicyAdminOnly,
@@ -283,4 +288,26 @@ func enforceActorPolicy(c *gin.Context) {
 		"success": false,
 		"msg":     I18nWeb(c, "pages.resellers.toasts.forbidden"),
 	})
+}
+
+// actorScope is the service Scope for this request's actor.
+func actorScope(c *gin.Context) service.Scope {
+	if id, ok := actorResellerID(c); ok {
+		return service.ResellerScope(id)
+	}
+	return service.AdminScope()
+}
+
+// jsonObjFor answers like jsonObj; a reseller's copy goes through StripForReseller.
+func jsonObjFor(c *gin.Context, obj any) {
+	if _, isReseller := actorResellerID(c); !isReseller {
+		jsonObj(c, obj, nil)
+		return
+	}
+	stripped, err := service.StripForReseller(obj)
+	if err != nil {
+		jsonObj(c, nil, err)
+		return
+	}
+	jsonObj(c, stripped, nil)
 }

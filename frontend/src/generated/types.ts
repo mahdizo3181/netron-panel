@@ -462,6 +462,11 @@ export interface ClientInbound {
   inboundId: number;
 }
 
+export interface ClientOwner {
+  id: number;
+  name: string;
+}
+
 export interface ClientPageResponse {
   filtered: number;
   groups: string[];
@@ -544,6 +549,7 @@ export interface ClientSlim {
   inboundIds: number[];
   limitHwid: number;
   limitIp: number;
+  owner?: ClientOwner | null;
   reset: number;
   resetDay: number;
   resetMax: number;
@@ -949,6 +955,12 @@ export interface OutboundTraffics {
   tag: string;
   total: number;
   up: number;
+}
+
+export interface OwnerChange {
+  email: string;
+  outsideInbounds: number[];
+  owner?: ClientOwner | null;
 }
 
 export interface PanelUpdateStatus {
