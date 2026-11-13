@@ -128,6 +128,9 @@ func (s *UserService) BumpLoginEpoch() error {
 }
 
 func (s *UserService) UpdateUser(id int, username string, password string) error {
+	if err := refuseResellerUsername(username); err != nil {
+		return err
+	}
 	db := database.GetDB()
 	hashedPassword, err := crypto.HashPasswordAsBcrypt(password)
 	if err != nil {
@@ -159,6 +162,9 @@ func (s *UserService) UpdateFirstUser(username string, password string) error {
 		return errors.New("username can not be empty")
 	} else if password == "" {
 		return errors.New("password can not be empty")
+	}
+	if err := refuseResellerUsername(username); err != nil {
+		return err
 	}
 	hashedPassword, er := crypto.HashPasswordAsBcrypt(password)
 
