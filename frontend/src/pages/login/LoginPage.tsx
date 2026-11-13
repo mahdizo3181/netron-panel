@@ -82,6 +82,10 @@ export default function LoginPage() {
     try {
       const msg = await HttpUtil.post('/login', values);
       if (msg.success) window.location.href = basePath + 'panel/';
+      // A reseller's own 2FA is only announced after its password matched.
+      else if ((msg.obj as { twoFactorRequired?: boolean } | null)?.twoFactorRequired) {
+        setTwoFactorEnable(true);
+      }
     } finally {
       setSubmitting(false);
     }
