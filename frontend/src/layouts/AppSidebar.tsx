@@ -34,7 +34,8 @@ import { formatPanelVersion } from '@/lib/panel-version';
 import { pauseAnimationsUntilLeave, useTheme } from '@/hooks/useTheme';
 import { useAllSettings } from '@/api/queries/useAllSettings';
 import { useCommandPalette } from '@/components/command-palette/useCommandPalette';
-import { PANEL_ROUTES } from '@/routes/panelRoutes';
+import { panelRoutesFor } from '@/routes/panelRoutes';
+import { isResellerUi } from '@/lib/role';
 import './AppSidebar.css';
 
 const DONATE_URL = 'https://donate.sanaei.dev/';
@@ -190,7 +191,7 @@ export default function AppSidebar() {
 
   const tabs = useMemo<{ key: string; icon: ComponentType; title: string }[]>(
     () => [
-      ...PANEL_ROUTES.map((route) => ({
+      ...panelRoutesFor(isResellerUi()).map((route) => ({
         key: route.path,
         icon: route.icon,
         title: t(route.titleKey),
@@ -393,30 +394,32 @@ export default function AppSidebar() {
             </div>
           )}
         </div>
-        <Tooltip
-          title={
-            railCollapsed ? t('commandPalette.title') || 'Command Palette (Ctrl + K)' : undefined
-          }
-          placement="right"
-        >
-          <button
-            type="button"
-            className={`sidebar-command-trigger${railCollapsed ? ' collapsed' : ''}`}
-            onClick={openCommandPalette}
-            aria-label={t('commandPalette.title') || 'Command Palette (Ctrl + K)'}
+        {!isResellerUi() && (
+          <Tooltip
+            title={
+              railCollapsed ? t('commandPalette.title') || 'Command Palette (Ctrl + K)' : undefined
+            }
+            placement="right"
           >
-            <span className="sidebar-command-left">
-              <SearchOutlined aria-hidden className="sidebar-command-icon" />
-              <span className="sidebar-command-text">
-                {t('commandPalette.search') || 'Search...'}
+            <button
+              type="button"
+              className={`sidebar-command-trigger${railCollapsed ? ' collapsed' : ''}`}
+              onClick={openCommandPalette}
+              aria-label={t('commandPalette.title') || 'Command Palette (Ctrl + K)'}
+            >
+              <span className="sidebar-command-left">
+                <SearchOutlined aria-hidden className="sidebar-command-icon" />
+                <span className="sidebar-command-text">
+                  {t('commandPalette.search') || 'Search...'}
+                </span>
               </span>
-            </span>
-            <span className="sidebar-command-kbd">
-              <span className="kbd-cmd">{SHORTCUT_MODIFIER}</span>
-              <span className="kbd-key">K</span>
-            </span>
-          </button>
-        </Tooltip>
+              <span className="sidebar-command-kbd">
+                <span className="kbd-cmd">{SHORTCUT_MODIFIER}</span>
+                <span className="kbd-key">K</span>
+              </span>
+            </button>
+          </Tooltip>
+        )}
         <Menu
           theme={currentTheme}
           mode="inline"

@@ -125,7 +125,8 @@
     "openMenu": "Mở menu",
     "pinSidebar": "Ghim thanh bên",
     "unpinSidebar": "Bỏ ghim thanh bên",
-    "subFormats": "Sub Formats"
+    "subFormats": "Sub Formats",
+    "resellers": "Resellers"
   },
   "pages": {
     "login": {
@@ -2532,7 +2533,58 @@
         "forbidden": "This is not available to reseller accounts.",
         "totp": "Reseller two-factor authentication",
         "owner": "Client owner change"
-      }
+      },
+      "add": "Add reseller",
+      "name": "Name",
+      "clients": "Clients",
+      "expiry": "Expiry",
+      "never": "Never",
+      "poolTotal": "Total volume",
+      "poolUsed": "Used",
+      "poolRemaining": "Remaining",
+      "poolGB": "Volume pool (GB, 0 = unlimited)",
+      "maxClients": "Client limit (0 = unlimited)",
+      "requireClientQuota": "Every client needs a traffic limit",
+      "allowedInbounds": "Allowed inbounds",
+      "allowedInboundsHelp": "Only VLESS, VMess, Trojan, Shadowsocks and Hysteria inbounds can be given to resellers. Removing one does not detach existing clients.",
+      "usernameRule": "3 to 32 characters: letters, digits, dot, dash or underscore",
+      "passwordRule": "At least 10 characters, different from the username",
+      "setPassword": "Set password",
+      "newPassword": "New password",
+      "resetTotp": "Turn off two-factor authentication",
+      "deleteTitle": "Delete reseller {name}?",
+      "deleteTransfer": "Keep its clients: they become yours",
+      "deleteClients": "Delete its clients too",
+      "ownerAdmin": "admin",
+      "ownerFilter": "Owner",
+      "ownerAll": "Everyone",
+      "ownerOwn": "My own clients",
+      "stateOk": "Active",
+      "statePool": "Volume used up",
+      "stateExpired": "Expired",
+      "stateDisabled": "Disabled",
+      "statePoolDesc": "The volume pool is used up. Adding or enabling clients is blocked until the admin adds volume.",
+      "stateExpiredDesc": "This account has expired. Adding or enabling clients is blocked until the admin extends it.",
+      "stateDisabledDesc": "This account is disabled by the admin."
+    },
+    "resellerHome": {
+      "account": "Account",
+      "changePassword": "Change password",
+      "currentPassword": "Current password",
+      "twoFactorOn": "On",
+      "twoFactorOff": "Off",
+      "enableTwoFactor": "Turn on",
+      "disableTwoFactor": "Turn off",
+      "twoFactorScan": "Scan the code with an authenticator app, then enter the 6-digit code it shows."
+    },
+    "resellerClients": {
+      "inbounds": "Inbounds",
+      "totalGB": "Traffic limit (GB, 0 = unlimited)",
+      "quotaRequired": "Your account requires a traffic limit for every client.",
+      "limitReached": "Client limit reached",
+      "deleteConfirm": "Delete client {email}?",
+      "resetConfirm": "Reset the traffic of {email}?",
+      "noSubscription": "Subscription links are turned off on this panel."
     }
   },
   "tgbot": {

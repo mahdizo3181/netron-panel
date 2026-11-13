@@ -9,6 +9,7 @@ import {
   GlobalOutlined,
   ImportOutlined,
   SettingOutlined,
+  ShopOutlined,
   SwapOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -25,6 +26,9 @@ const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 const XrayPage = lazy(() => import('@/pages/xray/XrayPage'));
 const ApiDocsPage = lazy(() => import('@/pages/api-docs/ApiDocsPage'));
 const SponsorsPage = lazy(() => import('@/pages/sponsors/SponsorsPage'));
+const ResellersPage = lazy(() => import('@/pages/resellers/ResellersPage'));
+const ResellerHome = lazy(() => import('@/pages/reseller-home/ResellerHome'));
+const ResellerClientsPage = lazy(() => import('@/pages/reseller-clients/ResellerClientsPage'));
 
 export interface PanelRoute {
   path: string;
@@ -42,6 +46,7 @@ export const PANEL_ROUTES: PanelRoute[] = [
   { path: '/groups', titleKey: 'menu.groups', icon: TagsOutlined, component: GroupsPage },
   { path: '/nodes', titleKey: 'menu.nodes', icon: ClusterOutlined, component: NodesPage },
   { path: '/hosts', titleKey: 'menu.hosts', icon: GlobalOutlined, component: HostsPage },
+  { path: '/resellers', titleKey: 'menu.resellers', icon: ShopOutlined, component: ResellersPage },
   { path: '/outbound', titleKey: 'menu.outbounds', icon: ExportOutlined, component: XrayPage },
   { path: '/routing', titleKey: 'menu.routing', icon: SwapOutlined, component: XrayPage },
   { path: '/settings', titleKey: 'menu.settings', icon: SettingOutlined, component: SettingsPage },
@@ -49,6 +54,21 @@ export const PANEL_ROUTES: PanelRoute[] = [
   { path: '/api-docs', titleKey: 'menu.apiDocs', icon: ApiOutlined, component: ApiDocsPage },
   { path: '/sponsors', titleKey: 'menu.sponsors', icon: CrownOutlined, component: SponsorsPage },
 ];
+
+// A reseller gets Home and its own clients only; every other path redirects to Home.
+export const RESELLER_ROUTES: PanelRoute[] = [
+  { path: '/', titleKey: 'menu.dashboard', icon: DashboardOutlined, component: ResellerHome },
+  {
+    path: '/clients',
+    titleKey: 'menu.clients',
+    icon: TeamOutlined,
+    component: ResellerClientsPage,
+  },
+];
+
+export function panelRoutesFor(reseller: boolean): PanelRoute[] {
+  return reseller ? RESELLER_ROUTES : PANEL_ROUTES;
+}
 
 export const PANEL_ROUTE_PATHS = PANEL_ROUTES.map((route) => route.path);
 

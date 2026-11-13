@@ -84,6 +84,7 @@ export const PALETTE_KEYWORDS: Record<string, string[]> = {
   '/xray': ['xray', 'templates', 'balancer', 'dns'],
   '/api-docs': ['api', 'api docs', 'swagger', 'rest api', 'endpoints'],
   '/sponsors': ['sponsors', 'sponsor', 'partners'],
+  '/resellers': ['resellers', 'reseller', 'agents', 'pool'],
 };
 
 export default function CommandPalette() {

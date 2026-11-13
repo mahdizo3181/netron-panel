@@ -1,9 +1,10 @@
 import { Suspense } from 'react';
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import { Navigate, createBrowserRouter, type RouteObject } from 'react-router';
 import { Spin } from 'antd';
 
 import PanelLayout from '@/layouts/PanelLayout';
-import { PANEL_ROUTES } from '@/routes/panelRoutes';
+import { panelRoutesFor } from '@/routes/panelRoutes';
+import { isResellerUi } from '@/lib/role';
 
 function withSuspense(node: React.ReactNode) {
   return (
@@ -26,16 +27,16 @@ function withSuspense(node: React.ReactNode) {
   );
 }
 
-export const routes: RouteObject[] = [
-  {
-    path: '/',
-    element: <PanelLayout />,
-    children: PANEL_ROUTES.map((route) => {
-      const element = withSuspense(<route.component />);
-      return route.path === '/' ? { index: true, element } : { path: route.path.slice(1), element };
-    }),
-  },
-];
+export function buildRoutes(reseller: boolean): RouteObject[] {
+  const children: RouteObject[] = panelRoutesFor(reseller).map((route) => {
+    const element = withSuspense(<route.component />);
+    return route.path === '/' ? { index: true, element } : { path: route.path.slice(1), element };
+  });
+  if (reseller) children.push({ path: '*', element: <Navigate to="/" replace /> });
+  return [{ path: '/', element: <PanelLayout />, children }];
+}
+
+export const routes: RouteObject[] = buildRoutes(isResellerUi());
 
 function computeBasename() {
   const raw = (typeof window !== 'undefined' && window.X_UI_BASE_PATH) || '/';

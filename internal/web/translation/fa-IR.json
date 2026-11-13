@@ -125,7 +125,8 @@
     "openMenu": "باز کردن منو",
     "pinSidebar": "ثابت کردن نوار کناری",
     "unpinSidebar": "برداشتن تثبیت نوار کناری",
-    "subFormats": "Sub Formats"
+    "subFormats": "Sub Formats",
+    "resellers": "نمایندگان"
   },
   "pages": {
     "login": {
@@ -2532,7 +2533,58 @@
         "forbidden": "این بخش برای حساب نماینده در دسترس نیست.",
         "totp": "ورود دومرحله‌ای نماینده",
         "owner": "تغییر مالک کلاینت"
-      }
+      },
+      "add": "افزودن نماینده",
+      "name": "نام",
+      "clients": "کلاینت‌ها",
+      "expiry": "انقضا",
+      "never": "هرگز",
+      "poolTotal": "حجم کل",
+      "poolUsed": "مصرف‌شده",
+      "poolRemaining": "باقی‌مانده",
+      "poolGB": "حجم کل (گیگابایت، ۰ = نامحدود)",
+      "maxClients": "سقف تعداد کلاینت (۰ = نامحدود)",
+      "requireClientQuota": "هر کلاینت باید محدودیت حجم داشته باشد",
+      "allowedInbounds": "ورودی‌های مجاز",
+      "allowedInboundsHelp": "فقط ورودی‌های VLESS، VMess، Trojan، Shadowsocks و Hysteria را می‌توان به نماینده داد. حذف یک ورودی از این فهرست، کلاینت‌های فعلی را جدا نمی‌کند.",
+      "usernameRule": "۳ تا ۳۲ نویسه: حرف، رقم، نقطه، خط تیره یا زیرخط",
+      "passwordRule": "دست‌کم ۱۰ نویسه و متفاوت با نام کاربری",
+      "setPassword": "تعیین رمز عبور",
+      "newPassword": "رمز عبور جدید",
+      "resetTotp": "خاموش کردن ورود دومرحله‌ای",
+      "deleteTitle": "نماینده {name} حذف شود؟",
+      "deleteTransfer": "کلاینت‌هایش بمانند و مال شما شوند",
+      "deleteClients": "کلاینت‌هایش هم حذف شوند",
+      "ownerAdmin": "مدیر",
+      "ownerFilter": "مالک",
+      "ownerAll": "همه",
+      "ownerOwn": "کلاینت‌های خودم",
+      "stateOk": "فعال",
+      "statePool": "حجم تمام شده",
+      "stateExpired": "منقضی",
+      "stateDisabled": "غیرفعال",
+      "statePoolDesc": "حجم کل تمام شده است. افزودن یا فعال کردن کلاینت تا افزایش حجم توسط مدیر ممکن نیست.",
+      "stateExpiredDesc": "این حساب منقضی شده است. افزودن یا فعال کردن کلاینت تا تمدید توسط مدیر ممکن نیست.",
+      "stateDisabledDesc": "این حساب توسط مدیر غیرفعال شده است."
+    },
+    "resellerHome": {
+      "account": "حساب",
+      "changePassword": "تغییر رمز عبور",
+      "currentPassword": "رمز عبور فعلی",
+      "twoFactorOn": "روشن",
+      "twoFactorOff": "خاموش",
+      "enableTwoFactor": "روشن کردن",
+      "disableTwoFactor": "خاموش کردن",
+      "twoFactorScan": "کد را با یک برنامه‌ی احراز هویت اسکن کنید و کد ۶ رقمی آن را وارد کنید."
+    },
+    "resellerClients": {
+      "inbounds": "ورودی‌ها",
+      "totalGB": "محدودیت حجم (گیگابایت، ۰ = نامحدود)",
+      "quotaRequired": "حساب شما برای هر کلاینت محدودیت حجم لازم دارد.",
+      "limitReached": "به سقف تعداد کلاینت رسیده‌اید",
+      "deleteConfirm": "کلاینت {email} حذف شود؟",
+      "resetConfirm": "مصرف {email} صفر شود؟",
+      "noSubscription": "لینک اشتراک در این پنل خاموش است."
     }
   },
   "tgbot": {
