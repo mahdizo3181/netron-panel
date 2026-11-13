@@ -95,6 +95,8 @@ const PromptModal = lazy(() => import('@/components/feedback/PromptModal'));
 import { ClientInboundChips, ClientRowActions } from './RowCells';
 import { emptyFilters, activeFilterCount } from './filters';
 import type { ClientFilters } from './filters';
+import OwnerTag from '@/components/resellers/OwnerTag';
+import { useResellerList } from '@/api/queries/useResellers';
 import './ClientsPage.css';
 
 const FILTER_STATE_KEY = 'clientsFilterState';
@@ -322,6 +324,13 @@ export default function ClientsPage() {
   const { isDark, isUltra, antdThemeConfig } = useTheme();
   const { datepicker } = useDatepicker();
   const { isMobile } = useMediaQuery();
+  // Owner tags and the owner filter appear only once a reseller exists.
+  const resellerList = useResellerList();
+  const resellers = useMemo(
+    () => (resellerList.data ?? []).map((r) => ({ id: r.id, name: r.name || r.username })),
+    [resellerList.data],
+  );
+  const hasResellers = resellers.length > 0;
   const [modal, modalContextHolder] = Modal.useModal();
   const [messageApi, messageContextHolder] = message.useMessage();
   useEffect(() => {
@@ -527,6 +536,7 @@ export default function ClientsPage() {
       hasTgId: filters.hasTgId || undefined,
       hasComment: filters.hasComment || undefined,
       group: filters.groups.join(',') || undefined,
+      owner: filters.owner || undefined,
       sort: sortColumn || undefined,
       order: sortOrder || undefined,
     });
@@ -1123,7 +1133,10 @@ export default function ClientsPage() {
         width: 220,
         render: (_v, record) => (
           <div className="email-cell">
-            <span className="email">{record.email}</span>
+            <span className="email">
+              {record.email}
+              {hasResellers && <OwnerTag owner={record.owner} />}
+            </span>
             {record.subId && (
               <span className="sub" title={record.subId}>
                 {record.subId}
@@ -1782,6 +1795,7 @@ export default function ClientsPage() {
                                       <Badge status={bucketBadgeStatus(bucket)} />
                                     )}
                                     <span className="tag-name">{row.email}</span>
+                                    {hasResellers && <OwnerTag owner={row.owner} />}
                                     {bucket === 'depleted' && (
                                       <Tag color="red" className="status-tag">
                                         {t('depleted')}
@@ -2036,6 +2050,7 @@ export default function ClientsPage() {
             protocols={protocolOptions}
             groups={groupOptions}
             nodes={nodes}
+            resellers={resellers}
           />
         </LazyMount>
         <LazyMount when={textOpen}>

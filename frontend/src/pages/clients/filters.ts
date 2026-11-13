@@ -6,6 +6,8 @@ export interface ClientFilters {
   // no nodeId). Mapped onto inbound ids client-side — see ClientsPage.
   nodeIds: number[];
   groups: string[];
+  // '' everyone, 'admin' the admin's own clients, or a reseller id (admin only).
+  owner: string;
   expiryFrom?: number;
   expiryTo?: number;
   usageFromGB?: number;
@@ -22,6 +24,7 @@ export function emptyFilters(): ClientFilters {
     inboundIds: [],
     nodeIds: [],
     groups: [],
+    owner: '',
     autoRenew: '',
     hasTgId: '',
     hasComment: '',
@@ -35,6 +38,7 @@ export function activeFilterCount(f: ClientFilters): number {
   if (f.inboundIds.length) n++;
   if (f.nodeIds.length) n++;
   if (f.groups.length) n++;
+  if (f.owner) n++;
   if (f.expiryFrom || f.expiryTo) n++;
   if (f.usageFromGB || f.usageToGB) n++;
   if (f.autoRenew) n++;

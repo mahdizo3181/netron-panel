@@ -31,6 +31,8 @@ interface FilterDrawerProps {
   protocols: string[];
   groups: string[];
   nodes: NodeRecord[];
+  // Shown only when resellers exist, so a panel without them looks as before.
+  resellers?: { id: number; name: string }[];
 }
 
 const BUCKET_KEYS = ['active', 'expiring', 'depleted', 'deactive', 'online'] as const;
@@ -44,6 +46,7 @@ export default function FilterDrawer({
   protocols,
   groups,
   nodes,
+  resellers = [],
 }: FilterDrawerProps) {
   const { t } = useTranslation();
   const uid = useId();
@@ -173,6 +176,22 @@ export default function FilterDrawer({
             listHeight={220}
           />
         </Form.Item>
+
+        {resellers.length > 0 && (
+          <Form.Item label={t('pages.resellers.ownerFilter')} htmlFor={`${uid}-owner`}>
+            <Select
+              id={`${uid}-owner`}
+              value={filters.owner}
+              onChange={(v) => patch('owner', v as string)}
+              options={[
+                { value: '', label: t('pages.resellers.ownerAll') },
+                { value: 'admin', label: t('pages.resellers.ownerOwn') },
+                ...resellers.map((r) => ({ value: String(r.id), label: r.name })),
+              ]}
+              showSearch={{ optionFilterProp: 'label' }}
+            />
+          </Form.Item>
+        )}
 
         <Form.Item label={t('pages.clients.expiryTime')} htmlFor={`${uid}-expiry`}>
           <DatePicker.RangePicker

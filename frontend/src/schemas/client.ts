@@ -40,6 +40,8 @@ export const ClientRecordSchema = z
     limitHwid: z.number().optional(),
     tgId: z.union([z.number(), z.string()]).optional(),
     group: z.string().optional(),
+    // Read-only; only the admin's responses carry it (StripForReseller drops it).
+    owner: z.object({ id: z.number(), name: z.string() }).nullable().optional(),
     comment: z.string().optional(),
     enable: z.boolean().optional(),
     reset: z.number().optional(),
