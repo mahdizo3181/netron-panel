@@ -208,6 +208,7 @@ describe('generated OpenAPI runtime contracts', () => {
       'hasTgId',
       'hasComment',
       'group',
+      'owner',
     ]);
     expect(paged.parameters?.every((param) => param.required === false)).toBe(true);
 
