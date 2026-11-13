@@ -227,7 +227,8 @@ func (s *InboundService) upsertNodeBaseline(tx *gorm.DB, nodeID int, email strin
 
 // mergeNodeClientTraffic folds one node-reported client into its central row.
 // While frozen (a push pending or just landed) only the counters may move.
-func (s *InboundService) mergeNodeClientTraffic(tx *gorm.DB, cs xray.ClientTraffic, canon nodeTrafficCounter, frozen bool, deltaUp, deltaDown, now int64) error {
+func (s *InboundService) mergeNodeClientTraffic(tx *gorm.DB, cs xray.ClientTraffic, canon nodeTrafficCounter, frozen bool, deltaUp, deltaDown, now int64, billed resellerUsage) error {
+	billed.add(cs.Email, deltaUp+deltaDown)
 	if frozen {
 		return tx.Exec(
 			fmt.Sprintf(
@@ -704,6 +705,7 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 
 	structuralChange := false
 	lifecycleLifted := false
+	billed := resellerUsage{}
 
 	var adoptedInbounds []*model.Inbound
 	type pendingAdopt struct {
@@ -1159,6 +1161,7 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 				if err := clearGlobalTraffic(tx, cs.Email); err != nil {
 					return false, err
 				}
+				billed.add(cs.Email, canon.Up+canon.Down)
 				existing.Up = canon.Up
 				existing.Down = canon.Down
 				existing.Enable = cs.Enable
@@ -1189,7 +1192,7 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 				// A multi-attached client is reported once per inbound and an idle one
 				// every tick: rewriting an unchanged row only holds its lock longer.
 				if next != *row {
-					if err := s.mergeNodeClientTraffic(tx, cs, canon, clientFrozen, deltaUp, deltaDown, now); err != nil {
+					if err := s.mergeNodeClientTraffic(tx, cs, canon, clientFrozen, deltaUp, deltaDown, now, billed); err != nil {
 						return false, err
 					}
 					*row = next
@@ -1438,6 +1441,9 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 
 	if err := liftActivatedClientRecordExpiries(tx); err != nil {
 		logger.Warning("setRemoteTraffic: lift activated expiries failed:", err)
+	}
+	if err := addResellerUsage(tx, billed); err != nil {
+		return false, fmt.Errorf("bill reseller pools: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
