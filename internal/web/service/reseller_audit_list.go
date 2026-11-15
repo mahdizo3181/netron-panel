@@ -71,17 +71,6 @@ func PruneResellerAuditLogs() error {
 	return database.GetDB().Where("at < ?", cutoff).Delete(&model.ResellerAuditLog{}).Error
 }
 
-func auditorFromScope(scope Scope, ip string) AuditActor {
-	if scope.IsAdmin() {
-		return AuditActor{Kind: "admin", Ip: ip}
-	}
-	return AuditActor{Kind: "reseller", Id: *scope.ResellerID, Ip: ip}
-}
-
-func recordResellerAuditDB(actor AuditActor, resellerID int, action, target string, detail map[string]any) error {
-	return recordResellerAudit(database.GetDB(), actor, resellerID, action, target, detail)
-}
-
 func auditResellerCreate(tx *gorm.DB, actor AuditActor, id int) error {
 	return recordResellerAudit(tx, actor, id, "create", "", nil)
 }
