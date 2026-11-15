@@ -3,6 +3,7 @@ package service
 import (
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
@@ -37,6 +38,10 @@ func TestPoolThresholdNotifiedOncePerCycle(t *testing.T) {
 	}
 	if err := bumpResellerPoolNotices(db, []int{r.Id}); err != nil {
 		t.Fatal(err)
+	}
+	deadline := time.Now().Add(200 * time.Millisecond)
+	for published.Load() < 1 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
 	}
 	if n := published.Load(); n != 1 {
 		t.Fatalf("%d reseller.pool events, want 1", n)
