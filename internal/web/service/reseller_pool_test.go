@@ -117,19 +117,33 @@ func TestPoolCounterNeverDropsOnClientResetRenewOrDelete(t *testing.T) {
 	}
 }
 
+func nodeInboundTag(nodeID int) string {
+	return fmt.Sprintf("n%d-in", nodeID)
+}
+
 // nodeTick is one node sync carrying the client in its settings, as real nodes report it.
 func nodeTick(t *testing.T, cs xray.ClientTraffic) {
 	t.Helper()
+	nodeTickOn(t, 1, nodeInboundTag(1), cs)
+}
+
+func nodeTickOn(t *testing.T, nodeID int, tag string, cs xray.ClientTraffic) {
+	t.Helper()
 	settings := fmt.Sprintf(`{"clients":[{"email":%q,"enable":%v,"expiryTime":%d,"reset":%d}]}`,
 		cs.Email, cs.Enable, cs.ExpiryTime, cs.Reset)
-	syncNodeWithSettings(t, &InboundService{}, 1, "n1-in", settings, cs)
+	syncNodeWithSettings(t, &InboundService{}, nodeID, tag, settings, cs)
 }
 
 func ownedNodeClient(t *testing.T, email string) int {
 	t.Helper()
+	return ownedNodeClientOn(t, 1, nodeInboundTag(1), email)
+}
+
+func ownedNodeClientOn(t *testing.T, nodeID int, tag, email string) int {
+	t.Helper()
 	db := database.GetDB()
-	createNodeInboundWithClient(t, db, 1, "n1-in", 25101, email)
-	nodeTick(t, xray.ClientTraffic{Email: email, Enable: true})
+	createNodeInboundWithClient(t, db, nodeID, tag, 25101, email)
+	nodeTickOn(t, nodeID, tag, xray.ClientTraffic{Email: email, Enable: true})
 	var n int64
 	if db.Model(&model.ClientRecord{}).Where("email = ?", email).Count(&n); n != 1 {
 		t.Fatalf("node sync left %d client records for %s", n, email)

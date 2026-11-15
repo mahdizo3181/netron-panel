@@ -207,6 +207,7 @@ var RoutePolicies = map[string]RoutePolicy{
 	"POST /panel/api/resellers/:id/disableClients":            PolicyAdminOnly,
 	"POST /panel/api/resellers/:id/enableClients":             PolicyAdminOnly,
 	"GET /panel/api/resellers/:id/audit":                      PolicyAdminOnly,
+	"GET /panel/api/resellers/poolEnforce":                    PolicyAdminOnly,
 	"POST /panel/api/resellers/poolEnforce":                   PolicyAdminOnly,
 	"GET /panel/api/reseller/me/audit":                        PolicyReseller,
 	"POST /panel/api/server/amneziawglogs/:count":               PolicyAdminOnly,
@@ -303,9 +304,12 @@ func enforceActorPolicy(c *gin.Context) {
 // actorScope is the service Scope for this request's actor.
 func actorScope(c *gin.Context) service.Scope {
 	if id, ok := actorResellerID(c); ok {
-		return service.ResellerScope(id)
+		return service.Scope{
+			ResellerID: &id,
+			Actor:      service.AuditActor{Kind: "reseller", Id: id, Ip: c.ClientIP()},
+		}
 	}
-	return service.AdminScope()
+	return service.Scope{Actor: adminAuditActor(c)}
 }
 
 // jsonObjFor answers like jsonObj; a reseller's copy goes through StripForReseller.

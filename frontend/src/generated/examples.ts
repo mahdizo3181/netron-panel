@@ -1126,15 +1126,39 @@ export const EXAMPLES: Record<string, unknown> = {
     "tlsVersion": "1.3",
     "x25519": true
   },
+  "ResellerAuditLog": {
+    "action": "",
+    "actorId": 0,
+    "actorKind": "",
+    "at": 0,
+    "detail": "",
+    "id": 0,
+    "ip": "",
+    "resellerId": 0,
+    "target": ""
+  },
   "ResellerAuditPage": {
     "rows": [
-      {}
+      {
+        "action": "",
+        "actorId": 0,
+        "actorKind": "",
+        "at": 0,
+        "detail": "",
+        "id": 0,
+        "ip": "",
+        "resellerId": 0,
+        "target": ""
+      }
     ],
     "total": 42
   },
   "ResellerMe": {
     "reseller": null,
     "role": "reseller"
+  },
+  "ResellerPoolEnforceView": {
+    "on": false
   },
   "ResellerSelfView": {
     "clientCount": 42,

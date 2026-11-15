@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { HttpUtil } from '@/utils';
 import { keys } from '@/api/queryKeys';
-import type { ResellerMe, ResellerView } from '@/generated/types';
+import type {
+  ResellerAuditPage,
+  ResellerMe,
+  ResellerPoolEnforceView,
+  ResellerView,
+} from '@/generated/types';
 
 const JSON_HEADERS = { headers: { 'Content-Type': 'application/json' } };
 
@@ -97,6 +102,16 @@ export function useResellerMutations() {
     mutationFn: async (on: boolean) =>
       done(await HttpUtil.post('/panel/api/resellers/poolEnforce', { on }, JSON_HEADERS)),
   });
+  const extendExpiry = useMutation({
+    mutationFn: async ({ id, expiryTime }: { id: number; expiryTime: number }) =>
+      done(
+        await HttpUtil.post(
+          `/panel/api/resellers/${id}/extendExpiry`,
+          { expiryTime },
+          JSON_HEADERS,
+        ),
+      ),
+  });
   return {
     create,
     update,
@@ -108,7 +123,54 @@ export function useResellerMutations() {
     disableClients,
     enableClients,
     setPoolEnforce,
+    extendExpiry,
   };
+}
+
+export function usePoolEnforce(enabled = true) {
+  return useQuery({
+    queryKey: [...keys.resellers.root(), 'pool-enforce'],
+    enabled,
+    queryFn: async (): Promise<boolean> => {
+      const msg = await HttpUtil.get<ResellerPoolEnforceView>(
+        '/panel/api/resellers/poolEnforce',
+        undefined,
+        { silent: true },
+      );
+      if (!msg?.success || !msg.obj) throw new Error(msg?.msg || 'Failed to load pool enforcement');
+      return msg.obj.on;
+    },
+  });
+}
+
+export interface ResellerAuditQuery {
+  resellerId?: number;
+  self?: boolean;
+  page?: number;
+  pageSize?: number;
+  action?: string;
+  from?: number;
+  to?: number;
+}
+
+export function useResellerAuditList(params: ResellerAuditQuery) {
+  const { resellerId, self, page = 1, pageSize = 25, action, from, to } = params;
+  return useQuery({
+    queryKey: [...keys.resellers.root(), 'audit', params],
+    enabled: self || (resellerId ?? 0) > 0,
+    queryFn: async (): Promise<ResellerAuditPage> => {
+      const path = self
+        ? '/panel/api/reseller/me/audit'
+        : `/panel/api/resellers/${resellerId}/audit`;
+      const msg = await HttpUtil.get<ResellerAuditPage>(
+        path,
+        { page, pageSize, action, from, to },
+        { silent: true },
+      );
+      if (!msg?.success || !msg.obj) throw new Error(msg?.msg || 'Failed to load audit log');
+      return msg.obj;
+    },
+  });
 }
 
 export interface ResellerSubSettings {

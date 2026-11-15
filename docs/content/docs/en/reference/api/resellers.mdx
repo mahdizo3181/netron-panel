@@ -63,6 +63,9 @@ _openapi:
       title: Paged audit log for one reseller (admin).
       url: '#paged-audit-log-for-one-reseller-admin'
     - depth: 2
+      title: Whether automatic reseller pool cut-off is enabled.
+      url: '#whether-automatic-reseller-pool-cut-off-is-enabled'
+    - depth: 2
       title: Toggle resellerPoolEnforce; OFF releases every cut-off.
       url: '#toggle-resellerpoolenforce-off-releases-every-cut-off'
     - depth: 2
@@ -131,6 +134,8 @@ _openapi:
         id: enable-owned-clients-that-are-still-valid-while-the-reseller-is-not-cut-off
       - content: Paged audit log for one reseller (admin).
         id: paged-audit-log-for-one-reseller-admin
+      - content: Whether automatic reseller pool cut-off is enabled.
+        id: whether-automatic-reseller-pool-cut-off-is-enabled
       - content: Toggle resellerPoolEnforce; OFF releases every cut-off.
         id: toggle-resellerpoolenforce-off-releases-every-cut-off
       - content: 'Who am I. An admin gets {"role": "admin"}; a reseller session gets
@@ -163,7 +168,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/resellers/{id}/addVolume","method":"post"},{"path":"/panel/api/resellers/{id}/resetUsage","method":"post"},{"path":"/panel/api/resellers/{id}/extendExpiry","method":"post"},{"path":"/panel/api/resellers/{id}/disableClients","method":"post"},{"path":"/panel/api/resellers/{id}/enableClients","method":"post"},{"path":"/panel/api/resellers/{id}/audit","method":"get"},{"path":"/panel/api/resellers/poolEnforce","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/audit","method":"get"},{"path":"/panel/api/reseller/me/password","method":"post"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
+      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/resellers/{id}/addVolume","method":"post"},{"path":"/panel/api/resellers/{id}/resetUsage","method":"post"},{"path":"/panel/api/resellers/{id}/extendExpiry","method":"post"},{"path":"/panel/api/resellers/{id}/disableClients","method":"post"},{"path":"/panel/api/resellers/{id}/enableClients","method":"post"},{"path":"/panel/api/resellers/{id}/audit","method":"get"},{"path":"/panel/api/resellers/poolEnforce","method":"get"},{"path":"/panel/api/resellers/poolEnforce","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/audit","method":"get"},{"path":"/panel/api/reseller/me/password","method":"post"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
     </>
   );
 }

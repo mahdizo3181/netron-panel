@@ -1027,6 +1027,18 @@ export interface RealityScanResult {
   x25519: boolean;
 }
 
+export interface ResellerAuditLog {
+  action: string;
+  actorId: number;
+  actorKind: string;
+  at: number;
+  detail: string;
+  id: number;
+  ip: string;
+  resellerId: number;
+  target: string;
+}
+
 export interface ResellerAuditPage {
   rows: ResellerAuditLog[];
   total: number;
@@ -1035,6 +1047,10 @@ export interface ResellerAuditPage {
 export interface ResellerMe {
   reseller?: ResellerSelfView | null;
   role: string;
+}
+
+export interface ResellerPoolEnforceView {
+  on: boolean;
 }
 
 export interface ResellerSelfView {

@@ -1096,6 +1096,19 @@ export const RealityScanResultSchema = z.object({
 });
 export type RealityScanResult = z.infer<typeof RealityScanResultSchema>;
 
+export const ResellerAuditLogSchema = z.object({
+  action: z.string(),
+  actorId: z.number().int(),
+  actorKind: z.string(),
+  at: z.number().int(),
+  detail: z.string(),
+  id: z.number().int(),
+  ip: z.string(),
+  resellerId: z.number().int(),
+  target: z.string(),
+});
+export type ResellerAuditLog = z.infer<typeof ResellerAuditLogSchema>;
+
 export const ResellerAuditPageSchema = z.object({
   rows: z.array(z.lazy(() => ResellerAuditLogSchema)),
   total: z.number().int(),
@@ -1107,6 +1120,11 @@ export const ResellerMeSchema = z.object({
   role: z.string(),
 });
 export type ResellerMe = z.infer<typeof ResellerMeSchema>;
+
+export const ResellerPoolEnforceViewSchema = z.object({
+  on: z.boolean(),
+});
+export type ResellerPoolEnforceView = z.infer<typeof ResellerPoolEnforceViewSchema>;
 
 export const ResellerSelfViewSchema = z.object({
   clientCount: z.number().int(),

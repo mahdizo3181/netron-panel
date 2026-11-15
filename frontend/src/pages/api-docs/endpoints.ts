@@ -2847,6 +2847,12 @@ export const sections: readonly Section[] = [
         responseSchema: 'ResellerAuditPage',
       },
       {
+        method: 'GET',
+        path: '/panel/api/resellers/poolEnforce',
+        summary: 'Whether automatic reseller pool cut-off is enabled.',
+        responseSchema: 'ResellerPoolEnforceView',
+      },
+      {
         method: 'POST',
         path: '/panel/api/resellers/poolEnforce',
         summary: 'Toggle resellerPoolEnforce; OFF releases every cut-off.',

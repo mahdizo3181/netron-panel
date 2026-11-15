@@ -17,6 +17,7 @@ import {
   Table,
   Tag,
   message,
+  Drawer,
 } from 'antd';
 import type { TableColumnsType } from 'antd';
 import {
@@ -32,7 +33,9 @@ import dayjs from 'dayjs';
 import AppSidebar from '@/layouts/AppSidebar';
 import { DateTimePicker } from '@/components/form';
 import PoolUsage from '@/components/resellers/PoolUsage';
+import ResellerAuditPanel from '@/components/resellers/ResellerAuditPanel';
 import {
+  usePoolEnforce,
   useResellerList,
   useResellerMutations,
   type ResellerFormPayload,
@@ -109,8 +112,15 @@ export default function ResellersPage() {
     resetUsage,
     disableClients,
     enableClients,
+    setPoolEnforce,
+    extendExpiry,
   } = useResellerMutations();
+  const poolEnforce = usePoolEnforce();
   const [editing, setEditing] = useState<number | 'new' | null>(null);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditResellerId, setAuditResellerId] = useState<number | undefined>();
+  const [extendFor, setExtendFor] = useState<number | null>(null);
+  const [extendAt, setExtendAt] = useState(0);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [pwFor, setPwFor] = useState<ResellerView | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -277,18 +287,59 @@ export default function ResellersPage() {
             <Card
               title={t('menu.resellers')}
               extra={
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined aria-hidden />}
-                  onClick={() => {
-                    setForm(emptyForm);
-                    setEditing('new');
-                  }}
-                >
-                  {t('pages.resellers.add')}
-                </Button>
+                <Space>
+                  <Button
+                    onClick={() => {
+                      setAuditResellerId(undefined);
+                      setAuditOpen(true);
+                    }}
+                  >
+                    {t('pages.resellers.viewAudit')}
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined aria-hidden />}
+                    onClick={() => {
+                      setForm(emptyForm);
+                      setEditing('new');
+                    }}
+                  >
+                    {t('pages.resellers.add')}
+                  </Button>
+                </Space>
               }
             >
+              <Form.Item
+                label={t('pages.resellers.poolEnforce')}
+                htmlFor={`${uid}-pool-enforce`}
+                colon={false}
+                style={{ marginBottom: 16 }}
+              >
+                <Space direction="vertical" size={4}>
+                  <Switch
+                    id={`${uid}-pool-enforce`}
+                    checked={poolEnforce.data ?? false}
+                    loading={poolEnforce.isPending || setPoolEnforce.isPending}
+                    onChange={(on) =>
+                      modal.confirm({
+                        title: t('pages.resellers.poolEnforce'),
+                        content: on
+                          ? t('pages.resellers.poolEnforceConfirmOn')
+                          : t('pages.resellers.poolEnforceConfirmOff'),
+                        okText: t('confirm'),
+                        cancelText: t('cancel'),
+                        onOk: async () => {
+                          await setPoolEnforce.mutateAsync(on);
+                          void poolEnforce.refetch();
+                        },
+                      })
+                    }
+                  />
+                  <span style={{ fontSize: 12, opacity: 0.75 }}>
+                    {t('pages.resellers.poolEnforceHelp')}
+                  </span>
+                </Space>
+              </Form.Item>
               <Table<ResellerView>
                 rowKey="id"
                 size="small"
@@ -440,10 +491,57 @@ export default function ResellersPage() {
               <Button onClick={() => enableClients.mutateAsync(editing)}>
                 {t('pages.resellers.actions.enableAll')}
               </Button>
+              <Button
+                onClick={() => {
+                  setExtendFor(editing);
+                  setExtendAt(0);
+                }}
+              >
+                {t('pages.resellers.actions.extendExpiry')}
+              </Button>
             </Space>
           )}
         </Form>
       </Modal>
+
+      <Modal
+        open={extendFor !== null}
+        title={t('pages.resellers.actions.extendExpiry')}
+        okText={t('confirm')}
+        cancelText={t('cancel')}
+        onCancel={() => setExtendFor(null)}
+        onOk={async () => {
+          if (extendFor === null) return;
+          await extendExpiry.mutateAsync({ id: extendFor, expiryTime: extendAt });
+          setExtendFor(null);
+        }}
+        destroyOnHidden
+      >
+        <Form layout="vertical">
+          <Form.Item
+            label={t('pages.resellers.expiry')}
+            htmlFor={`${uid}-extend-expiry`}
+            extra={t('pages.resellers.never')}
+          >
+            <DateTimePicker
+              id={`${uid}-extend-expiry`}
+              aria-label={t('pages.resellers.expiry')}
+              value={extendAt > 0 ? dayjs(extendAt) : null}
+              onChange={(d) => setExtendAt(d ? d.valueOf() : 0)}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Drawer
+        title={t('pages.resellers.audit.title')}
+        open={auditOpen}
+        width={720}
+        onClose={() => setAuditOpen(false)}
+        destroyOnHidden
+      >
+        <ResellerAuditPanel resellerId={auditResellerId} resellers={list.data ?? []} />
+      </Drawer>
 
       <Modal
         open={pwFor !== null}

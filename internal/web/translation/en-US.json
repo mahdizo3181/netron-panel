@@ -2551,6 +2551,19 @@
         "enableAll": "Enable all clients",
         "audit": "Audit log"
       },
+      "viewAudit": "Audit log",
+      "poolEnforceConfirmOn": "Turn on automatic cut-off when a pool is exhausted, expired, or the reseller is disabled? Usage may overshoot by about one traffic poll (5 s) plus one node sync interval.",
+      "poolEnforceConfirmOff": "Turn off automatic cut-off? Counters keep running and every cut-off client is released.",
+      "audit": {
+        "title": "Audit log",
+        "at": "Time",
+        "action": "Action",
+        "target": "Target",
+        "detail": "Detail",
+        "actor": "Actor",
+        "resellerFilter": "Reseller",
+        "actionFilter": "Action"
+      },
       "add": "Add reseller",
       "name": "Name",
       "clients": "Clients",

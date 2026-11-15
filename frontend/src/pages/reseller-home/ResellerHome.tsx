@@ -22,6 +22,7 @@ import * as OTPAuth from 'otpauth';
 
 import AppSidebar from '@/layouts/AppSidebar';
 import PoolUsage from '@/components/resellers/PoolUsage';
+import ResellerAuditPanel from '@/components/resellers/ResellerAuditPanel';
 import { useResellerMe, useResellerSelf, useResellerSubSettings } from '@/api/queries/useResellers';
 import { useTheme } from '@/hooks/useTheme';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -63,6 +64,11 @@ export default function ResellerHome() {
                         usedTraffic={r.usedTraffic}
                         state={r.state}
                       />
+                    </Card>
+                  </Col>
+                  <Col span={24}>
+                    <Card title={t('pages.resellers.audit.title')}>
+                      <ResellerAuditPanel self />
                     </Card>
                   </Col>
                   <Col xs={24} md={12}>

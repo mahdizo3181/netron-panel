@@ -776,7 +776,7 @@ func (a *ClientController) setOwner(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.owner"), err)
 		return
 	}
-	change, err := a.clientService.SetOwner(c.Param("email"), req.ResellerId)
+	change, err := a.clientService.SetOwner(adminAuditActor(c), c.Param("email"), req.ResellerId)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.owner"), err)
 		return

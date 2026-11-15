@@ -1131,9 +1131,12 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 			}
 
 			renewed := !clientFrozen && seen && existing != nil && nodeClientRenewed(existing, cs, canon, base)
-			if renewed && resellerClientBlocksNodeRenewal(tx, cs.Email) {
-				renewed = false
-				structuralChange = true
+			if existing != nil && resellerClientBlocksNodeRenewal(tx, cs.Email) {
+				if renewed || cs.ExpiryTime > existing.ExpiryTime {
+					renewed = false
+					structuralChange = true
+					lifecycleLifted = true
+				}
 			}
 			if renewed {
 				// Reject when the node's own settings still carry the old absolute:

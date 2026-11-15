@@ -4555,10 +4555,57 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ResellerAuditLog": {
+    "description": "ResellerAuditLog records who changed what for one reseller's tenant; Detail never holds secrets.",
+    "properties": {
+      "action": {
+        "type": "string"
+      },
+      "actorId": {
+        "type": "integer"
+      },
+      "actorKind": {
+        "type": "string"
+      },
+      "at": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "detail": {
+        "type": "string"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "ip": {
+        "type": "string"
+      },
+      "resellerId": {
+        "type": "integer"
+      },
+      "target": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "actorId",
+      "actorKind",
+      "at",
+      "detail",
+      "id",
+      "ip",
+      "resellerId",
+      "target"
+    ],
+    "type": "object"
+  },
   "ResellerAuditPage": {
     "properties": {
       "rows": {
-        "items": {},
+        "items": {
+          "$ref": "#/components/schemas/ResellerAuditLog"
+        },
         "type": "array"
       },
       "total": {
@@ -4591,6 +4638,19 @@ export const SCHEMAS: Record<string, unknown> = {
     },
     "required": [
       "role"
+    ],
+    "type": "object"
+  },
+  "ResellerPoolEnforceView": {
+    "description": "ResellerPoolEnforceView is whether automatic pool cut-off is active panel-wide.",
+    "properties": {
+      "on": {
+        "example": false,
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "on"
     ],
     "type": "object"
   },

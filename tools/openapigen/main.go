@@ -40,6 +40,7 @@ func run(root, outDir string) error {
 				"InboundFallback",
 				"Host",
 				"SubBalancer",
+				"ResellerAuditLog",
 			),
 			AliasAllow: setOf("Protocol"),
 			Overrides: map[string][]walkOverride{
@@ -119,6 +120,7 @@ func run(root, outDir string) error {
 				"ResellerView",
 				"ResellerAuditPage",
 				"ResellerAuditLog",
+				"ResellerPoolEnforceView",
 				"ResellerMe",
 				"ResellerSelfView",
 				"ClientOwner",

@@ -21,6 +21,7 @@ var (
 // the admin, who is never limited (docs/RESELLERS.md §3.3).
 type Scope struct {
 	ResellerID *int
+	Actor      AuditActor
 }
 
 func AdminScope() Scope { return Scope{} }

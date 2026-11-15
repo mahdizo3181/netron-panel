@@ -48,13 +48,13 @@ func TestSubscriptionOutputIgnoresClientOwnership(t *testing.T) {
 	if !strings.Contains(before, "aaaaaaaa-1111-4222-8333-444444444444") {
 		t.Fatalf("fixture: subscription has no link for the client: %q", before)
 	}
-	if _, err := clients.SetOwner("alice@sub", &r.Id); err != nil {
+	if _, err := clients.SetOwner(service.AuditActor{Kind: "admin"}, "alice@sub", &r.Id); err != nil {
 		t.Fatal(err)
 	}
 	if after := render("sub-alice"); after != before {
 		t.Fatalf("reassigning to a reseller changed the subscription:\nbefore %q\nafter  %q", before, after)
 	}
-	if _, err := clients.SetOwner("alice@sub", nil); err != nil {
+	if _, err := clients.SetOwner(service.AuditActor{Kind: "admin"}, "alice@sub", nil); err != nil {
 		t.Fatal(err)
 	}
 	if after := render("sub-alice"); after != before {

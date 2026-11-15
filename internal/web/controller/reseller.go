@@ -35,8 +35,14 @@ func NewResellerController(g *gin.RouterGroup) *ResellerController {
 	g.POST("/:id/disableClients", a.disableClients)
 	g.POST("/:id/enableClients", a.enableClients)
 	g.GET("/:id/audit", a.audit)
+	g.GET("/poolEnforce", a.getPoolEnforce)
 	g.POST("/poolEnforce", a.setPoolEnforce)
 	return a
+}
+
+func (a *ResellerController) getPoolEnforce(c *gin.Context) {
+	on, err := (&service.SettingService{}).GetResellerPoolEnforce()
+	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.poolEnforce"), service.ResellerPoolEnforceView{On: on}, err)
 }
 
 func resellerID(c *gin.Context) (int, error) {
@@ -84,7 +90,7 @@ func (a *ResellerController) create(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.create"), err)
 		return
 	}
-	view, err := a.resellerService.Create(payload)
+	view, err := a.resellerService.CreateAs(adminAuditActor(c), payload)
 	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.create"), view, err)
 }
 
@@ -116,7 +122,7 @@ func (a *ResellerController) setPassword(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.password"), err)
 		return
 	}
-	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.password"), a.resellerService.SetPassword(id, body.Password))
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.password"), a.resellerService.SetPasswordAs(adminAuditActor(c), id, body.Password))
 }
 
 func (a *ResellerController) del(c *gin.Context) {
@@ -132,7 +138,7 @@ func (a *ResellerController) del(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.delete"), err)
 		return
 	}
-	needRestart, err := a.resellerService.Delete(&a.inboundService, id, body.Clients)
+	needRestart, err := a.resellerService.DeleteAs(adminAuditActor(c), &a.inboundService, id, body.Clients)
 	// Flagged before the error check: a partly-applied client delete still needs the restart.
 	if needRestart {
 		a.xrayService.SetToNeedRestart()

@@ -45,7 +45,21 @@ func TestResellerAuditScopedToOwnRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if page.Total != 1 || len(page.Rows) != 1 || page.Rows[0].ResellerId != a.Id {
-		t.Fatalf("reseller A sees %+v, want one own row", page)
+	if page.Total < 1 {
+		t.Fatalf("reseller A sees %+v, want at least one row", page)
+	}
+	for _, row := range page.Rows {
+		if row.ResellerId != a.Id {
+			t.Fatalf("row %+v belongs to another reseller", row)
+		}
+	}
+	pageB, err := (&ResellerService{}).ListAudit(ResellerScope(b.Id), ResellerAuditPageParams{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range pageB.Rows {
+		if row.ResellerId == a.Id {
+			t.Fatalf("reseller B must not see A's audit: %+v", row)
+		}
 	}
 }

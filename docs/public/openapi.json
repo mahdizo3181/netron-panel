@@ -4581,10 +4581,57 @@
         ],
         "type": "object"
       },
+      "ResellerAuditLog": {
+        "description": "ResellerAuditLog records who changed what for one reseller's tenant; Detail never holds secrets.",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "integer"
+          },
+          "actorKind": {
+            "type": "string"
+          },
+          "at": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "resellerId": {
+            "type": "integer"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "actorId",
+          "actorKind",
+          "at",
+          "detail",
+          "id",
+          "ip",
+          "resellerId",
+          "target"
+        ],
+        "type": "object"
+      },
       "ResellerAuditPage": {
         "properties": {
           "rows": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ResellerAuditLog"
+            },
             "type": "array"
           },
           "total": {
@@ -4617,6 +4664,19 @@
         },
         "required": [
           "role"
+        ],
+        "type": "object"
+      },
+      "ResellerPoolEnforceView": {
+        "description": "ResellerPoolEnforceView is whether automatic pool cut-off is active panel-wide.",
+        "properties": {
+          "on": {
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "on"
         ],
         "type": "object"
       },
@@ -17030,7 +17090,17 @@
                   "success": true,
                   "obj": {
                     "rows": [
-                      {}
+                      {
+                        "action": "",
+                        "actorId": 0,
+                        "actorKind": "",
+                        "at": 0,
+                        "detail": "",
+                        "id": 0,
+                        "ip": "",
+                        "resellerId": 0,
+                        "target": ""
+                      }
                     ],
                     "total": 42
                   }
@@ -17042,6 +17112,42 @@
       }
     },
     "/panel/api/resellers/poolEnforce": {
+      "get": {
+        "tags": [
+          "Resellers"
+        ],
+        "summary": "Whether automatic reseller pool cut-off is enabled.",
+        "operationId": "get_panel_api_resellers_poolEnforce",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {
+                      "$ref": "#/components/schemas/ResellerPoolEnforceView"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "obj": {
+                    "on": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "Resellers"
@@ -17153,7 +17259,17 @@
                   "success": true,
                   "obj": {
                     "rows": [
-                      {}
+                      {
+                        "action": "",
+                        "actorId": 0,
+                        "actorKind": "",
+                        "at": 0,
+                        "detail": "",
+                        "id": 0,
+                        "ip": "",
+                        "resellerId": 0,
+                        "target": ""
+                      }
                     ],
                     "total": 42
                   }

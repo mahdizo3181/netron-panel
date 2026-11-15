@@ -97,6 +97,19 @@ func (s *ClientService) createForReseller(scope Scope, inboundSvc *InboundServic
 			err = stampErr
 		}
 	}
+	if err == nil {
+		if bulk {
+			emails := make([]string, 0, len(payloads))
+			for _, p := range payloads {
+				if p != nil && p.Client.Email != "" {
+					emails = append(emails, p.Client.Email)
+				}
+			}
+			_ = scope.auditReseller("bulkCreate", "", auditBulkEmails("bulkCreate", len(emails), emails))
+		} else if len(payloads) > 0 && payloads[0] != nil {
+			_ = scope.auditReseller("create", payloads[0].Client.Email, map[string]any{"inbounds": len(payloads[0].InboundIds)})
+		}
+	}
 	return result, needRestart, err
 }
 
@@ -136,7 +149,11 @@ func (s *ClientService) DeleteByEmailFor(scope Scope, inboundSvc *InboundService
 	if err := scope.RequireOwnEmails(database.GetDB(), []string{email}); err != nil {
 		return false, err
 	}
-	return s.DeleteByEmail(inboundSvc, email, keepTraffic)
+	needRestart, err := s.DeleteByEmail(inboundSvc, email, keepTraffic)
+	if err == nil {
+		_ = scope.auditReseller("delete", email, nil)
+	}
+	return needRestart, err
 }
 
 func (s *ClientService) BulkSetEnableFor(scope Scope, inboundSvc *InboundService, emails []string, enable bool) (BulkSetEnableResult, bool, error) {
@@ -151,7 +168,15 @@ func (s *ClientService) BulkSetEnableFor(scope Scope, inboundSvc *InboundService
 			}
 		}
 	}
-	return s.BulkSetEnable(inboundSvc, emails, enable)
+	result, needRestart, err := s.BulkSetEnable(inboundSvc, emails, enable)
+	if err == nil && !scope.IsAdmin() {
+		action := "bulkDisable"
+		if enable {
+			action = "bulkEnable"
+		}
+		_ = scope.auditReseller(action, "", auditBulkEmails(action, result.Changed, emails))
+	}
+	return result, needRestart, err
 }
 
 // ResetTrafficByEmailFor is gated like an enable: a reset re-enables a depleted client.
@@ -164,7 +189,11 @@ func (s *ClientService) ResetTrafficByEmailFor(scope Scope, inboundSvc *InboundS
 			return false, err
 		}
 	}
-	return s.ResetTrafficByEmail(inboundSvc, email)
+	needRestart, err := s.ResetTrafficByEmail(inboundSvc, email)
+	if err == nil {
+		_ = scope.auditReseller("resetTraffic", email, nil)
+	}
+	return needRestart, err
 }
 
 func (s *ClientService) GetRecordByEmailFor(scope Scope, email string) (*model.ClientRecord, error) {
@@ -204,7 +233,7 @@ func ClientOwners(ids []int) (map[int]*ClientOwner, error) {
 
 // SetOwner hands a client to a reseller (or back to the admin with nil). Past
 // pool usage stays with the old owner; only future traffic bills the new one (§5.2).
-func (s *ClientService) SetOwner(email string, resellerID *int) (*OwnerChange, error) {
+func (s *ClientService) SetOwner(actor AuditActor, email string, resellerID *int) (*OwnerChange, error) {
 	db := database.GetDB()
 	rec, err := s.GetRecordByEmail(nil, email)
 	if err != nil {
@@ -242,8 +271,20 @@ func (s *ClientService) SetOwner(email string, resellerID *int) (*OwnerChange, e
 			}
 		}
 	}
-	return change, db.Model(&model.ClientRecord{}).Where("id = ?", rec.Id).
-		Updates(map[string]any{"reseller_id": resellerID, "pool_disabled": false}).Error
+	oldOwner := rec.ResellerID
+	if err := db.Model(&model.ClientRecord{}).Where("id = ?", rec.Id).
+		Updates(map[string]any{"reseller_id": resellerID, "pool_disabled": false}).Error; err != nil {
+		return change, err
+	}
+	if oldOwner != nil {
+		_ = recordResellerAudit(db, actor, *oldOwner, "setOwner", email, map[string]any{"toResellerId": resellerID})
+	}
+	if resellerID != nil {
+		_ = recordResellerAudit(db, actor, *resellerID, "setOwner", email, map[string]any{"fromResellerId": oldOwner})
+	} else if oldOwner != nil {
+		_ = recordResellerAudit(db, actor, *oldOwner, "setOwner", email, map[string]any{"toResellerId": nil})
+	}
+	return change, nil
 }
 
 // GetInboundOptionsFor lists the inbounds the actor may put clients on.

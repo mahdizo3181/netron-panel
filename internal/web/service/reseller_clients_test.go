@@ -448,7 +448,7 @@ func TestSetOwnerMovesOwnershipAndNothingElse(t *testing.T) {
 	db.Model(&model.ClientRecord{}).Where("email = ?", "move@x").Update("pool_disabled", true)
 	svc := &ClientService{}
 
-	change, err := svc.SetOwner("move@x", &ra.Id)
+	change, err := svc.SetOwner(testAdmin, "move@x", &ra.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -457,16 +457,16 @@ func TestSetOwnerMovesOwnershipAndNothingElse(t *testing.T) {
 		fmt.Sprint(change.OutsideInbounds) != fmt.Sprint([]int{private.Id}) {
 		t.Fatalf("after SetOwner: row owner %s poolDisabled %v, change %+v", ownerID(row), row.PoolDisabled, change)
 	}
-	if _, err := svc.SetOwner("second@x", &ra.Id); !errors.Is(err, ErrResellerClientLimit) {
+	if _, err := svc.SetOwner(testAdmin, "second@x", &ra.Id); !errors.Is(err, ErrResellerClientLimit) {
 		t.Fatalf("over the new owner's limit: err = %v, want ErrResellerClientLimit", err)
 	}
-	if _, err := svc.SetOwner("move@x", &ra.Id); err != nil {
+	if _, err := svc.SetOwner(testAdmin, "move@x", &ra.Id); err != nil {
 		t.Fatalf("re-assigning to the current owner at its limit: %v", err)
 	}
-	if _, err := svc.SetOwner("move@x", &rb.Id); err != nil {
+	if _, err := svc.SetOwner(testAdmin, "move@x", &rb.Id); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.SetOwner("move@x", nil); err != nil {
+	if _, err := svc.SetOwner(testAdmin, "move@x", nil); err != nil {
 		t.Fatal(err)
 	}
 	if row := resellerClientRow(t, "move@x"); row.ResellerID != nil {
@@ -478,10 +478,10 @@ func TestSetOwnerMovesOwnershipAndNothingElse(t *testing.T) {
 		t.Fatalf("reassignment rewrote pool usage: %v, want [111 222]", used)
 	}
 	missing := 99999
-	if _, err := svc.SetOwner("move@x", &missing); !errors.Is(err, ErrResellerNotFound) {
+	if _, err := svc.SetOwner(testAdmin, "move@x", &missing); !errors.Is(err, ErrResellerNotFound) {
 		t.Fatalf("unknown reseller: err = %v", err)
 	}
-	if _, err := svc.SetOwner("nobody@x", nil); !errors.Is(err, ErrScopeNotFound) {
+	if _, err := svc.SetOwner(testAdmin, "nobody@x", nil); !errors.Is(err, ErrScopeNotFound) {
 		t.Fatalf("unknown client: err = %v", err)
 	}
 }

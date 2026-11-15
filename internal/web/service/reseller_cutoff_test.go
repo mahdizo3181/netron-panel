@@ -267,26 +267,24 @@ func TestNodeRenewalOfABlockedResellersClientIsRejected(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			setupPoolDB(t)
 			db := database.GetDB()
-			node := &model.Node{Name: "n1", Address: "127.0.0.1", Port: 2096, ApiToken: "tok", Enable: true, Status: "online"}
-			if err := db.Create(node).Error; err != nil || node.Id != 1 {
-				t.Fatalf("node id %d err %v", node.Id, err)
-			}
-			id := ownedNodeClient(t, "rn@x")
+			nodeID, _ := setupNodeRuntime(t)
+			tag := nodeInboundTag(nodeID)
+			id := ownedNodeClientOn(t, nodeID, tag, "rn@x")
 			setEnforce(t, tc.enforce)
 			const first = int64(1893456000000)
-			nodeTick(t, xray.ClientTraffic{Email: "rn@x", Up: 2 * gb, ExpiryTime: first, Reset: 30, Enable: true})
+			nodeTickOn(t, nodeID, tag, xray.ClientTraffic{Email: "rn@x", Up: 2 * gb, ExpiryTime: first, Reset: 30, Enable: true})
 			tc.block(t, id)
 			db.Model(xray.ClientTraffic{}).Where("email = ?", "rn@x").Update("enable", false)
 			db.Model(&model.ClientRecord{}).Where("email = ?", "rn@x").Update("enable", false)
-			db.Model(&model.Node{}).Where("id = ?", 1).Update("config_dirty", false)
+			db.Model(&model.Node{}).Where("id = ?", nodeID).Update("config_dirty", false)
 
-			nodeTick(t, xray.ClientTraffic{Email: "rn@x", Down: gb, ExpiryTime: first + 30*86400000, Reset: 30, Enable: true})
+			nodeTickOn(t, nodeID, tag, xray.ClientTraffic{Email: "rn@x", Down: gb, ExpiryTime: first + 30*86400000, Reset: 30, Enable: true})
 			ct := readTraffic(t, db, "rn@x")
 			if ct.Enable || ct.ExpiryTime != first {
 				t.Fatalf("master took the node's renewal: enable=%v expiry=%d", ct.Enable, ct.ExpiryTime)
 			}
 			var n model.Node
-			db.First(&n, 1)
+			db.First(&n, nodeID)
 			if !n.ConfigDirty {
 				t.Fatal("node not marked dirty, so it keeps serving the renewed client")
 			}

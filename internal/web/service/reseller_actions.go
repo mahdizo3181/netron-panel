@@ -11,6 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// ResellerPoolEnforceView is whether automatic pool cut-off is active panel-wide.
+type ResellerPoolEnforceView struct {
+	On bool `json:"on" example:"false"`
+}
+
 var (
 	ErrResellerVolume        = errors.New("the volume to add must be more than zero")
 	ErrResellerUnlimitedPool = errors.New("this reseller has no pool limit to add volume to")

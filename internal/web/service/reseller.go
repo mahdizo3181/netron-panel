@@ -200,6 +200,10 @@ func getResellerView(tx *gorm.DB, id int) (*ResellerView, error) {
 }
 
 func (s *ResellerService) Create(p ResellerPayload) (*ResellerView, error) {
+	return s.CreateAs(AuditActor{Kind: "admin"}, p)
+}
+
+func (s *ResellerService) CreateAs(actor AuditActor, p ResellerPayload) (*ResellerView, error) {
 	p.Username = strings.TrimSpace(p.Username)
 	if !resellerUsernamePattern.MatchString(p.Username) {
 		return nil, ErrResellerUsername
@@ -241,6 +245,9 @@ func (s *ResellerService) Create(p ResellerPayload) (*ResellerView, error) {
 			}
 		}
 		if err := replaceResellerInbounds(tx, row.Id, p.InboundIds); err != nil {
+			return err
+		}
+		if err := auditResellerCreate(tx, actor, row.Id); err != nil {
 			return err
 		}
 		view, err = getResellerView(tx, row.Id)
@@ -296,6 +303,10 @@ func (s *ResellerService) UpdateAs(actor AuditActor, id int, p ResellerPayload) 
 
 // SetPassword replaces the password and bumps the login epoch so open sessions end.
 func (s *ResellerService) SetPassword(id int, password string) error {
+	return s.SetPasswordAs(AuditActor{Kind: "admin"}, id, password)
+}
+
+func (s *ResellerService) SetPasswordAs(actor AuditActor, id int, password string) error {
 	db := database.GetDB()
 	var row model.Reseller
 	if err := db.Select("id", "username").First(&row, id).Error; err != nil {
@@ -311,14 +322,21 @@ func (s *ResellerService) SetPassword(id int, password string) error {
 	if err != nil {
 		return err
 	}
-	return db.Model(&model.Reseller{}).Where("id = ?", id).Updates(map[string]any{
+	if err := db.Model(&model.Reseller{}).Where("id = ?", id).Updates(map[string]any{
 		"password": hash, "login_epoch": gorm.Expr("login_epoch + 1"), "updated_at": time.Now().UnixMilli(),
-	}).Error
+	}).Error; err != nil {
+		return err
+	}
+	return recordResellerAudit(db, actor, id, "setPassword", "", nil)
 }
 
 // Delete removes a reseller. Its clients go to the admin (transfer, the default)
 // or are deleted through the normal client delete path, which reaches nodes.
 func (s *ResellerService) Delete(inboundSvc *InboundService, id int, mode string) (bool, error) {
+	return s.DeleteAs(AuditActor{Kind: "admin"}, inboundSvc, id, mode)
+}
+
+func (s *ResellerService) DeleteAs(actor AuditActor, inboundSvc *InboundService, id int, mode string) (bool, error) {
 	if mode == "" {
 		mode = ResellerDeleteTransfer
 	}
@@ -352,6 +370,9 @@ func (s *ResellerService) Delete(inboundSvc *InboundService, id int, mode string
 			return err
 		}
 		if err := tx.Where("reseller_id = ?", id).Delete(&model.ResellerInbound{}).Error; err != nil {
+			return err
+		}
+		if err := recordResellerAudit(tx, actor, id, "delete", "", map[string]any{"clients": mode}); err != nil {
 			return err
 		}
 		return tx.Delete(&model.Reseller{}, id).Error
