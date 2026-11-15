@@ -48,6 +48,9 @@ func GetLoginUser(c *gin.Context) *model.User {
 			return u
 		}
 	}
+	if _, ok := c.Get("github.com/gin-contrib/sessions"); !ok {
+		return nil
+	}
 	s := sessions.Default(c)
 	obj := s.Get(loginUserKey)
 	if obj == nil {

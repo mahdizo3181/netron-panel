@@ -294,7 +294,7 @@ export default function ResellersPage() {
                       setAuditOpen(true);
                     }}
                   >
-                    {t('pages.resellers.viewAudit')}
+                    {t('pages.resellers.actions.audit')}
                   </Button>
                   <Button
                     type="primary"
