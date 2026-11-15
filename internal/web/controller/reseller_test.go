@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
@@ -27,6 +29,7 @@ func setupResellerRouter(t *testing.T) *gin.Engine {
 	dbtest.InitDB(t, filepath.Join(t.TempDir(), "x-ui.db"))
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
+	router.Use(sessions.Sessions("3x-ui", cookie.NewStore([]byte("test-session-key-32bytes-long!!"))))
 	NewResellerController(router.Group("/panel/api"))
 	return router
 }
