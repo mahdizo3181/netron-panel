@@ -24,6 +24,7 @@ func NewResellerSelfController(g *gin.RouterGroup) *ResellerSelfController {
 	g.POST("/totp", a.setTotp)
 	g.POST("/totp/disable", a.disableTotp)
 	g.POST("/password", a.changePassword)
+	g.GET("/audit", a.audit)
 	return a
 }
 
@@ -73,6 +74,21 @@ func (a *ResellerSelfController) changePassword(c *gin.Context) {
 		err = session.SetLoginReseller(c, r)
 	}
 	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.password"), err)
+}
+
+func (a *ResellerSelfController) audit(c *gin.Context) {
+	id, isReseller := actorResellerID(c)
+	if !isReseller {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.audit"), errNotReseller)
+		return
+	}
+	var p service.ResellerAuditPageParams
+	if err := c.ShouldBindQuery(&p); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.audit"), err)
+		return
+	}
+	page, err := a.resellerService.ListAudit(service.ResellerScope(id), p)
+	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.audit"), page, err)
 }
 
 // resellerDefaultSettingsKeys are the subscription and display settings a reseller

@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/session"
 )
 
 // ResellerController is the admin's reseller management (docs/RESELLERS.md, stage A).
@@ -28,6 +29,13 @@ func NewResellerController(g *gin.RouterGroup) *ResellerController {
 	g.POST("/:id/password", a.setPassword)
 	g.POST("/:id/del", a.del)
 	g.POST("/:id/resetTotp", a.resetTotp)
+	g.POST("/:id/addVolume", a.addVolume)
+	g.POST("/:id/resetUsage", a.resetUsage)
+	g.POST("/:id/extendExpiry", a.extendExpiry)
+	g.POST("/:id/disableClients", a.disableClients)
+	g.POST("/:id/enableClients", a.enableClients)
+	g.GET("/:id/audit", a.audit)
+	g.POST("/poolEnforce", a.setPoolEnforce)
 	return a
 }
 
@@ -139,4 +147,104 @@ func (a *ResellerController) resetTotp(c *gin.Context) {
 		err = a.resellerService.ResetTotp(id)
 	}
 	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.totp"), err)
+}
+
+func adminAuditActor(c *gin.Context) service.AuditActor {
+	actor := service.AuditActor{Kind: "admin", Ip: c.ClientIP()}
+	if u := session.GetLoginUser(c); u != nil {
+		actor.Id = u.Id
+	}
+	return actor
+}
+
+func (a *ResellerController) addVolume(c *gin.Context) {
+	id, err := resellerID(c)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.addVolume"), err)
+		return
+	}
+	var body struct {
+		Bytes int64 `json:"bytes"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.addVolume"), err)
+		return
+	}
+	err = a.resellerService.AddVolume(adminAuditActor(c), id, body.Bytes)
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.addVolume"), err)
+}
+
+func (a *ResellerController) resetUsage(c *gin.Context) {
+	id, err := resellerID(c)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.resetUsage"), err)
+		return
+	}
+	err = a.resellerService.ResetUsage(adminAuditActor(c), id)
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.resetUsage"), err)
+}
+
+func (a *ResellerController) extendExpiry(c *gin.Context) {
+	id, err := resellerID(c)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.extendExpiry"), err)
+		return
+	}
+	var body struct {
+		ExpiryTime int64 `json:"expiryTime"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.extendExpiry"), err)
+		return
+	}
+	err = a.resellerService.ExtendExpiry(adminAuditActor(c), id, body.ExpiryTime)
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.extendExpiry"), err)
+}
+
+func (a *ResellerController) disableClients(c *gin.Context) {
+	id, err := resellerID(c)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.disableClients"), err)
+		return
+	}
+	n, err := a.resellerService.DisableClients(adminAuditActor(c), id)
+	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.disableClients"), map[string]int{"changed": n}, err)
+}
+
+func (a *ResellerController) enableClients(c *gin.Context) {
+	id, err := resellerID(c)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.enableClients"), err)
+		return
+	}
+	n, err := a.resellerService.EnableClients(adminAuditActor(c), id)
+	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.enableClients"), map[string]int{"changed": n}, err)
+}
+
+func (a *ResellerController) audit(c *gin.Context) {
+	id, err := resellerID(c)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.audit"), err)
+		return
+	}
+	var p service.ResellerAuditPageParams
+	if err := c.ShouldBindQuery(&p); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.audit"), err)
+		return
+	}
+	p.ResellerId = id
+	page, err := a.resellerService.ListAudit(service.AdminScope(), p)
+	jsonMsgObj(c, I18nWeb(c, "pages.resellers.toasts.audit"), page, err)
+}
+
+func (a *ResellerController) setPoolEnforce(c *gin.Context) {
+	var body struct {
+		On bool `json:"on"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.poolEnforce"), err)
+		return
+	}
+	err := a.resellerService.SetPoolEnforce(adminAuditActor(c), body.On)
+	jsonMsg(c, I18nWeb(c, "pages.resellers.toasts.poolEnforce"), err)
 }

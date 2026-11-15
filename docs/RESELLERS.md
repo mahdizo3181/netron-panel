@@ -859,7 +859,7 @@ The open questions of the first draft, as answered by the owner:
 | B — actor, route policy, scope, reseller login | implemented | Resellers log in and reach only `/reseller/me` and their own 2FA routes; every other route is refused.                                                             |
 | C — client operations with limits, owner field | implemented | Resellers manage their own clients on allowed inbounds; the admin sees and reassigns owners.                                                                       |
 | D — UI                                         | implemented | Admin reseller page, owner badge and filter, reseller home and clients view, self password and 2FA.                                                                |
-| E                                              | not started |                                                                                                                                                                    |
+| E                                              | implemented | Pool counter, cut-off behind `resellerPoolEnforce`, re-enable, admin actions, audit log, Telegram thresholds, operator notes below.                                |
 
 Stage A details that refine the text above:
 
@@ -979,3 +979,20 @@ Stage D details and corrections:
   panel without resellers looks exactly as before.
 - **Not unit-testable**: RTL, phone width and dark theme; see the stage D report for what was
   looked at in a real browser.
+
+Stage E operator notes:
+
+- Leave `resellerPoolEnforce` **off** for a few days after upgrade and compare each reseller's
+  `used_traffic` with real client usage on the `/resellers` page. When the counter matches
+  expectations, turn enforcement on with `POST /panel/api/resellers/poolEnforce` `{"on":true}` or
+  the switch on the admin resellers page. Optional `resellerPoolNotify` enables Telegram notices at
+  80%, 100%, cut-off and release (requires the bot to be on).
+- **Rollback:** set `resellerPoolEnforce` to off (releases cut-offs) and run a stock binary: extra
+  tables are ignored; clients already disabled stay off until re-enabled manually.
+
+Stage E corrections (re-checked on `feat/reseller-stage-e`):
+
+- `disableEmailsInInbounds` lives in `inbound_disable.go` (shared with pool cut-off).
+- `addResellerUsage` is in `reseller_usage.go`; cut-off in `reseller_cutoff.go`;
+  `releaseResellerCutoff` and admin volume actions in `reseller_actions.go`.
+- `ClientsPage` is admin-only; resellers use `ResellerClientsPage` (stage D).

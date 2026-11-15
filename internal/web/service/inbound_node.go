@@ -227,8 +227,8 @@ func (s *InboundService) upsertNodeBaseline(tx *gorm.DB, nodeID int, email strin
 
 // mergeNodeClientTraffic folds one node-reported client into its central row.
 // While frozen (a push pending or just landed) only the counters may move.
-func (s *InboundService) mergeNodeClientTraffic(tx *gorm.DB, cs xray.ClientTraffic, canon nodeTrafficCounter, frozen bool, deltaUp, deltaDown, now int64, billed resellerUsage) error {
-	billed.add(cs.Email, deltaUp+deltaDown)
+func (s *InboundService) mergeNodeClientTraffic(tx *gorm.DB, cs xray.ClientTraffic, canon nodeTrafficCounter, frozen bool, deltaUp, deltaDown, now int64, billed map[string]int64) error {
+	billUsageAdd(billed, cs.Email, deltaUp+deltaDown)
 	if frozen {
 		return tx.Exec(
 			fmt.Sprintf(
@@ -705,7 +705,7 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 
 	structuralChange := false
 	lifecycleLifted := false
-	billed := resellerUsage{}
+	billed := map[string]int64{}
 
 	var adoptedInbounds []*model.Inbound
 	type pendingAdopt struct {
@@ -1131,6 +1131,10 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 			}
 
 			renewed := !clientFrozen && seen && existing != nil && nodeClientRenewed(existing, cs, canon, base)
+			if renewed && resellerClientBlocksNodeRenewal(tx, cs.Email) {
+				renewed = false
+				structuralChange = true
+			}
 			if renewed {
 				// Reject when the node's own settings still carry the old absolute:
 				// lagging ClientStats after a master shorten mimic a renew (#6228).
@@ -1161,7 +1165,7 @@ func (s *InboundService) setRemoteTrafficLocked(nodeID int, snap *runtime.Traffi
 				if err := clearGlobalTraffic(tx, cs.Email); err != nil {
 					return false, err
 				}
-				billed.add(cs.Email, canon.Up+canon.Down)
+				billUsageAdd(billed, cs.Email, canon.Up+canon.Down)
 				existing.Up = canon.Up
 				existing.Down = canon.Down
 				existing.Enable = cs.Enable

@@ -2532,7 +2532,14 @@
         "delete": "Reseller deleted",
         "forbidden": "This is not available to reseller accounts.",
         "totp": "Reseller two-factor authentication",
-        "owner": "Client owner change"
+        "owner": "Client owner change",
+        "addVolume": "Pool volume added",
+        "resetUsage": "Pool usage reset",
+        "extendExpiry": "Reseller expiry updated",
+        "disableClients": "Reseller clients disabled",
+        "enableClients": "Reseller clients enabled",
+        "audit": "Reseller audit log",
+        "poolEnforce": "Pool enforcement updated"
       },
       "add": "Add reseller",
       "name": "Name",
@@ -2565,7 +2572,17 @@
       "stateDisabled": "Disabled",
       "statePoolDesc": "The volume pool is used up. Adding or enabling clients is blocked until the admin adds volume.",
       "stateExpiredDesc": "This account has expired. Adding or enabling clients is blocked until the admin extends it.",
-      "stateDisabledDesc": "This account is disabled by the admin."
+      "stateDisabledDesc": "This account is disabled by the admin.",
+      "poolEnforce": "Enforce volume pool cut-off",
+      "poolEnforceHelp": "When off, usage is counted but clients are not cut off automatically. Traffic may run slightly past the pool between polls (about 5 s) plus one node sync interval.",
+      "actions": {
+        "addVolume": "Add volume",
+        "resetUsage": "Reset usage",
+        "extendExpiry": "Extend expiry",
+        "disableAll": "Disable all clients",
+        "enableAll": "Enable all clients",
+        "audit": "Audit log"
+      }
     },
     "resellerHome": {
       "account": "Account",
@@ -2713,7 +2730,11 @@
       "qrLegendJSON": "{{ .Code }}. Predplatné JSON",
       "qrLegendLink": "{{ .Code }}. Odkaz pre aplikáciu {{ .App }}",
       "backupFailed": "Databázu sa nepodarilo prečítať; záloha nebola odoslaná.",
-      "privateOnly": "🤖 Tento bot funguje len v súkromnom chate. Otvorte ho, prosím, v priamej správe."
+      "privateOnly": "🤖 Tento bot funguje len v súkromnom chate. Otvorte ho, prosím, v priamej správe.",
+      "resellerPool80": "Reseller {{ .Name }} has used 80% of its volume pool.",
+      "resellerPool100": "Reseller {{ .Name }} has reached its volume pool limit.",
+      "resellerPoolCutoff": "Reseller {{ .Name }} was cut off ({{ .Reason }}).",
+      "resellerPoolRelease": "Reseller {{ .Name }} was released after a pool or account fix."
     },
     "buttons": {
       "closeKeyboard": "❌ Zavrieť klávesnicu",

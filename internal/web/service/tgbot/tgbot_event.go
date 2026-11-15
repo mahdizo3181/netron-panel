@@ -52,6 +52,10 @@ func (t *Tgbot) eventNoticeKind(e eventbus.Event) string {
 }
 
 func (t *Tgbot) isEventEnabled(eventType eventbus.EventType) bool {
+	if eventType == eventbus.EventResellerPool {
+		on, err := t.settingService.GetResellerPoolNotify()
+		return err == nil && on
+	}
 	events, err := t.settingService.GetTgEnabledEvents()
 	if err != nil || events == "" {
 		return false
@@ -163,6 +167,28 @@ func (t *Tgbot) formatEventMessage(e eventbus.Event) string {
 			return msg
 		}
 		return header + t.I18nBot("tgbot.messages.eventLoginFallback", "Source=="+e.Source)
+	case eventbus.EventResellerPool:
+		data, ok := e.Data.(*eventbus.ResellerPoolData)
+		if !ok || data == nil {
+			return ""
+		}
+		switch data.Kind {
+		case "threshold":
+			if data.Level == 80 {
+				return header + t.I18nBot("tgbot.messages.resellerPool80",
+					"Name=="+data.Name)
+			}
+			if data.Level == 100 {
+				return header + t.I18nBot("tgbot.messages.resellerPool100",
+					"Name=="+data.Name)
+			}
+		case "cutoff":
+			return header + t.I18nBot("tgbot.messages.resellerPoolCutoff",
+				"Name=="+data.Name, "Reason=="+data.Reason)
+		case "release":
+			return header + t.I18nBot("tgbot.messages.resellerPoolRelease",
+				"Name=="+data.Name)
+		}
 	}
 
 	return ""

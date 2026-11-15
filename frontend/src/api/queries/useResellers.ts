@@ -77,7 +77,38 @@ export function useResellerMutations() {
     mutationFn: async (id: number) =>
       done(await HttpUtil.post(`/panel/api/resellers/${id}/resetTotp`)),
   });
-  return { create, update, setPassword, remove, resetTotp };
+  const addVolume = useMutation({
+    mutationFn: async ({ id, bytes }: { id: number; bytes: number }) =>
+      done(await HttpUtil.post(`/panel/api/resellers/${id}/addVolume`, { bytes }, JSON_HEADERS)),
+  });
+  const resetUsage = useMutation({
+    mutationFn: async (id: number) =>
+      done(await HttpUtil.post(`/panel/api/resellers/${id}/resetUsage`, {}, JSON_HEADERS)),
+  });
+  const disableClients = useMutation({
+    mutationFn: async (id: number) =>
+      done(await HttpUtil.post(`/panel/api/resellers/${id}/disableClients`, {}, JSON_HEADERS)),
+  });
+  const enableClients = useMutation({
+    mutationFn: async (id: number) =>
+      done(await HttpUtil.post(`/panel/api/resellers/${id}/enableClients`, {}, JSON_HEADERS)),
+  });
+  const setPoolEnforce = useMutation({
+    mutationFn: async (on: boolean) =>
+      done(await HttpUtil.post('/panel/api/resellers/poolEnforce', { on }, JSON_HEADERS)),
+  });
+  return {
+    create,
+    update,
+    setPassword,
+    remove,
+    resetTotp,
+    addVolume,
+    resetUsage,
+    disableClients,
+    enableClients,
+    setPoolEnforce,
+  };
 }
 
 export interface ResellerSubSettings {

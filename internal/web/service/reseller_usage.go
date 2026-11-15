@@ -10,18 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
-// resellerUsage collects billed bytes per client email during one traffic write.
-type resellerUsage map[string]int64
-
-func (u resellerUsage) add(email string, bytes int64) {
+func billUsageAdd(usage map[string]int64, email string, bytes int64) {
 	if bytes > 0 && email != "" {
-		u[email] += bytes
+		usage[email] += bytes
 	}
 }
 
 // addResellerUsage bills the owned emails' bytes to their resellers' pools in tx.
 // Unowned emails cost one indexed SELECT and touch no counter (docs §4.3).
-func addResellerUsage(tx *gorm.DB, usage resellerUsage) error {
+func addResellerUsage(tx *gorm.DB, usage map[string]int64) error {
 	if len(usage) == 0 {
 		return nil
 	}
@@ -46,5 +43,5 @@ func addResellerUsage(tx *gorm.DB, usage resellerUsage) error {
 			return err
 		}
 	}
-	return nil
+	return bumpResellerPoolNotices(tx, slices.Sorted(maps.Keys(perReseller)))
 }

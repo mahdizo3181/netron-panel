@@ -4555,6 +4555,24 @@ export const SCHEMAS: Record<string, unknown> = {
     ],
     "type": "object"
   },
+  "ResellerAuditPage": {
+    "properties": {
+      "rows": {
+        "items": {},
+        "type": "array"
+      },
+      "total": {
+        "example": 42,
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "rows",
+      "total"
+    ],
+    "type": "object"
+  },
   "ResellerMe": {
     "description": "ResellerMe answers \"who am I\": role \"admin\", or \"reseller\" with its own numbers.",
     "properties": {

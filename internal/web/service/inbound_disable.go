@@ -75,6 +75,61 @@ func depletedCond(tx *gorm.DB) (string, []any) {
 	return depletedClientsCondLocal, []any{now.UnixMilli()}
 }
 
+// disableEmailsInInbounds turns off the given clients the same way
+// disableInvalidClients does: settings JSON, client_traffics, and runtime batch.
+func (s *InboundService) disableEmailsInInbounds(tx *gorm.DB, emails []string, mutationBatch *trafficMutationBatch) (map[int]struct{}, error) {
+	emails = uniqueNonEmptyStrings(emails)
+	if len(emails) == 0 {
+		return nil, nil
+	}
+	type target struct {
+		InboundID int  `gorm:"column:inbound_id"`
+		NodeID    *int `gorm:"column:node_id"`
+		Tag       string
+		Email     string
+	}
+	var targets []target
+	if err := tx.Raw(`
+			SELECT inbounds.id AS inbound_id, inbounds.node_id AS node_id,
+			       inbounds.tag AS tag, clients.email AS email
+			FROM clients
+			JOIN client_inbounds ON client_inbounds.client_id = clients.id
+			JOIN inbounds        ON inbounds.id = client_inbounds.inbound_id
+			WHERE clients.email IN ?
+		`, emails).Scan(&targets).Error; err != nil {
+		return nil, err
+	}
+	byInbound := make(map[int][]target)
+	for _, t := range targets {
+		byInbound[t.InboundID] = append(byInbound[t.InboundID], t)
+	}
+	disabledNodeIDs := make(map[int]struct{})
+	for inboundID, group := range byInbound {
+		want := make(map[string]struct{}, len(group))
+		for _, t := range group {
+			want[t.Email] = struct{}{}
+		}
+		oldInbound, inbound, mErr := s.markClientsDisabledInSettings(tx, inboundID, want)
+		if mErr != nil {
+			return nil, mErr
+		}
+		if inbound.NodeID != nil {
+			mutationBatch.remotePlans = append(mutationBatch.remotePlans, trafficInboundUpdatePlan{
+				oldInbound: *oldInbound, newInbound: *inbound,
+			})
+			mutationBatch.addNode(*inbound.NodeID)
+			disabledNodeIDs[*inbound.NodeID] = struct{}{}
+			continue
+		}
+		for email := range want {
+			mutationBatch.localPlans = append(mutationBatch.localPlans, trafficLocalApplyPlan{
+				action: trafficRemoveUser, inbound: *inbound, email: email,
+			})
+		}
+	}
+	return disabledNodeIDs, nil
+}
+
 func (s *InboundService) disableInvalidClients(tx *gorm.DB, mutationBatch *trafficMutationBatch) (bool, int64, []int, error) {
 	now := time.Now().UnixMilli()
 	cond, condArgs := depletedCond(tx)

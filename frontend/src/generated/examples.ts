@@ -1126,6 +1126,12 @@ export const EXAMPLES: Record<string, unknown> = {
     "tlsVersion": "1.3",
     "x25519": true
   },
+  "ResellerAuditPage": {
+    "rows": [
+      {}
+    ],
+    "total": 42
+  },
   "ResellerMe": {
     "reseller": null,
     "role": "reseller"

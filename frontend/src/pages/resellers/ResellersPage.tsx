@@ -55,7 +55,9 @@ export function resellerStateOf(
   r: ResellerView,
   nowMs: number,
 ): 'ok' | 'pool' | 'expired' | 'disabled' {
-  if (!r.enable) return 'disabled';
+  if (r.cutoffReason === 'disabled' || !r.enable) return 'disabled';
+  if (r.cutoffReason === 'expired') return 'expired';
+  if (r.cutoffReason === 'pool') return 'pool';
   if (r.expiryTime > 0 && r.expiryTime <= nowMs) return 'expired';
   if (r.poolBytes > 0 && r.usedTraffic >= r.poolBytes) return 'pool';
   return 'ok';
@@ -97,7 +99,17 @@ export default function ResellersPage() {
   const [modal, modalContextHolder] = Modal.useModal();
   useEffect(() => setMessageInstance(messageApi), [messageApi]);
   const list = useResellerList();
-  const { create, update, setPassword, remove, resetTotp } = useResellerMutations();
+  const {
+    create,
+    update,
+    setPassword,
+    remove,
+    resetTotp,
+    addVolume,
+    resetUsage,
+    disableClients,
+    enableClients,
+  } = useResellerMutations();
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [pwFor, setPwFor] = useState<ResellerView | null>(null);
@@ -395,6 +407,41 @@ export default function ResellersPage() {
               onChange={(v) => setForm({ ...form, enable: v })}
             />
           </Form.Item>
+          {editing !== 'new' && typeof editing === 'number' && (
+            <Space wrap>
+              <Button
+                onClick={() =>
+                  modal.confirm({
+                    title: t('pages.resellers.actions.addVolume'),
+                    content: t('pages.resellers.poolEnforceHelp'),
+                    okText: t('confirm'),
+                    cancelText: t('cancel'),
+                    onOk: () => addVolume.mutateAsync({ id: editing, bytes: 1024 ** 3 }),
+                  })
+                }
+              >
+                {t('pages.resellers.actions.addVolume')}
+              </Button>
+              <Button
+                onClick={() =>
+                  modal.confirm({
+                    title: t('pages.resellers.actions.resetUsage'),
+                    okText: t('confirm'),
+                    cancelText: t('cancel'),
+                    onOk: () => resetUsage.mutateAsync(editing),
+                  })
+                }
+              >
+                {t('pages.resellers.actions.resetUsage')}
+              </Button>
+              <Button onClick={() => disableClients.mutateAsync(editing)}>
+                {t('pages.resellers.actions.disableAll')}
+              </Button>
+              <Button onClick={() => enableClients.mutateAsync(editing)}>
+                {t('pages.resellers.actions.enableAll')}
+              </Button>
+            </Space>
+          )}
         </Form>
       </Modal>
 

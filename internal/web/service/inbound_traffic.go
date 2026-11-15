@@ -83,6 +83,18 @@ func (s *InboundService) addTrafficLocked(inboundTraffics []*xray.Traffic, clien
 			disabledClientsCount = count
 		}
 
+		_, cutNodeIDs, cutCount, cutErr := s.enforceResellerCutoffs(tx, batch)
+		if cutErr != nil {
+			return fmt.Errorf("reseller cut-off: %w", cutErr)
+		}
+		if cutCount > 0 {
+			logger.Debugf("%v clients cut off by reseller pool", cutCount)
+			disabledClientsCount += cutCount
+		}
+		for id := range cutNodeIDs {
+			nodeIDs = append(nodeIDs, id)
+		}
+
 		needRestart2, count, err := s.disableInvalidInbounds(tx, batch)
 		if err != nil {
 			return fmt.Errorf("disable invalid inbounds: %w", err)
@@ -180,7 +192,7 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		}
 	}
 	now := time.Now().UnixMilli()
-	billed := resellerUsage{}
+	billed := map[string]int64{}
 	// Use atomic per-row UPDATE instead of read-modify-write Save. tx.Save
 	// issues UPDATEs in slice order, which varies between concurrent callers;
 	// on PostgreSQL two transactions locking the same rows in opposite order
@@ -202,7 +214,7 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 		).Error; err != nil {
 			return fmt.Errorf("update traffic for %s: %w", ct.Email, err)
 		}
-		billed.add(ct.Email, t.Up+t.Down)
+		billUsageAdd(billed, ct.Email, t.Up+t.Down)
 	}
 	if err = addResellerUsage(tx, billed); err != nil {
 		return fmt.Errorf("bill reseller pools: %w", err)

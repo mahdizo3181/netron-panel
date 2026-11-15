@@ -104,6 +104,7 @@ func TestResellerReachableRoutesAreExactlyTheListedRoutes(t *testing.T) {
 		"GET /panel/api/clients/list/paged",
 		"GET /panel/api/inbounds/options",
 		"GET /panel/api/reseller/me",
+		"GET /panel/api/reseller/me/audit",
 		"POST /panel/api/clients/add",
 		"POST /panel/api/clients/bulkCreate",
 		"POST /panel/api/clients/bulkDisable",

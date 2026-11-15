@@ -23,6 +23,9 @@ const (
 
 	// Security
 	EventLoginAttempt EventType = "login.attempt"
+
+	// Reseller pool thresholds and cut-off / release (master panel only).
+	EventResellerPool EventType = "reseller.pool"
 )
 
 // Event is the unit of information flowing through the bus.
@@ -62,4 +65,16 @@ type LoginEventData struct {
 type SystemMetricData struct {
 	Percent   float64 // current usage percentage
 	Threshold int     // configured threshold
+}
+
+// ResellerPoolData is the reseller.pool payload (no secrets).
+type ResellerPoolData struct {
+	ResellerId int    `json:"resellerId"`
+	Name       string `json:"name"`
+	UsedBytes  int64  `json:"usedBytes"`
+	PoolBytes  int64  `json:"poolBytes"`
+	Level      int    `json:"level,omitempty"`
+	Kind       string `json:"kind"`
+	Reason     string `json:"reason,omitempty"`
+	Clients    int    `json:"clients,omitempty"`
 }

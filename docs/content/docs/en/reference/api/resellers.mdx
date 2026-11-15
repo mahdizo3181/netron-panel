@@ -43,11 +43,37 @@ _openapi:
         its authenticator.
       url: '#turn-off-a-resellers-two-factor-authentication-for-a-reseller-who-lost-its-authenticator'
     - depth: 2
+      title: Raise a reseller pool by bytes and run the re-enable check.
+      url: '#raise-a-reseller-pool-by-bytes-and-run-the-re-enable-check'
+    - depth: 2
+      title: Zero used_traffic and run the re-enable check.
+      url: '#zero-used_traffic-and-run-the-re-enable-check'
+    - depth: 2
+      title: Set expiryTime (ms; 0 = never) and run the re-enable check.
+      url: '#set-expirytime-ms-0--never-and-run-the-re-enable-check'
+    - depth: 2
+      title: Disable every client owned by this reseller (clears pool_disabled as
+        manual intent).
+      url: '#disable-every-client-owned-by-this-reseller-clears-pool_disabled-as-manual-intent'
+    - depth: 2
+      title: Enable owned clients that are still valid while the reseller is not cut
+        off.
+      url: '#enable-owned-clients-that-are-still-valid-while-the-reseller-is-not-cut-off'
+    - depth: 2
+      title: Paged audit log for one reseller (admin).
+      url: '#paged-audit-log-for-one-reseller-admin'
+    - depth: 2
+      title: Toggle resellerPoolEnforce; OFF releases every cut-off.
+      url: '#toggle-resellerpoolenforce-off-releases-every-cut-off'
+    - depth: 2
       title: 'Who am I. An admin gets {"role": "admin"}; a reseller session gets role
         "reseller" with its own pool, used traffic, remaining bytes, client
         count and limit, expiry, state (ok, pool, expired, disabled) and whether
         its 2FA is on. The only data route a reseller may call in this release.'
       url: '#who-am-i-an-admin-gets-role-admin-a-reseller-session-gets-role-reseller-with-its-own-pool-used-traffic-remaining-bytes-client-count-and-limit-expiry-state-ok-pool-expired-disabled-and-whether-its-2fa-is-on-the-only-data-route-a-reseller-may-call-in-this-release'
+    - depth: 2
+      title: Read-only audit log for the calling reseller.
+      url: '#read-only-audit-log-for-the-calling-reseller'
     - depth: 2
       title: Change the calling reseller's own password. currentPassword must match;
         newPassword needs at least 10 characters and must differ from the
@@ -91,12 +117,30 @@ _openapi:
       - content: Turn off a reseller's two-factor authentication, for a reseller who
           lost its authenticator.
         id: turn-off-a-resellers-two-factor-authentication-for-a-reseller-who-lost-its-authenticator
+      - content: Raise a reseller pool by bytes and run the re-enable check.
+        id: raise-a-reseller-pool-by-bytes-and-run-the-re-enable-check
+      - content: Zero used_traffic and run the re-enable check.
+        id: zero-used_traffic-and-run-the-re-enable-check
+      - content: Set expiryTime (ms; 0 = never) and run the re-enable check.
+        id: set-expirytime-ms-0--never-and-run-the-re-enable-check
+      - content: Disable every client owned by this reseller (clears pool_disabled as
+          manual intent).
+        id: disable-every-client-owned-by-this-reseller-clears-pool_disabled-as-manual-intent
+      - content: Enable owned clients that are still valid while the reseller is not cut
+          off.
+        id: enable-owned-clients-that-are-still-valid-while-the-reseller-is-not-cut-off
+      - content: Paged audit log for one reseller (admin).
+        id: paged-audit-log-for-one-reseller-admin
+      - content: Toggle resellerPoolEnforce; OFF releases every cut-off.
+        id: toggle-resellerpoolenforce-off-releases-every-cut-off
       - content: 'Who am I. An admin gets {"role": "admin"}; a reseller session gets
           role "reseller" with its own pool, used traffic, remaining bytes,
           client count and limit, expiry, state (ok, pool, expired, disabled)
           and whether its 2FA is on. The only data route a reseller may call in
           this release.'
         id: who-am-i-an-admin-gets-role-admin-a-reseller-session-gets-role-reseller-with-its-own-pool-used-traffic-remaining-bytes-client-count-and-limit-expiry-state-ok-pool-expired-disabled-and-whether-its-2fa-is-on-the-only-data-route-a-reseller-may-call-in-this-release
+      - content: Read-only audit log for the calling reseller.
+        id: read-only-audit-log-for-the-calling-reseller
       - content: Change the calling reseller's own password. currentPassword must match;
           newPassword needs at least 10 characters and must differ from the
           username. Ends the reseller's other sessions and keeps this one.
@@ -119,7 +163,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/password","method":"post"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
+      <OpenAPIPage document="./public/openapi.json" webhooks={[]} operations={[{"path":"/panel/api/resellers","method":"get"},{"path":"/panel/api/resellers","method":"post"},{"path":"/panel/api/resellers/{id}","method":"get"},{"path":"/panel/api/resellers/{id}","method":"post"},{"path":"/panel/api/resellers/{id}/password","method":"post"},{"path":"/panel/api/resellers/{id}/del","method":"post"},{"path":"/panel/api/resellers/{id}/resetTotp","method":"post"},{"path":"/panel/api/resellers/{id}/addVolume","method":"post"},{"path":"/panel/api/resellers/{id}/resetUsage","method":"post"},{"path":"/panel/api/resellers/{id}/extendExpiry","method":"post"},{"path":"/panel/api/resellers/{id}/disableClients","method":"post"},{"path":"/panel/api/resellers/{id}/enableClients","method":"post"},{"path":"/panel/api/resellers/{id}/audit","method":"get"},{"path":"/panel/api/resellers/poolEnforce","method":"post"},{"path":"/panel/api/reseller/me","method":"get"},{"path":"/panel/api/reseller/me/audit","method":"get"},{"path":"/panel/api/reseller/me/password","method":"post"},{"path":"/panel/api/reseller/me/totp","method":"post"},{"path":"/panel/api/reseller/me/totp/disable","method":"post"}]} showTitle />
     </>
   );
 }

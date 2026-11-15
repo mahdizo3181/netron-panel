@@ -1655,8 +1655,12 @@ func (s *ClientService) BulkSetEnable(inboundSvc *InboundService, emails []strin
 				if e := tx.Model(xray.ClientTraffic{}).Where("email IN ?", batch).Update("enable", enable).Error; e != nil {
 					return e
 				}
+				fields := map[string]any{"enable": enable, "updated_at": now}
+				if !enable {
+					fields["pool_disabled"] = false
+				}
 				if e := tx.Model(&model.ClientRecord{}).Where("email IN ?", batch).
-					Updates(map[string]any{"enable": enable, "updated_at": now}).Error; e != nil {
+					Updates(fields).Error; e != nil {
 					return e
 				}
 			}

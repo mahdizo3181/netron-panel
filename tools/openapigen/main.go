@@ -117,6 +117,8 @@ func run(root, outDir string) error {
 				"UsageMultiplierStatus",
 				"UsageMultiplierNodeStatus",
 				"ResellerView",
+				"ResellerAuditPage",
+				"ResellerAuditLog",
 				"ResellerMe",
 				"ResellerSelfView",
 				"ClientOwner",

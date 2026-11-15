@@ -2800,11 +2800,70 @@ export const sections: readonly Section[] = [
         params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
       },
       {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/addVolume',
+        summary: 'Raise a reseller pool by bytes and run the re-enable check.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+        body: '{\n  "bytes": 1073741824\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/resetUsage',
+        summary: 'Zero used_traffic and run the re-enable check.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/extendExpiry',
+        summary: 'Set expiryTime (ms; 0 = never) and run the re-enable check.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+        body: '{\n  "expiryTime": 0\n}',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/disableClients',
+        summary:
+          'Disable every client owned by this reseller (clears pool_disabled as manual intent).',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/:id/enableClients',
+        summary: 'Enable owned clients that are still valid while the reseller is not cut off.',
+        params: [{ name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' }],
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/resellers/:id/audit',
+        summary: 'Paged audit log for one reseller (admin).',
+        params: [
+          { name: 'id', in: 'path', type: 'integer', desc: 'Reseller id.' },
+          { name: 'action', in: 'query', type: 'string', desc: 'Filter by action.' },
+          { name: 'from', in: 'query', type: 'integer', desc: 'Start time (ms).' },
+          { name: 'to', in: 'query', type: 'integer', desc: 'End time (ms).' },
+          { name: 'page', in: 'query', type: 'integer', desc: 'Page (default 1).' },
+          { name: 'pageSize', in: 'query', type: 'integer', desc: 'Page size (default 25).' },
+        ],
+        responseSchema: 'ResellerAuditPage',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/resellers/poolEnforce',
+        summary: 'Toggle resellerPoolEnforce; OFF releases every cut-off.',
+        body: '{\n  "on": true\n}',
+      },
+      {
         method: 'GET',
         path: '/panel/api/reseller/me',
         summary:
           'Who am I. An admin gets {"role": "admin"}; a reseller session gets role "reseller" with its own pool, used traffic, remaining bytes, client count and limit, expiry, state (ok, pool, expired, disabled) and whether its 2FA is on. The only data route a reseller may call in this release.',
         responseSchema: 'ResellerMe',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/reseller/me/audit',
+        summary: 'Read-only audit log for the calling reseller.',
+        responseSchema: 'ResellerAuditPage',
       },
       {
         method: 'POST',

@@ -1096,6 +1096,12 @@ export const RealityScanResultSchema = z.object({
 });
 export type RealityScanResult = z.infer<typeof RealityScanResultSchema>;
 
+export const ResellerAuditPageSchema = z.object({
+  rows: z.array(z.lazy(() => ResellerAuditLogSchema)),
+  total: z.number().int(),
+});
+export type ResellerAuditPage = z.infer<typeof ResellerAuditPageSchema>;
+
 export const ResellerMeSchema = z.object({
   reseller: z.lazy(() => ResellerSelfViewSchema).nullable().optional(),
   role: z.string(),

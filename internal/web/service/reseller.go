@@ -250,6 +250,10 @@ func (s *ResellerService) Create(p ResellerPayload) (*ResellerView, error) {
 }
 
 func (s *ResellerService) Update(id int, p ResellerPayload) (*ResellerView, error) {
+	return s.UpdateAs(AuditActor{Kind: "admin"}, id, p)
+}
+
+func (s *ResellerService) UpdateAs(actor AuditActor, id int, p ResellerPayload) (*ResellerView, error) {
 	if err := validateResellerLimits(p); err != nil {
 		return nil, err
 	}
@@ -273,10 +277,21 @@ func (s *ResellerService) Update(id int, p ResellerPayload) (*ResellerView, erro
 		if err := replaceResellerInbounds(tx, id, p.InboundIds); err != nil {
 			return err
 		}
+		if err := recordResellerAudit(tx, actor, id, "update", "", map[string]any{
+			"enable": enable, "poolBytes": p.PoolBytes, "maxClients": p.MaxClients,
+		}); err != nil {
+			return err
+		}
 		view, err = getResellerView(tx, id)
 		return err
 	})
-	return view, err
+	if err != nil {
+		return nil, err
+	}
+	if err := s.releaseResellerCutoff(actor, id); err != nil {
+		return view, err
+	}
+	return getResellerView(database.GetDB(), id)
 }
 
 // SetPassword replaces the password and bumps the login epoch so open sessions end.

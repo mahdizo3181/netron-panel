@@ -99,6 +99,9 @@ var defaultValueMap = map[string]string{
 	"tgCpu":                       "80",
 	"tgMemory":                    "80",
 	"tgLang":                      "en-US",
+	"resellerPoolEnforce":         "false",
+	"resellerPoolNotify":          "false",
+	"resellerAuditRetentionDays":  "180",
 	"twoFactorEnable":             "false",
 	"twoFactorToken":              "",
 	"happLinkEnable":              "false",
@@ -691,6 +694,26 @@ func (s *SettingService) GetTwoFactorToken() (string, error) {
 
 func (s *SettingService) SetTwoFactorToken(value string) error {
 	return s.setString("twoFactorToken", value)
+}
+
+func (s *SettingService) GetResellerPoolEnforce() (bool, error) {
+	return s.getBool("resellerPoolEnforce")
+}
+
+func (s *SettingService) SetResellerPoolEnforce(on bool) error {
+	return s.setBool("resellerPoolEnforce", on)
+}
+
+func (s *SettingService) GetResellerPoolNotify() (bool, error) {
+	return s.getBool("resellerPoolNotify")
+}
+
+func (s *SettingService) SetResellerPoolNotify(on bool) error {
+	return s.setBool("resellerPoolNotify", on)
+}
+
+func (s *SettingService) GetResellerAuditRetentionDays() (int, error) {
+	return s.getInt("resellerAuditRetentionDays")
 }
 
 func (s *SettingService) VerifyTwoFactorCode(code string) error {

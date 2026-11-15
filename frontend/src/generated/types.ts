@@ -1027,6 +1027,11 @@ export interface RealityScanResult {
   x25519: boolean;
 }
 
+export interface ResellerAuditPage {
+  rows: ResellerAuditLog[];
+  total: number;
+}
+
 export interface ResellerMe {
   reseller?: ResellerSelfView | null;
   role: string;
