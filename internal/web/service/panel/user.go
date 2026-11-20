@@ -2,6 +2,7 @@ package panel
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -176,6 +177,9 @@ func (s *UserService) UpdateFirstUser(username string, password string) error {
 	if database.IsNotFound(err) {
 		user.Username = username
 		user.Password = hashedPassword
+		if err := ensureUserOwnerRoleWhenUnset(user); err != nil {
+			return err
+		}
 		return db.Model(model.User{}).Create(user).Error
 	} else if err != nil {
 		return err
@@ -183,5 +187,23 @@ func (s *UserService) UpdateFirstUser(username string, password string) error {
 	user.Username = username
 	user.Password = hashedPassword
 	user.LoginEpoch++
+	if err := ensureUserOwnerRoleWhenUnset(user); err != nil {
+		return err
+	}
 	return db.Save(user).Error
+}
+
+func ensureUserOwnerRoleWhenUnset(user *model.User) error {
+	if user == nil || user.RoleId > 0 {
+		return nil
+	}
+	var role model.AdminRole
+	if err := database.GetDB().Where("slug = ?", model.AdminRoleSlugOwner).First(&role).Error; err != nil {
+		return err
+	}
+	user.RoleId = role.Id
+	if strings.TrimSpace(user.Status) == "" {
+		user.Status = model.AdminStatusActive
+	}
+	return nil
 }

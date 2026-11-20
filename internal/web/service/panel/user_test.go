@@ -48,3 +48,22 @@ func TestHasDefaultCredential(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateFirstUserSetsOwnerRoleWhenUnset(t *testing.T) {
+	dbtest.InitDB(t, filepath.Join(t.TempDir(), "x-ui.db"))
+	svc := &UserService{}
+	if err := svc.UpdateFirstUser("panel-admin", "long-secret-1"); err != nil {
+		t.Fatalf("UpdateFirstUser: %v", err)
+	}
+	var user model.User
+	if err := database.GetDB().First(&user).Error; err != nil {
+		t.Fatalf("reload user: %v", err)
+	}
+	var role model.AdminRole
+	if err := database.GetDB().Where("id = ?", user.RoleId).First(&role).Error; err != nil {
+		t.Fatalf("load role: %v", err)
+	}
+	if !role.OwnerRole {
+		t.Fatalf("role_id = %d (%q), want owner role", user.RoleId, role.Slug)
+	}
+}

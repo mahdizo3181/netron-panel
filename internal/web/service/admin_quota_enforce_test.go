@@ -1,11 +1,30 @@
 package service
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/xray"
 )
+
+func TestSyncEnforceOnLiveDB(t *testing.T) {
+	if os.Getenv("XUI_SYNC_ENFORCE") == "" {
+		t.Skip("set XUI_SYNC_ENFORCE=1 with XUI_DB_FOLDER for live quota sync")
+	}
+	folder := os.Getenv("XUI_DB_FOLDER")
+	if folder == "" {
+		t.Fatal("XUI_DB_FOLDER is required")
+	}
+	if err := database.InitDB(filepath.Join(folder, "x-ui.db")); err != nil {
+		t.Fatalf("init db: %v", err)
+	}
+	if _, _, err := (&InboundService{}).SyncAndEnforceAdminUsageLimits(); err != nil {
+		t.Fatalf("SyncAndEnforceAdminUsageLimits: %v", err)
+	}
+}
 
 func TestCreateClientRejectedWhenMaxUsersReached(t *testing.T) {
 	db := initTrafficTestDB(t)
