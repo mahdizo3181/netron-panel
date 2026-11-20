@@ -2596,6 +2596,8 @@
       "nameSlugRequired": "نام و شناسه الزامی است.",
       "deleteConfirmTitle": "حذف نقش {name}؟",
       "builtInHint": "نقش‌های پیش‌فرض حذف نمی‌شوند؛ مجوزهای حساس فقط خواندنی هستند.",
+      "limitsSection": "سقف کلاینت (پیش‌فرض نقش)",
+      "saveFailed": "ذخیره نقش انجام نشد.",
       "usersSection": "کلاینت‌ها",
       "usersRead": "خواندن",
       "usersCreate": "ایجاد",

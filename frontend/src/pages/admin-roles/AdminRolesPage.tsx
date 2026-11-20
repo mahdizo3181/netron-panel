@@ -7,6 +7,7 @@ import {
   ConfigProvider,
   Form,
   Input,
+  InputNumber,
   Layout,
   Modal,
   Result,
@@ -63,6 +64,50 @@ interface RoleFormValues {
   name: string;
   slug: string;
   permissions: PermissionRoot;
+}
+
+interface RoleLimitsForm {
+  maxUsers?: number | null;
+  minDataLimitGb?: number | null;
+  maxDataLimitGb?: number | null;
+  minExpireDays?: number | null;
+  maxExpireDays?: number | null;
+}
+
+function positiveLimitNum(
+  limits: Record<string, unknown> | undefined,
+  key: string,
+): number | undefined {
+  const v = limits?.[key];
+  if (typeof v === 'number' && v > 0) return v;
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = Number(v);
+    return n > 0 ? n : undefined;
+  }
+  return undefined;
+}
+
+function limitsToForm(limits?: Record<string, unknown>): RoleLimitsForm {
+  if (!limits) return {};
+  return {
+    maxUsers: positiveLimitNum(limits, 'maxUsers'),
+    minDataLimitGb: positiveLimitNum(limits, 'minDataLimit'),
+    maxDataLimitGb: positiveLimitNum(limits, 'maxDataLimit'),
+    minExpireDays: positiveLimitNum(limits, 'minExpireDays'),
+    maxExpireDays: positiveLimitNum(limits, 'maxExpireDays'),
+  };
+}
+
+function formToLimits(form: RoleLimitsForm): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (form.maxUsers != null && form.maxUsers > 0) out.maxUsers = form.maxUsers;
+  if (form.minDataLimitGb != null && form.minDataLimitGb > 0)
+    out.minDataLimit = form.minDataLimitGb;
+  if (form.maxDataLimitGb != null && form.maxDataLimitGb > 0)
+    out.maxDataLimit = form.maxDataLimitGb;
+  if (form.minExpireDays != null && form.minExpireDays > 0) out.minExpireDays = form.minExpireDays;
+  if (form.maxExpireDays != null && form.maxExpireDays > 0) out.maxExpireDays = form.maxExpireDays;
+  return out;
 }
 
 function defaultPermissions(): PermissionRoot {
@@ -143,6 +188,7 @@ export default function AdminRolesPage() {
     slug: '',
     permissions: defaultPermissions(),
   });
+  const [limitsForm, setLimitsForm] = useState<RoleLimitsForm>({});
 
   const rolesQuery = useQuery({
     queryKey: keys.adminRoles.list(),
@@ -170,7 +216,10 @@ export default function AdminRolesPage() {
         invalidate();
         setFormOpen(false);
         setEditTarget(null);
+        setLimitsForm({});
+        return;
       }
+      messageApi.error(msg?.msg || t('pages.adminRoles.saveFailed'));
     },
   });
 
@@ -183,14 +232,15 @@ export default function AdminRolesPage() {
 
   const roles = rolesQuery.data ?? [];
   const matrixReadOnly =
-    !editTarget ||
-    editTarget.builtIn ||
-    BUILTIN_READONLY_SLUGS.has(editTarget.slug) ||
-    (!canUpdate && !canCreate);
+    editTarget != null &&
+    (editTarget.builtIn ||
+      BUILTIN_READONLY_SLUGS.has(editTarget.slug) ||
+      (!canUpdate && !canCreate));
 
   function openCreate() {
     setEditTarget(null);
     setFormValues({ name: '', slug: '', permissions: defaultPermissions() });
+    setLimitsForm({});
     setFormOpen(true);
   }
 
@@ -201,6 +251,7 @@ export default function AdminRolesPage() {
       slug: role.slug,
       permissions: normalizeRolePermissions(role.permissions),
     });
+    setLimitsForm(limitsToForm(role.limits));
     setFormOpen(true);
   }
 
@@ -215,7 +266,7 @@ export default function AdminRolesPage() {
       name,
       slug: editTarget?.builtIn ? editTarget.slug : slug,
       permissions: formValues.permissions,
-      limits: editTarget?.limits ?? {},
+      limits: formToLimits(limitsForm),
     });
   }
 
@@ -447,6 +498,79 @@ export default function AdminRolesPage() {
                 >
                   {t('pages.adminRoles.nodesRead')}
                 </Checkbox>
+              </Card>
+
+              <Card
+                size="small"
+                title={t('pages.adminRoles.limitsSection')}
+                type="inner"
+                style={{ marginTop: 12 }}
+              >
+                <Form.Item
+                  name="roleMaxUsers"
+                  label={t('pages.admins.maxUsers')}
+                  style={{ marginBottom: 8 }}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: '100%' }}
+                    disabled={matrixReadOnly || sensitiveReadOnly}
+                    value={limitsForm.maxUsers ?? undefined}
+                    onChange={(v) => setLimitsForm((prev) => ({ ...prev, maxUsers: v }))}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="roleMinDataLimitGb"
+                  label={t('pages.admins.dataLimitMinGb')}
+                  style={{ marginBottom: 8 }}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: '100%' }}
+                    disabled={matrixReadOnly || sensitiveReadOnly}
+                    value={limitsForm.minDataLimitGb ?? undefined}
+                    onChange={(v) => setLimitsForm((prev) => ({ ...prev, minDataLimitGb: v }))}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="roleMaxDataLimitGb"
+                  label={t('pages.admins.dataLimitMaxGb')}
+                  style={{ marginBottom: 8 }}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: '100%' }}
+                    disabled={matrixReadOnly || sensitiveReadOnly}
+                    value={limitsForm.maxDataLimitGb ?? undefined}
+                    onChange={(v) => setLimitsForm((prev) => ({ ...prev, maxDataLimitGb: v }))}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="roleMinExpireDays"
+                  label={t('pages.admins.expireDaysMin')}
+                  style={{ marginBottom: 8 }}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: '100%' }}
+                    disabled={matrixReadOnly || sensitiveReadOnly}
+                    value={limitsForm.minExpireDays ?? undefined}
+                    onChange={(v) => setLimitsForm((prev) => ({ ...prev, minExpireDays: v }))}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="roleMaxExpireDays"
+                  label={t('pages.admins.expireDaysMax')}
+                  style={{ marginBottom: 0 }}
+                >
+                  <InputNumber
+                    min={0}
+                    style={{ width: '100%' }}
+                    disabled={matrixReadOnly || sensitiveReadOnly}
+                    value={limitsForm.maxExpireDays ?? undefined}
+                    onChange={(v) => setLimitsForm((prev) => ({ ...prev, maxExpireDays: v }))}
+                  />
+                </Form.Item>
               </Card>
 
               <Card

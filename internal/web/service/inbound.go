@@ -366,6 +366,19 @@ type InboundOption struct {
 
 func (s *InboundService) GetInboundOptions(userId int) ([]InboundOption, error) {
 	db := database.GetDB()
+	if db == nil {
+		return nil, errors.New("database is not initialized")
+	}
+	var user model.User
+	if err := db.Where("id = ?", userId).First(&user).Error; err != nil {
+		return nil, err
+	}
+	var role model.AdminRole
+	if err := db.Where("id = ?", user.RoleId).First(&role).Error; err != nil {
+		return nil, err
+	}
+	listAll := inboundOptionsListAllInbounds(&role)
+
 	var rows []struct {
 		Id                int    `gorm:"column:id"`
 		Remark            string `gorm:"column:remark"`
@@ -382,12 +395,13 @@ func (s *InboundService) GetInboundOptions(userId int) ([]InboundOption, error) 
 		NodeAddress       string `gorm:"column:node_address"`
 		DisableFlow       bool   `gorm:"column:disable_flow"`
 	}
-	err := db.Table("inbounds").
+	q := db.Table("inbounds").
 		Select("inbounds.id, inbounds.remark, inbounds.tag, inbounds.protocol, inbounds.port, inbounds.enable, inbounds.stream_settings, inbounds.settings, inbounds.listen, inbounds.share_addr, inbounds.share_addr_strategy, inbounds.node_id, COALESCE(nodes.address, '') AS node_address, inbounds.disable_flow").
-		Joins("LEFT JOIN nodes ON nodes.id = inbounds.node_id").
-		Where("inbounds.user_id = ?", userId).
-		Order("inbounds.id ASC").
-		Scan(&rows).Error
+		Joins("LEFT JOIN nodes ON nodes.id = inbounds.node_id")
+	if !listAll {
+		q = q.Where("inbounds.user_id = ?", userId)
+	}
+	err := q.Order("inbounds.id ASC").Scan(&rows).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}

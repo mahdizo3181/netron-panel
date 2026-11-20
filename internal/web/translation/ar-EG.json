@@ -2596,6 +2596,8 @@
       "nameSlugRequired": "Name and slug are required.",
       "deleteConfirmTitle": "Delete role {name}?",
       "builtInHint": "Built-in roles cannot be deleted; sensitive permissions are read-only here.",
+      "limitsSection": "Client limits (role defaults)",
+      "saveFailed": "Could not save role.",
       "usersSection": "Clients (users)",
       "usersRead": "Read",
       "usersCreate": "Create",
