@@ -1696,7 +1696,6 @@ export const sections: readonly Section[] = [
   {
     id: 'admins',
     title: 'Panel Admins',
-    auth: 'cookie-only',
     description:
       'Manage panel administrator accounts. Requires owner role or admins.* permission on the signed-in role. Password hashes are never returned.',
     endpoints: [
@@ -1704,6 +1703,11 @@ export const sections: readonly Section[] = [
         method: 'GET',
         path: '/panel/api/admins/current',
         summary: 'Return the logged-in administrator with role permissions and limits JSON.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/stats',
+        summary: 'Aggregate administrator counts (total, active, disabled, quota-limited).',
       },
       {
         method: 'GET',
@@ -1769,6 +1773,61 @@ export const sections: readonly Section[] = [
         path: '/panel/api/admins/resetUsage/:id',
         summary: 'Reset traffic for all clients owned by the administrator and resync used bytes.',
         params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/users/disableActive/:id',
+        summary: 'Disable every active client owned by the administrator.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/users/activateDisabled/:id',
+        summary: 'Re-enable quota-disabled clients for the administrator when quota allows.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/users/removeAll/:id',
+        summary: 'Delete every client owned by the administrator.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+    ],
+  },
+
+  {
+    id: 'adminRoles',
+    title: 'Admin Roles',
+    description:
+      'Custom administrator roles and permission matrices. Built-in roles (owner, administrator, operator) cannot be deleted.',
+    endpoints: [
+      {
+        method: 'GET',
+        path: '/panel/api/adminRoles/list',
+        summary: 'List every administrator role with permissions and client limits JSON.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/adminRoles/get/:id',
+        summary: 'Fetch one administrator role.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Role ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/adminRoles/add',
+        summary: 'Create a custom administrator role.',
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/adminRoles/update/:id',
+        summary: 'Update a custom administrator role.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Role ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/adminRoles/del/:id',
+        summary: 'Delete a custom role with no assigned administrators.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Role ID.' }],
       },
     ],
   },

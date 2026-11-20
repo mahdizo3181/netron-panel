@@ -194,6 +194,12 @@ func (s *ClientService) CreateForAdmin(inboundSvc *InboundService, payload *Clie
 		if scope.Mode == ClientAccessNone {
 			return false, common.NewError("client create permission required")
 		}
+		if err := s.EnsureAdminMayCreateOrEnable(user, payload.Client.TotalGB); err != nil {
+			return false, err
+		}
+		if err := s.ValidateClientLimitsForAdmin(user, payload.Client, true); err != nil {
+			return false, err
+		}
 		if email != "" {
 			if existing, err := s.GetRecordByEmail(nil, email); err == nil {
 				if !s.ClientRecordAllowed(scope, existing) {

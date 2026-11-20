@@ -1,6 +1,7 @@
 package panel
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -16,23 +17,32 @@ import (
 type AdminService struct{}
 
 type AdminPayload struct {
-	Username  string `json:"username" form:"username"`
-	Password  string `json:"password" form:"password"`
-	RoleId    int    `json:"roleId" form:"roleId"`
-	Status    string `json:"status" form:"status"`
-	DataLimit int64  `json:"dataLimit" form:"dataLimit"`
+	Username            string         `json:"username" form:"username"`
+	Password            string         `json:"password" form:"password"`
+	RoleId              int            `json:"roleId" form:"roleId"`
+	Status              string         `json:"status" form:"status"`
+	DataLimit           int64          `json:"dataLimit" form:"dataLimit"`
+	PermissionOverrides map[string]any `json:"permissionOverrides"`
 }
 
 type AdminView struct {
-	Id          int    `json:"id"`
-	Username    string `json:"username"`
-	RoleId      int    `json:"roleId"`
-	RoleName    string `json:"roleName"`
-	RoleSlug    string `json:"roleSlug"`
-	Status      string `json:"status"`
-	DataLimit   int64  `json:"dataLimit"`
-	UsedBytes   int64  `json:"usedBytes"`
-	TotalUsers  int64  `json:"totalUsers"`
+	Id                  int            `json:"id"`
+	Username            string         `json:"username"`
+	RoleId              int            `json:"roleId"`
+	RoleName            string         `json:"roleName"`
+	RoleSlug            string         `json:"roleSlug"`
+	Status              string         `json:"status"`
+	DataLimit           int64          `json:"dataLimit"`
+	UsedBytes           int64          `json:"usedBytes"`
+	TotalUsers          int64          `json:"totalUsers"`
+	PermissionOverrides map[string]any `json:"permissionOverrides"`
+}
+
+type AdminStats struct {
+	Total    int64 `json:"total"`
+	Active   int64 `json:"active"`
+	Disabled int64 `json:"disabled"`
+	Limited  int64 `json:"limited"`
 }
 
 func validAdminStatus(status string) bool {
@@ -47,6 +57,29 @@ func normalizeAdminStatus(status string) string {
 	return status
 }
 
+func parseAdminOverridesJSON(raw string) map[string]any {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return map[string]any{}
+	}
+	var out map[string]any
+	if err := json.Unmarshal([]byte(raw), &out); err != nil || out == nil {
+		return map[string]any{}
+	}
+	return out
+}
+
+func marshalPermissionOverrides(overrides map[string]any) (string, error) {
+	if overrides == nil || len(overrides) == 0 {
+		return "", nil
+	}
+	b, err := json.Marshal(overrides)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func adminToView(user *model.User, role *model.AdminRole, totalUsers int64) *AdminView {
 	roleName := ""
 	roleSlug := ""
@@ -55,16 +88,63 @@ func adminToView(user *model.User, role *model.AdminRole, totalUsers int64) *Adm
 		roleSlug = role.Slug
 	}
 	return &AdminView{
-		Id:         user.Id,
-		Username:   user.Username,
-		RoleId:     user.RoleId,
-		RoleName:   roleName,
-		RoleSlug:   roleSlug,
-		Status:     user.Status,
-		DataLimit:  user.DataLimit,
-		UsedBytes:  user.UsedBytes,
-		TotalUsers: totalUsers,
+		Id:                  user.Id,
+		Username:            user.Username,
+		RoleId:              user.RoleId,
+		RoleName:            roleName,
+		RoleSlug:            roleSlug,
+		Status:              user.Status,
+		DataLimit:           user.DataLimit,
+		UsedBytes:           user.UsedBytes,
+		TotalUsers:          totalUsers,
+		PermissionOverrides: parseAdminOverridesJSON(user.PermissionOverridesJSON),
 	}
+}
+
+func (s *AdminService) Stats() (*AdminStats, error) {
+	db := database.GetDB()
+	var users []model.User
+	if err := db.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	stats := &AdminStats{}
+	for _, user := range users {
+		stats.Total++
+		switch user.Status {
+		case model.AdminStatusDisabled:
+			stats.Disabled++
+		default:
+			stats.Active++
+		}
+		if user.DataLimit > 0 {
+			stats.Limited++
+		}
+	}
+	return stats, nil
+}
+
+func (s *AdminService) RemoveAllClients(id int) (int64, bool, error) {
+	if id <= 0 {
+		return 0, false, common.NewError("invalid admin id")
+	}
+	db := database.GetDB()
+	var emails []string
+	if err := db.Model(&model.ClientRecord{}).
+		Where("owner_admin_id = ?", id).
+		Pluck("email", &emails).Error; err != nil {
+		return 0, false, err
+	}
+	if len(emails) == 0 {
+		return 0, false, nil
+	}
+	res, needRestart, err := (&core.ClientService{}).BulkDelete(&core.InboundService{}, emails, false)
+	if err != nil {
+		return int64(res.Deleted), needRestart, err
+	}
+	if _, syncErr := (&core.InboundService{}).SyncAdminUsedBytes(); syncErr != nil {
+		return int64(res.Deleted), needRestart, syncErr
+	}
+	return int64(res.Deleted), needRestart, nil
 }
 
 func (s *AdminService) roleByID(tx *gorm.DB, roleID int) (*model.AdminRole, error) {
@@ -207,12 +287,18 @@ func (s *AdminService) Create(payload AdminPayload) (*AdminView, error) {
 		return nil, err
 	}
 
+	overridesJSON, err := marshalPermissionOverrides(payload.PermissionOverrides)
+	if err != nil {
+		return nil, err
+	}
+
 	user := &model.User{
-		Username:  username,
-		Password:  hash,
-		RoleId:    payload.RoleId,
-		Status:    status,
-		DataLimit: payload.DataLimit,
+		Username:                username,
+		Password:                hash,
+		RoleId:                  payload.RoleId,
+		Status:                  status,
+		DataLimit:               payload.DataLimit,
+		PermissionOverridesJSON: overridesJSON,
 	}
 
 	if err := db.Create(user).Error; err != nil {
@@ -266,10 +352,17 @@ func (s *AdminService) Update(id int, payload AdminPayload) (*AdminView, error) 
 	}
 
 	updates := map[string]any{
-		"username":    username,
-		"role_id":     payload.RoleId,
-		"status":      status,
-		"data_limit":  payload.DataLimit,
+		"username":   username,
+		"role_id":    payload.RoleId,
+		"status":     status,
+		"data_limit": payload.DataLimit,
+	}
+	if payload.PermissionOverrides != nil {
+		overridesJSON, overridesErr := marshalPermissionOverrides(payload.PermissionOverrides)
+		if overridesErr != nil {
+			return nil, overridesErr
+		}
+		updates["permission_overrides"] = overridesJSON
 	}
 
 	if payload.Password != "" {

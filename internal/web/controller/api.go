@@ -213,6 +213,9 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	admins := api.Group("/admins")
 	NewAdminController(admins)
 
+	adminRoles := api.Group("/adminRoles")
+	NewAdminRoleController(adminRoles)
+
 	// Server API
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)

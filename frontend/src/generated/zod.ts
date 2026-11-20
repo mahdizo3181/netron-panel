@@ -3,6 +3,9 @@ import { z } from 'zod';
 export const BlockerCodeSchema = z.string();
 export type BlockerCode = z.infer<typeof BlockerCodeSchema>;
 
+export const ClientAccessModeSchema = z.string();
+export type ClientAccessMode = z.infer<typeof ClientAccessModeSchema>;
+
 export const GeoKindSchema = z.string();
 export type GeoKind = z.infer<typeof GeoKindSchema>;
 
@@ -505,6 +508,7 @@ export const ClientRecordSchema = z.object({
   clientHostRuleIds: z.array(z.number().int()).optional(),
   comment: z.string(),
   createdAt: z.number().int(),
+  disabledByOwnerAdminId: z.number().int(),
   email: z.string(),
   enable: z.boolean(),
   expiryTime: z.number().int(),
@@ -515,6 +519,7 @@ export const ClientRecordSchema = z.object({
   keepAlive: z.union([z.number().int(), z.string()]),
   limitHwid: z.number().int(),
   limitIp: z.number().int(),
+  ownerAdminId: z.number().int(),
   password: z.string(),
   preSharedKey: z.string(),
   privateKey: z.string(),
@@ -1217,8 +1222,13 @@ export const UsageMultiplierStatusSchema = z.object({
 export type UsageMultiplierStatus = z.infer<typeof UsageMultiplierStatusSchema>;
 
 export const UserSchema = z.object({
+  dataLimit: z.number().int(),
   id: z.number().int(),
   password: z.string(),
+  permissionOverrides: z.string(),
+  roleId: z.number().int(),
+  status: z.string(),
+  usedBytes: z.number().int(),
   username: z.string(),
 });
 export type User = z.infer<typeof UserSchema>;

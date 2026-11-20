@@ -51,6 +51,8 @@ type User struct {
 	Status    string `json:"status" gorm:"default:active;index"`
 	DataLimit int64  `json:"dataLimit" gorm:"column:data_limit;default:0"`
 	UsedBytes int64  `json:"usedBytes" gorm:"column:used_bytes;default:0"`
+
+	PermissionOverridesJSON string `json:"permissionOverrides" gorm:"column:permission_overrides;type:text"`
 }
 
 // Inbound represents an Xray inbound configuration with traffic statistics and settings.
@@ -1023,7 +1025,8 @@ type ClientRecord struct {
 	// Owned solely by the node-snapshot sweep, which soft-orphans instead of
 	// deleting; orphans from any other cause stay at zero and are never reaped.
 	SyncOrphanedAt int64 `json:"-" gorm:"column:sync_orphaned_at;default:0"`
-	OwnerAdminId   int   `json:"ownerAdminId" gorm:"column:owner_admin_id;index;default:0"`
+	OwnerAdminId           int `json:"ownerAdminId" gorm:"column:owner_admin_id;index;default:0"`
+	DisabledByOwnerAdminId int `json:"disabledByOwnerAdminId" gorm:"column:disabled_by_owner_admin_id;index;default:0"`
 }
 
 func (ClientRecord) TableName() string { return "clients" }

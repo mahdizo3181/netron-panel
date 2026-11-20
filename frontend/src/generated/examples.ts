@@ -524,6 +524,7 @@ export const EXAMPLES: Record<string, unknown> = {
     ],
     "comment": "",
     "createdAt": 0,
+    "disabledByOwnerAdminId": 0,
     "email": "",
     "enable": false,
     "expiryTime": 0,
@@ -534,6 +535,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "keepAlive": 0,
     "limitHwid": 0,
     "limitIp": 0,
+    "ownerAdminId": 0,
     "password": "",
     "preSharedKey": "",
     "privateKey": "",
@@ -1265,8 +1267,13 @@ export const EXAMPLES: Record<string, unknown> = {
     ]
   },
   "User": {
+    "dataLimit": 0,
     "id": 0,
     "password": "",
+    "permissionOverrides": "",
+    "roleId": 0,
+    "status": "",
+    "usedBytes": 0,
     "username": ""
   }
 };

@@ -2006,6 +2006,9 @@ export const SCHEMAS: Record<string, unknown> = {
         "format": "int64",
         "type": "integer"
       },
+      "disabledByOwnerAdminId": {
+        "type": "integer"
+      },
       "email": {
         "type": "string"
       },
@@ -2043,6 +2046,9 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "integer"
       },
       "limitIp": {
+        "type": "integer"
+      },
+      "ownerAdminId": {
         "type": "integer"
       },
       "password": {
@@ -2107,6 +2113,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "auth",
       "comment",
       "createdAt",
+      "disabledByOwnerAdminId",
       "email",
       "enable",
       "expiryTime",
@@ -2117,6 +2124,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "keepAlive",
       "limitHwid",
       "limitIp",
+      "ownerAdminId",
       "password",
       "preSharedKey",
       "privateKey",
@@ -5025,19 +5033,41 @@ export const SCHEMAS: Record<string, unknown> = {
   "User": {
     "description": "User represents a user account in the 3x-ui panel.",
     "properties": {
+      "dataLimit": {
+        "format": "int64",
+        "type": "integer"
+      },
       "id": {
         "type": "integer"
       },
       "password": {
         "type": "string"
       },
+      "permissionOverrides": {
+        "type": "string"
+      },
+      "roleId": {
+        "type": "integer"
+      },
+      "status": {
+        "type": "string"
+      },
+      "usedBytes": {
+        "format": "int64",
+        "type": "integer"
+      },
       "username": {
         "type": "string"
       }
     },
     "required": [
+      "dataLimit",
       "id",
       "password",
+      "permissionOverrides",
+      "roleId",
+      "status",
+      "usedBytes",
       "username"
     ],
     "type": "object"

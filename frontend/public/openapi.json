@@ -2032,6 +2032,9 @@
             "format": "int64",
             "type": "integer"
           },
+          "disabledByOwnerAdminId": {
+            "type": "integer"
+          },
           "email": {
             "type": "string"
           },
@@ -2069,6 +2072,9 @@
             "type": "integer"
           },
           "limitIp": {
+            "type": "integer"
+          },
+          "ownerAdminId": {
             "type": "integer"
           },
           "password": {
@@ -2133,6 +2139,7 @@
           "auth",
           "comment",
           "createdAt",
+          "disabledByOwnerAdminId",
           "email",
           "enable",
           "expiryTime",
@@ -2143,6 +2150,7 @@
           "keepAlive",
           "limitHwid",
           "limitIp",
+          "ownerAdminId",
           "password",
           "preSharedKey",
           "privateKey",
@@ -5051,19 +5059,41 @@
       "User": {
         "description": "User represents a user account in the 3x-ui panel.",
         "properties": {
+          "dataLimit": {
+            "format": "int64",
+            "type": "integer"
+          },
           "id": {
             "type": "integer"
           },
           "password": {
             "type": "string"
           },
+          "permissionOverrides": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "usedBytes": {
+            "format": "int64",
+            "type": "integer"
+          },
           "username": {
             "type": "string"
           }
         },
         "required": [
+          "dataLimit",
           "id",
           "password",
+          "permissionOverrides",
+          "roleId",
+          "status",
+          "usedBytes",
           "username"
         ],
         "type": "object"
@@ -5126,6 +5156,14 @@
     {
       "name": "Clients",
       "description": "Manage clients as first-class entities that can be attached to one or more inbounds. A single client row drives the settings.clients entry in every inbound it belongs to. Endpoints live under /panel/api/clients."
+    },
+    {
+      "name": "Panel Admins",
+      "description": "Manage panel administrator accounts. Requires owner role or admins.* permission on the signed-in role. Password hashes are never returned."
+    },
+    {
+      "name": "Admin Roles",
+      "description": "Custom administrator roles and permission matrices. Built-in roles (owner, administrator, operator) cannot be deleted."
     },
     {
       "name": "Nodes",
@@ -11316,6 +11354,715 @@
                   "obj": [
                     "vless://uuid@host:443?...#user1"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/current": {
+      "get": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Return the logged-in administrator with role permissions and limits JSON.",
+        "operationId": "get_panel_api_admins_current",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/stats": {
+      "get": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Aggregate administrator counts (total, active, disabled, quota-limited).",
+        "operationId": "get_panel_api_admins_stats",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/list": {
+      "get": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "List administrators with role metadata, limits, and live used bytes.",
+        "operationId": "get_panel_api_admins_list",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/get/{id}": {
+      "get": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Fetch one administrator by ID.",
+        "operationId": "get_panel_api_admins_get_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/add": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Create a non-owner administrator.",
+        "operationId": "post_panel_api_admins_add",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "Unique username."
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "Plaintext password."
+                  },
+                  "roleId": {
+                    "type": "integer",
+                    "description": "Non-owner role ID."
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "active or disabled."
+                  },
+                  "dataLimit": {
+                    "type": "integer",
+                    "description": "Bytes quota for owned clients. 0 means unlimited."
+                  }
+                },
+                "required": [
+                  "username",
+                  "password",
+                  "roleId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/update/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Update a non-owner administrator.",
+        "operationId": "post_panel_api_admins_update_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/del/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Delete a non-owner administrator with no owned clients.",
+        "operationId": "post_panel_api_admins_del_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/enable/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Enable an administrator account.",
+        "operationId": "post_panel_api_admins_enable_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/disable/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Disable an administrator account and invalidate sessions.",
+        "operationId": "post_panel_api_admins_disable_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/resetUsage/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Reset traffic for all clients owned by the administrator and resync used bytes.",
+        "operationId": "post_panel_api_admins_resetUsage_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/users/disableActive/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Disable every active client owned by the administrator.",
+        "operationId": "post_panel_api_admins_users_disableActive_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/users/activateDisabled/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Re-enable quota-disabled clients for the administrator when quota allows.",
+        "operationId": "post_panel_api_admins_users_activateDisabled_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/admins/users/removeAll/{id}": {
+      "post": {
+        "tags": [
+          "Panel Admins"
+        ],
+        "summary": "Delete every client owned by the administrator.",
+        "operationId": "post_panel_api_admins_users_removeAll_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Administrator ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/adminRoles/list": {
+      "get": {
+        "tags": [
+          "Admin Roles"
+        ],
+        "summary": "List every administrator role with permissions and client limits JSON.",
+        "operationId": "get_panel_api_adminRoles_list",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/adminRoles/get/{id}": {
+      "get": {
+        "tags": [
+          "Admin Roles"
+        ],
+        "summary": "Fetch one administrator role.",
+        "operationId": "get_panel_api_adminRoles_get_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Role ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/adminRoles/add": {
+      "post": {
+        "tags": [
+          "Admin Roles"
+        ],
+        "summary": "Create a custom administrator role.",
+        "operationId": "post_panel_api_adminRoles_add",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/adminRoles/update/{id}": {
+      "post": {
+        "tags": [
+          "Admin Roles"
+        ],
+        "summary": "Update a custom administrator role.",
+        "operationId": "post_panel_api_adminRoles_update_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Role ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/panel/api/adminRoles/del/{id}": {
+      "post": {
+        "tags": [
+          "Admin Roles"
+        ],
+        "summary": "Delete a custom role with no assigned administrators.",
+        "operationId": "post_panel_api_adminRoles_del_id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Role ID.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "obj": {}
+                  }
                 }
               }
             }

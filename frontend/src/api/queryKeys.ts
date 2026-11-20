@@ -43,6 +43,16 @@ export const keys = {
     lastOnline: () => ['clients', 'lastOnline'] as const,
     groups: () => ['clients', 'groups'] as const,
   },
+  admins: {
+    root: () => ['admins'] as const,
+    current: () => ['admins', 'current'] as const,
+    list: () => ['admins', 'list'] as const,
+    stats: () => ['admins', 'stats'] as const,
+  },
+  adminRoles: {
+    root: () => ['adminRoles'] as const,
+    list: () => ['adminRoles', 'list'] as const,
+  },
   xray: {
     root: () => ['xray'] as const,
     config: () => ['xray', 'config'] as const,

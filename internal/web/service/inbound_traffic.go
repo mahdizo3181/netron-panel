@@ -103,6 +103,14 @@ func (s *InboundService) addTrafficLocked(inboundTraffics []*xray.Traffic, clien
 		return false, false, nil, nil, nil, nil
 	}
 	needRestart = needRestart || s.applyTrafficMutationBatch(batch)
+	if adminRestart, adminOff, adminErr := s.SyncAndEnforceAdminUsageLimits(); adminErr != nil {
+		logger.Warning("admin quota enforcement failed:", adminErr)
+	} else {
+		needRestart = needRestart || adminRestart
+		if adminOff {
+			clientsDisabled = true
+		}
+	}
 	return needRestart, clientsDisabled, disabledNodeIDs, batch.remotePlans, batch.renewedEmails, nil
 }
 

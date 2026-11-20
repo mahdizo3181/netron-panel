@@ -1499,8 +1499,15 @@ func EnsureFirstUser() (username, password string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	if err := db.Create(&model.User{Username: username, Password: hashedPassword}).Error; err != nil {
+	user := model.User{Username: username, Password: hashedPassword, Status: model.AdminStatusActive}
+	if err := db.Create(&user).Error; err != nil {
 		return "", "", err
+	}
+	var ownerRole model.AdminRole
+	if err := db.Where("owner_role = ?", true).First(&ownerRole).Error; err == nil && ownerRole.Id > 0 {
+		if err := db.Model(&model.User{}).Where("id = ?", user.Id).Update("role_id", ownerRole.Id).Error; err != nil {
+			return "", "", err
+		}
 	}
 	return username, password, nil
 }
@@ -1535,7 +1542,10 @@ func runSeeders(isUsersEmpty bool) error {
 				return err
 			}
 		}
-		return seedApiTokens()
+		if err := seedApiTokens(); err != nil {
+			return err
+		}
+		return seedRBACDefaults()
 	}
 
 	var seedersHistory []string

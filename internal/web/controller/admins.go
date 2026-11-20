@@ -3,6 +3,7 @@ package controller
 import (
 	"strconv"
 
+	core "github.com/mhsanaei/3x-ui/v3/internal/web/service"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service/panel"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func NewAdminController(g *gin.RouterGroup) *AdminController {
 
 func (a *AdminController) initRouter(g *gin.RouterGroup) {
 	g.GET("/current", a.current)
+	g.GET("/stats", requireAdminPermission("admins", "read"), a.stats)
 	g.GET("/list", requireAdminPermission("admins", "read"), a.list)
 	g.GET("/get/:id", requireAdminPermission("admins", "read"), a.get)
 
@@ -29,6 +31,14 @@ func (a *AdminController) initRouter(g *gin.RouterGroup) {
 	g.POST("/enable/:id", requireAdminPermission("admins", "update"), a.enable)
 	g.POST("/disable/:id", requireAdminPermission("admins", "update"), a.disable)
 	g.POST("/resetUsage/:id", requireAdminPermission("admins", "reset_usage"), a.resetUsage)
+	g.POST("/users/disableActive/:id", requireAdminPermission("admins", "update"), a.disableActiveClients)
+	g.POST("/users/activateDisabled/:id", requireAdminPermission("admins", "update"), a.activateDisabledClients)
+	g.POST("/users/removeAll/:id", requireAdminPermission("admins", "update"), a.removeAllClients)
+}
+
+func (a *AdminController) stats(c *gin.Context) {
+	stats, err := a.adminService.Stats()
+	jsonObj(c, stats, err)
 }
 
 func (a *AdminController) current(c *gin.Context) {
@@ -139,4 +149,57 @@ func (a *AdminController) resetUsage(c *gin.Context) {
 		return
 	}
 	jsonMsg(c, "reset admin usage", a.adminService.ResetUsage(id))
+}
+
+func (a *AdminController) disableActiveClients(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "get"), err)
+		return
+	}
+	inboundSvc := &core.InboundService{}
+	needRestart, count, opErr := inboundSvc.DisableClientsByOwnerAdminID(id)
+	if opErr != nil {
+		jsonMsg(c, "disable admin clients", opErr)
+		return
+	}
+	if needRestart {
+		(&core.XrayService{}).SetToNeedRestart()
+	}
+	jsonMsgObj(c, "disable admin clients", gin.H{"affected": count}, nil)
+}
+
+func (a *AdminController) activateDisabledClients(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "get"), err)
+		return
+	}
+	inboundSvc := &core.InboundService{}
+	needRestart, count, opErr := inboundSvc.EnableClientsDisabledByOwnerAdminID(id)
+	if opErr != nil {
+		jsonMsg(c, "activate admin clients", opErr)
+		return
+	}
+	if needRestart {
+		(&core.XrayService{}).SetToNeedRestart()
+	}
+	jsonMsgObj(c, "activate admin clients", gin.H{"affected": count}, nil)
+}
+
+func (a *AdminController) removeAllClients(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "get"), err)
+		return
+	}
+	deleted, needRestart, opErr := a.adminService.RemoveAllClients(id)
+	if opErr != nil {
+		jsonMsg(c, "remove admin clients", opErr)
+		return
+	}
+	if needRestart {
+		(&core.XrayService{}).SetToNeedRestart()
+	}
+	jsonMsgObj(c, "remove admin clients", gin.H{"deleted": deleted}, nil)
 }

@@ -13,6 +13,8 @@ import {
   TagsOutlined,
   TeamOutlined,
   ToolOutlined,
+  UserOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons';
 
 const IndexPage = lazy(() => import('@/pages/index/IndexPage'));
@@ -25,6 +27,8 @@ const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 const XrayPage = lazy(() => import('@/pages/xray/XrayPage'));
 const ApiDocsPage = lazy(() => import('@/pages/api-docs/ApiDocsPage'));
 const SponsorsPage = lazy(() => import('@/pages/sponsors/SponsorsPage'));
+const AdminsPage = lazy(() => import('@/pages/admins/AdminsPage'));
+const AdminRolesPage = lazy(() => import('@/pages/admin-roles/AdminRolesPage'));
 
 export interface PanelRoute {
   path: string;
@@ -40,6 +44,13 @@ export const PANEL_ROUTES: PanelRoute[] = [
   { path: '/inbounds', titleKey: 'menu.inbounds', icon: ImportOutlined, component: InboundsPage },
   { path: '/clients', titleKey: 'menu.clients', icon: TeamOutlined, component: ClientsPage },
   { path: '/groups', titleKey: 'menu.groups', icon: TagsOutlined, component: GroupsPage },
+  { path: '/admins', titleKey: 'menu.admins', icon: UserOutlined, component: AdminsPage },
+  {
+    path: '/admin-roles',
+    titleKey: 'menu.adminRoles',
+    icon: SafetyCertificateOutlined,
+    component: AdminRolesPage,
+  },
   { path: '/nodes', titleKey: 'menu.nodes', icon: ClusterOutlined, component: NodesPage },
   { path: '/hosts', titleKey: 'menu.hosts', icon: GlobalOutlined, component: HostsPage },
   { path: '/outbound', titleKey: 'menu.outbounds', icon: ExportOutlined, component: XrayPage },

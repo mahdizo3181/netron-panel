@@ -37,6 +37,7 @@ import (
 // so they do not need manual updates.
 func migrationModels() []any {
 	return []any{
+		&model.AdminRole{},
 		&model.User{},
 		&model.Setting{},
 		&model.HistoryOfSeeders{},

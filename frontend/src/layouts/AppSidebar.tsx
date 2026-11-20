@@ -34,6 +34,7 @@ import { formatPanelVersion } from '@/lib/panel-version';
 import { pauseAnimationsUntilLeave, useTheme } from '@/hooks/useTheme';
 import { useAllSettings } from '@/api/queries/useAllSettings';
 import { useCommandPalette } from '@/components/command-palette/useCommandPalette';
+import { useCurrentAdmin } from '@/hooks/useCurrentAdmin';
 import { PANEL_ROUTES } from '@/routes/panelRoutes';
 import './AppSidebar.css';
 
@@ -153,8 +154,10 @@ export default function AppSidebar() {
   const navigate = useNavigate();
   const { pathname, hash } = useLocation();
   const { allSetting } = useAllSettings();
+  const { canAccessPanelRoute, hasPermission, isOwner } = useCurrentAdmin();
   const showSubFormats = !!(allSetting.subJsonEnable || allSetting.subClashEnable);
   const showSubBalancers = !!allSetting.subJsonEnable;
+  const showSettingsNav = isOwner || hasPermission('settings', 'read_general');
 
   const [hovered, setHovered] = useState(() => hoveredAcrossRemounts);
   const [pinned, setPinned] = useState(readSidebarPinned);
@@ -190,20 +193,21 @@ export default function AppSidebar() {
 
   const tabs = useMemo<{ key: string; icon: ComponentType; title: string }[]>(
     () => [
-      ...PANEL_ROUTES.map((route) => ({
+      ...PANEL_ROUTES.filter((route) => canAccessPanelRoute(route.path)).map((route) => ({
         key: route.path,
         icon: route.icon,
         title: t(route.titleKey),
       })),
       { key: LOGOUT_KEY, icon: LogoutOutlined, title: t('logout') },
     ],
-    [t],
+    [canAccessPanelRoute, t],
   );
 
   const navItems = useMemo(() => tabs.filter((tab) => tab.key !== LOGOUT_KEY), [tabs]);
   const utilItems = useMemo(() => tabs.filter((tab) => tab.key === LOGOUT_KEY), [tabs]);
 
   const settingsChildren = useMemo<NonNullable<MenuProps['items']>>(() => {
+    if (!showSettingsNav) return [];
     const children: NonNullable<MenuProps['items']> = [
       {
         key: '/settings#general',
@@ -251,7 +255,7 @@ export default function AppSidebar() {
       });
     }
     return children;
-  }, [t, showSubFormats, showSubBalancers]);
+  }, [showSettingsNav, t, showSubFormats, showSubBalancers]);
 
   const xrayChildren = useMemo<NonNullable<MenuProps['items']>>(
     () => [
