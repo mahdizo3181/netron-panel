@@ -299,6 +299,9 @@ func (s *InboundService) SyncAndEnforceAdminUsageLimits() (bool, bool, error) {
 			needRestart = true
 		}
 	}
+	if err := s.SyncAdminQuotaTelegramNotices(); err != nil {
+		return needRestart, clientsDisabled, err
+	}
 	return needRestart, clientsDisabled, nil
 }
 

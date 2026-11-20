@@ -98,11 +98,44 @@ func (a *SUBController) metadataForSubRequest(getSubReq func() *SubService, subI
 	// Disabled modes ignore the retained custom URL and never fall back to the request URL.
 	profileURL = renderSubPlaceholders(profileURL, subPlaceholderData{SubID: subID, Context: context, HasCtx: hasContext, Escape: true})
 	data := subPlaceholderData{SubID: subID, Context: context, HasCtx: hasContext}
-	return renderedSubMetadata{
+	meta := renderedSubMetadata{
 		Title:      renderSubPlaceholders(a.subTitle, data),
 		SupportURL: renderSubPlaceholders(a.subSupportUrl, subPlaceholderData{SubID: subID, Context: context, HasCtx: hasContext, Escape: true}),
 		ProfileURL: profileURL,
 		Announce:   renderSubPlaceholders(a.subAnnounce, data),
+	}
+	applyOwnerAdminSubBranding(subID, data, &meta)
+	return meta
+}
+
+func applyOwnerAdminSubBranding(subID string, data subPlaceholderData, meta *renderedSubMetadata) {
+	if meta == nil || subID == "" {
+		return
+	}
+	db := database.GetDB()
+	if db == nil {
+		return
+	}
+	var rec model.ClientRecord
+	err := db.Select("owner_admin_id").Where("sub_id = ?", subID).Order("id ASC").First(&rec).Error
+	if err != nil || rec.OwnerAdminId <= 0 {
+		return
+	}
+	var owner model.User
+	if err := db.Select("profile_title", "support_url").
+		Where("id = ?", rec.OwnerAdminId).First(&owner).Error; err != nil {
+		return
+	}
+	if title := strings.TrimSpace(owner.ProfileTitle); title != "" {
+		meta.Title = renderSubPlaceholders(title, data)
+	}
+	if support := strings.TrimSpace(owner.SupportURL); support != "" {
+		meta.SupportURL = renderSubPlaceholders(support, subPlaceholderData{
+			SubID:   subID,
+			Context: data.Context,
+			HasCtx:  data.HasCtx,
+			Escape:  true,
+		})
 	}
 }
 

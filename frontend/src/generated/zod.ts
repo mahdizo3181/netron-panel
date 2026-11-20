@@ -30,6 +30,46 @@ export type trafficLocalApplyAction = z.infer<typeof trafficLocalApplyActionSche
 export const transportBitsSchema = z.number().int();
 export type transportBits = z.infer<typeof transportBitsSchema>;
 
+export const AdminPayloadSchema = z.object({
+  dataLimit: z.number().int(),
+  password: z.string(),
+  permissionOverrides: z.record(z.string(), z.unknown()),
+  profileTitle: z.string(),
+  roleId: z.number().int(),
+  status: z.string(),
+  subscriptionDomain: z.string(),
+  supportUrl: z.string(),
+  telegramId: z.string(),
+  username: z.string(),
+});
+export type AdminPayload = z.infer<typeof AdminPayloadSchema>;
+
+export const AdminStatsSchema = z.object({
+  active: z.number().int(),
+  disabled: z.number().int(),
+  limited: z.number().int(),
+  total: z.number().int(),
+});
+export type AdminStats = z.infer<typeof AdminStatsSchema>;
+
+export const AdminViewSchema = z.object({
+  dataLimit: z.number().int(),
+  id: z.number().int(),
+  permissionOverrides: z.record(z.string(), z.unknown()),
+  profileTitle: z.string(),
+  roleId: z.number().int(),
+  roleName: z.string(),
+  roleSlug: z.string(),
+  status: z.string(),
+  subscriptionDomain: z.string(),
+  supportUrl: z.string(),
+  telegramId: z.string(),
+  totalUsers: z.number().int(),
+  usedBytes: z.number().int(),
+  username: z.string(),
+});
+export type AdminView = z.infer<typeof AdminViewSchema>;
+
 export const AllSettingSchema = z.object({
   datepicker: z.string(),
   discordAdminIds: z.string(),
@@ -1233,8 +1273,12 @@ export const UserSchema = z.object({
   id: z.number().int(),
   password: z.string(),
   permissionOverrides: z.string(),
+  profileTitle: z.string(),
   roleId: z.number().int(),
   status: z.string(),
+  subscriptionDomain: z.string(),
+  supportUrl: z.string(),
+  telegramId: z.string(),
   usedBytes: z.number().int(),
   username: z.string(),
 });

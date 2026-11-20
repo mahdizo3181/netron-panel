@@ -17,24 +17,32 @@ import (
 type AdminService struct{}
 
 type AdminPayload struct {
-	Username            string         `json:"username" form:"username"`
+	Username            string         `json:"username" form:"username" example:"reseller1"`
 	Password            string         `json:"password" form:"password"`
-	RoleId              int            `json:"roleId" form:"roleId"`
-	Status              string         `json:"status" form:"status"`
-	DataLimit           int64          `json:"dataLimit" form:"dataLimit"`
+	RoleId              int            `json:"roleId" form:"roleId" example:"3"`
+	Status              string         `json:"status" form:"status" example:"active"`
+	DataLimit           int64          `json:"dataLimit" form:"dataLimit" example:"10737418240"`
+	ProfileTitle        string         `json:"profileTitle" form:"profileTitle" example:"VIP Clients"`
+	SupportURL          string         `json:"supportUrl" form:"supportUrl" example:"https://t.me/support"`
+	SubscriptionDomain  string         `json:"subscriptionDomain" form:"subscriptionDomain" example:"sub.example.com"`
+	TelegramID          string         `json:"telegramId" form:"telegramId" example:"123456789"`
 	PermissionOverrides map[string]any `json:"permissionOverrides"`
 }
 
 type AdminView struct {
-	Id                  int            `json:"id"`
-	Username            string         `json:"username"`
-	RoleId              int            `json:"roleId"`
-	RoleName            string         `json:"roleName"`
-	RoleSlug            string         `json:"roleSlug"`
-	Status              string         `json:"status"`
-	DataLimit           int64          `json:"dataLimit"`
-	UsedBytes           int64          `json:"usedBytes"`
-	TotalUsers          int64          `json:"totalUsers"`
+	Id                  int            `json:"id" example:"2"`
+	Username            string         `json:"username" example:"reseller1"`
+	RoleId              int            `json:"roleId" example:"3"`
+	RoleName            string         `json:"roleName" example:"Operator"`
+	RoleSlug            string         `json:"roleSlug" example:"operator"`
+	Status              string         `json:"status" example:"active"`
+	DataLimit           int64          `json:"dataLimit" example:"10737418240"`
+	UsedBytes           int64          `json:"usedBytes" example:"0"`
+	TotalUsers          int64          `json:"totalUsers" example:"5"`
+	ProfileTitle        string         `json:"profileTitle" example:"VIP Clients"`
+	SupportURL          string         `json:"supportUrl" example:"https://t.me/support"`
+	SubscriptionDomain  string         `json:"subscriptionDomain" example:"sub.example.com"`
+	TelegramID          string         `json:"telegramId" example:"123456789"`
 	PermissionOverrides map[string]any `json:"permissionOverrides"`
 }
 
@@ -97,6 +105,10 @@ func adminToView(user *model.User, role *model.AdminRole, totalUsers int64) *Adm
 		DataLimit:           user.DataLimit,
 		UsedBytes:           user.UsedBytes,
 		TotalUsers:          totalUsers,
+		ProfileTitle:        user.ProfileTitle,
+		SupportURL:          user.SupportURL,
+		SubscriptionDomain:  user.SubscriptionDomain,
+		TelegramID:          user.TelegramID,
 		PermissionOverrides: parseAdminOverridesJSON(user.PermissionOverridesJSON),
 	}
 }
@@ -298,6 +310,10 @@ func (s *AdminService) Create(payload AdminPayload) (*AdminView, error) {
 		RoleId:                  payload.RoleId,
 		Status:                  status,
 		DataLimit:               payload.DataLimit,
+		ProfileTitle:            strings.TrimSpace(payload.ProfileTitle),
+		SupportURL:              strings.TrimSpace(payload.SupportURL),
+		SubscriptionDomain:      strings.TrimSpace(payload.SubscriptionDomain),
+		TelegramID:              strings.TrimSpace(payload.TelegramID),
 		PermissionOverridesJSON: overridesJSON,
 	}
 
@@ -352,10 +368,14 @@ func (s *AdminService) Update(id int, payload AdminPayload) (*AdminView, error) 
 	}
 
 	updates := map[string]any{
-		"username":   username,
-		"role_id":    payload.RoleId,
-		"status":     status,
-		"data_limit": payload.DataLimit,
+		"username":             username,
+		"role_id":              payload.RoleId,
+		"status":               status,
+		"data_limit":           payload.DataLimit,
+		"profile_title":        strings.TrimSpace(payload.ProfileTitle),
+		"support_url":          strings.TrimSpace(payload.SupportURL),
+		"subscription_domain":  strings.TrimSpace(payload.SubscriptionDomain),
+		"telegram_id":          strings.TrimSpace(payload.TelegramID),
 	}
 	if payload.PermissionOverrides != nil {
 		overridesJSON, overridesErr := marshalPermissionOverrides(payload.PermissionOverrides)

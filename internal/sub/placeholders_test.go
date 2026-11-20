@@ -191,3 +191,37 @@ func TestMetadataForSubRequestUsesStableClientIdentity(t *testing.T) {
 		t.Fatalf("Announce = %q", metadata.Announce)
 	}
 }
+
+func TestMetadataUsesOwnerAdminBranding(t *testing.T) {
+	initSubDB(t)
+	db := database.GetDB()
+	owner := model.User{
+		Username:     "reseller",
+		Status:       model.AdminStatusActive,
+		ProfileTitle: "Reseller Profile",
+		SupportURL:   "https://t.me/reseller-support",
+	}
+	if err := db.Create(&owner).Error; err != nil {
+		t.Fatalf("create owner admin: %v", err)
+	}
+	if err := db.Create(&model.ClientRecord{
+		Email:        "owned@x",
+		SubID:        "sub-reseller",
+		OwnerAdminId: owner.Id,
+	}).Error; err != nil {
+		t.Fatalf("create client: %v", err)
+	}
+
+	a := &SUBController{
+		subTitle:      "Global Panel Title",
+		subSupportUrl: "https://global.support/",
+	}
+	meta := a.metadataForSubRequest(func() *SubService { return &SubService{} }, "sub-reseller", "")
+
+	if meta.Title != "Reseller Profile" {
+		t.Fatalf("Title = %q, want reseller profile title", meta.Title)
+	}
+	if meta.SupportURL != "https://t.me/reseller-support" {
+		t.Fatalf("SupportURL = %q, want reseller support link", meta.SupportURL)
+	}
+}

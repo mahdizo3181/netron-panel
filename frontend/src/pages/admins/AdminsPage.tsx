@@ -62,6 +62,10 @@ const AdminViewSchema = z.object({
   usedBytes: z.number(),
   totalUsers: z.number(),
   permissionOverrides: z.record(z.string(), z.unknown()).optional(),
+  profileTitle: z.string().optional(),
+  supportUrl: z.string().optional(),
+  subscriptionDomain: z.string().optional(),
+  telegramId: z.string().optional(),
 });
 
 const AdminListSchema = z.array(AdminViewSchema);
@@ -96,6 +100,10 @@ interface AdminFormValues {
   dataLimitMaxGb?: number | null;
   expireDaysMin?: number | null;
   expireDaysMax?: number | null;
+  profileTitle?: string;
+  supportUrl?: string;
+  subscriptionDomain?: string;
+  telegramId?: string;
 }
 
 function gbToBytes(gb: number | null | undefined): number | undefined {
@@ -270,6 +278,10 @@ export default function AdminsPage() {
       roleId: record.roleId,
       status: record.status,
       dataLimitGb: bytesToGb(record.dataLimit),
+      profileTitle: record.profileTitle ?? '',
+      supportUrl: record.supportUrl ?? '',
+      subscriptionDomain: record.subscriptionDomain ?? '',
+      telegramId: record.telegramId ?? '',
       password: '',
       ...overridesToForm(record.permissionOverrides),
     });
@@ -287,6 +299,10 @@ export default function AdminsPage() {
       roleId: values.roleId,
       status: values.status,
       dataLimit: dataLimitBytes,
+      profileTitle: values.profileTitle?.trim() ?? '',
+      supportUrl: values.supportUrl?.trim() ?? '',
+      subscriptionDomain: values.subscriptionDomain?.trim() ?? '',
+      telegramId: values.telegramId?.trim() ?? '',
       permissionOverrides: buildOverrides(values),
     };
     if (!editTarget || values.password?.trim()) {
@@ -693,6 +709,18 @@ export default function AdminsPage() {
                   style={{ width: '100%' }}
                   placeholder={t('pages.admins.unlimitedQuota')}
                 />
+              </Form.Item>
+              <Form.Item name="profileTitle" label={t('pages.admins.profileTitle')}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="supportUrl" label={t('pages.admins.supportUrl')}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="subscriptionDomain" label={t('pages.admins.subscriptionDomain')}>
+                <Input />
+              </Form.Item>
+              <Form.Item name="telegramId" label={t('pages.admins.telegramId')}>
+                <Input inputMode="numeric" />
               </Form.Item>
               <Card size="small" title={t('pages.admins.overridesTitle')} type="inner">
                 <Form.Item name="maxUsers" label={t('pages.admins.maxUsers')}>

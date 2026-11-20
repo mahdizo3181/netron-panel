@@ -26,6 +26,170 @@
       }
     },
     "schemas": {
+      "AdminPayload": {
+        "properties": {
+          "dataLimit": {
+            "example": 10737418240,
+            "format": "int64",
+            "type": "integer"
+          },
+          "password": {
+            "type": "string"
+          },
+          "permissionOverrides": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "profileTitle": {
+            "example": "VIP Clients",
+            "type": "string"
+          },
+          "roleId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "status": {
+            "example": "active",
+            "type": "string"
+          },
+          "subscriptionDomain": {
+            "example": "sub.example.com",
+            "type": "string"
+          },
+          "supportUrl": {
+            "example": "https://t.me/support",
+            "type": "string"
+          },
+          "telegramId": {
+            "example": "123456789",
+            "type": "string"
+          },
+          "username": {
+            "example": "reseller1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dataLimit",
+          "password",
+          "permissionOverrides",
+          "profileTitle",
+          "roleId",
+          "status",
+          "subscriptionDomain",
+          "supportUrl",
+          "telegramId",
+          "username"
+        ],
+        "type": "object"
+      },
+      "AdminStats": {
+        "properties": {
+          "active": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "disabled": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "limited": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active",
+          "disabled",
+          "limited",
+          "total"
+        ],
+        "type": "object"
+      },
+      "AdminView": {
+        "properties": {
+          "dataLimit": {
+            "example": 10737418240,
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "example": 2,
+            "type": "integer"
+          },
+          "permissionOverrides": {
+            "additionalProperties": {},
+            "type": "object"
+          },
+          "profileTitle": {
+            "example": "VIP Clients",
+            "type": "string"
+          },
+          "roleId": {
+            "example": 3,
+            "type": "integer"
+          },
+          "roleName": {
+            "example": "Operator",
+            "type": "string"
+          },
+          "roleSlug": {
+            "example": "operator",
+            "type": "string"
+          },
+          "status": {
+            "example": "active",
+            "type": "string"
+          },
+          "subscriptionDomain": {
+            "example": "sub.example.com",
+            "type": "string"
+          },
+          "supportUrl": {
+            "example": "https://t.me/support",
+            "type": "string"
+          },
+          "telegramId": {
+            "example": "123456789",
+            "type": "string"
+          },
+          "totalUsers": {
+            "example": 5,
+            "format": "int64",
+            "type": "integer"
+          },
+          "usedBytes": {
+            "example": 0,
+            "format": "int64",
+            "type": "integer"
+          },
+          "username": {
+            "example": "reseller1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dataLimit",
+          "id",
+          "permissionOverrides",
+          "profileTitle",
+          "roleId",
+          "roleName",
+          "roleSlug",
+          "status",
+          "subscriptionDomain",
+          "supportUrl",
+          "telegramId",
+          "totalUsers",
+          "usedBytes",
+          "username"
+        ],
+        "type": "object"
+      },
       "AllSetting": {
         "properties": {
           "datepicker": {
@@ -5112,10 +5276,22 @@
           "permissionOverrides": {
             "type": "string"
           },
+          "profileTitle": {
+            "type": "string"
+          },
           "roleId": {
             "type": "integer"
           },
           "status": {
+            "type": "string"
+          },
+          "subscriptionDomain": {
+            "type": "string"
+          },
+          "supportUrl": {
+            "type": "string"
+          },
+          "telegramId": {
             "type": "string"
           },
           "usedBytes": {
@@ -5131,8 +5307,12 @@
           "id",
           "password",
           "permissionOverrides",
+          "profileTitle",
           "roleId",
           "status",
+          "subscriptionDomain",
+          "supportUrl",
+          "telegramId",
           "usedBytes",
           "username"
         ],

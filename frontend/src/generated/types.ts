@@ -10,6 +10,43 @@ export type staticEgressResolver = string;
 export type trafficLocalApplyAction = number;
 export type transportBits = number;
 
+export interface AdminPayload {
+  dataLimit: number;
+  password: string;
+  permissionOverrides: Record<string, unknown>;
+  profileTitle: string;
+  roleId: number;
+  status: string;
+  subscriptionDomain: string;
+  supportUrl: string;
+  telegramId: string;
+  username: string;
+}
+
+export interface AdminStats {
+  active: number;
+  disabled: number;
+  limited: number;
+  total: number;
+}
+
+export interface AdminView {
+  dataLimit: number;
+  id: number;
+  permissionOverrides: Record<string, unknown>;
+  profileTitle: string;
+  roleId: number;
+  roleName: string;
+  roleSlug: string;
+  status: string;
+  subscriptionDomain: string;
+  supportUrl: string;
+  telegramId: string;
+  totalUsers: number;
+  usedBytes: number;
+  username: string;
+}
+
 export interface AllSetting {
   datepicker: string;
   discordAdminIds: string;
@@ -1155,8 +1192,12 @@ export interface User {
   id: number;
   password: string;
   permissionOverrides: string;
+  profileTitle: string;
   roleId: number;
   status: string;
+  subscriptionDomain: string;
+  supportUrl: string;
+  telegramId: string;
   usedBytes: number;
   username: string;
 }

@@ -525,6 +525,7 @@ func (s *Server) StartPanelOnly() (err error) {
 }
 
 func (s *Server) start(restartXray bool, startTgBot bool) (err error) {
+	s.wireAdminQuotaTelegramNotify()
 	// This is an anonymous function, no function name
 	defer func() {
 		if err != nil {

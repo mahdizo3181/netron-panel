@@ -52,6 +52,14 @@ type User struct {
 	DataLimit int64  `json:"dataLimit" gorm:"column:data_limit;default:0"`
 	UsedBytes int64  `json:"usedBytes" gorm:"column:used_bytes;default:0"`
 
+	ProfileTitle       string `json:"profileTitle" gorm:"column:profile_title"`
+	SupportURL         string `json:"supportUrl" gorm:"column:support_url"`
+	SubscriptionDomain string `json:"subscriptionDomain" gorm:"column:subscription_domain"`
+	TelegramID         string `json:"telegramId" gorm:"column:telegram_id"`
+
+	QuotaWarn80Sent  bool `json:"-" gorm:"column:quota_warn_80_sent;default:false"`
+	QuotaWarn100Sent bool `json:"-" gorm:"column:quota_warn_100_sent;default:false"`
+
 	PermissionOverridesJSON string `json:"permissionOverrides" gorm:"column:permission_overrides;type:text"`
 }
 

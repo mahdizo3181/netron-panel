@@ -120,7 +120,7 @@ func run(root, outDir string) error {
 		},
 		{
 			Path:        resolveRel(root, "internal/web/service/panel"),
-			StructAllow: setOf("ApiTokenView", "PanelUpdateStatus", "Sponsor", "SponsorList"),
+			StructAllow: setOf("AdminView", "AdminPayload", "AdminStats", "ApiTokenView", "PanelUpdateStatus", "Sponsor", "SponsorList"),
 		},
 		{
 			Path:        resolveRel(root, "internal/web/controller"),
