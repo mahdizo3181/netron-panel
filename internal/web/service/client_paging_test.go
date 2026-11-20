@@ -565,7 +565,7 @@ func TestClientQueryOnlineEmails(t *testing.T) {
 	_, _, _ = setupPagingServices(t)
 	seedPagingClients(t)
 
-	q := newClientQuery(database.GetDB(), time.Now().UnixMilli(), 0, 0)
+	q := newClientQuery(database.GetDB(), time.Now().UnixMilli(), 0, 0, ClientAccessScope{Mode: ClientAccessAll})
 	emails, count, err := q.onlineEmails([]string{"alpha@x", "echo@x", "ghost@x", "kilo1@x"})
 	if err != nil {
 		t.Fatalf("onlineEmails: %v", err)

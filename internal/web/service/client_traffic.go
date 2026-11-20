@@ -121,6 +121,9 @@ func (s *ClientService) BulkResetTraffic(inboundSvc *InboundService, emails []st
 			logger.Warning("Failed to auto-enable client during bulk traffic reset:", uErr)
 		}
 	}
+	if affected > 0 {
+		_, _ = inboundSvc.SyncAdminUsedBytes()
+	}
 	return affected, nil
 }
 

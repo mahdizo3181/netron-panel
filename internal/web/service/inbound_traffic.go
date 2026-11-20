@@ -694,6 +694,7 @@ func (s *InboundService) ResetClientTrafficByEmail(clientEmail string) error {
 	})
 	if err == nil {
 		s.resetMtprotoClientQuota(clientEmail)
+		_, _ = s.SyncAdminUsedBytes()
 	}
 	return err
 }

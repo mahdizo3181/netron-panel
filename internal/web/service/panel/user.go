@@ -116,6 +116,10 @@ func (s *UserService) CheckUser(username string, password string, twoFactorCode 
 		}
 	}
 
+	if user.Status != "" && user.Status != model.AdminStatusActive {
+		return nil, errors.New("invalid credentials")
+	}
+
 	return user, nil
 }
 

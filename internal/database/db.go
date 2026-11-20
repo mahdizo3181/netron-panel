@@ -64,6 +64,7 @@ const sqliteBackupDirPrefix = ".x-ui-backup-"
 func allModels() []any {
 	return []any{
 		&model.User{},
+		&model.AdminRole{},
 		&model.Inbound{},
 		&model.OutboundTraffics{},
 		&model.Setting{},
@@ -1738,9 +1739,118 @@ func runSeeders(isUsersEmpty bool) error {
 		return err
 	}
 
+	if !slices.Contains(seedersHistory, "RBACRolesAndOwner") {
+		if err := seedRBACDefaults(); err != nil {
+			return err
+		}
+	}
+
+	if err := backfillLegacyClientsToOwner(); err != nil {
+		return err
+	}
+
 	// Idempotent, not seeder-gated: bad values can re-enter via a restored
 	// backup, so re-check on every start.
 	return normalizeSettingPaths()
+}
+
+func seedRBACDefaults() error {
+	const seederName = "RBACRolesAndOwner"
+
+	return db.Transaction(func(tx *gorm.DB) error {
+		roleIDs := make(map[string]int)
+
+		for _, role := range model.DefaultAdminRoles() {
+			var existing model.AdminRole
+			err := tx.Where("slug = ?", role.Slug).First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				if err := tx.Create(&role).Error; err != nil {
+					return err
+				}
+				existing = role
+			} else if err != nil {
+				return err
+			}
+
+			roleIDs[existing.Slug] = existing.Id
+		}
+
+		ownerRoleID := roleIDs[model.AdminRoleSlugOwner]
+		adminRoleID := roleIDs[model.AdminRoleSlugAdministrator]
+		if ownerRoleID == 0 || adminRoleID == 0 {
+			return fmt.Errorf("rbac seed failed: missing default role ids")
+		}
+
+		var users []model.User
+		if err := tx.Order("id ASC").Find(&users).Error; err != nil {
+			return err
+		}
+
+		for i, user := range users {
+			updates := map[string]any{}
+
+			if strings.TrimSpace(user.Status) == "" {
+				updates["status"] = model.AdminStatusActive
+			}
+
+			if user.RoleId == 0 {
+				if i == 0 {
+					updates["role_id"] = ownerRoleID
+				} else {
+					updates["role_id"] = adminRoleID
+				}
+			}
+
+			if len(updates) == 0 {
+				continue
+			}
+
+			if err := tx.Model(&model.User{}).
+				Where("id = ?", user.Id).
+				Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Where("seeder_name = ?", seederName).
+			FirstOrCreate(&model.HistoryOfSeeders{SeederName: seederName}).Error
+	})
+}
+
+func backfillLegacyClientsToOwner() error {
+	type ownerCandidate struct {
+		ID int `gorm:"column:id"`
+	}
+
+	var owner ownerCandidate
+	if err := db.Table("users AS u").
+		Select("u.id").
+		Joins("JOIN admin_roles AS r ON r.id = u.role_id").
+		Where("r.owner_role = ?", true).
+		Where("(u.status = ? OR u.status = '' OR u.status IS NULL)", model.AdminStatusActive).
+		Order("u.id ASC").
+		Limit(1).
+		Scan(&owner).Error; err != nil {
+		return err
+	}
+
+	if owner.ID <= 0 {
+		return nil
+	}
+
+	var legacy int64
+	if err := db.Model(&model.ClientRecord{}).
+		Where("owner_admin_id IS NULL OR owner_admin_id = ?", 0).
+		Count(&legacy).Error; err != nil {
+		return err
+	}
+	if legacy == 0 {
+		return nil
+	}
+
+	return db.Model(&model.ClientRecord{}).
+		Where("owner_admin_id IS NULL OR owner_admin_id = ?", 0).
+		Update("owner_admin_id", owner.ID).Error
 }
 
 // seedNodeInboundsAdopted keeps the pre-existing reconcile behavior for nodes

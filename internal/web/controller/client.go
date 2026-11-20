@@ -10,6 +10,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/entity"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/service"
+	"github.com/mhsanaei/3x-ui/v3/internal/web/session"
 	"github.com/mhsanaei/3x-ui/v3/internal/web/websocket"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,33 @@ import (
 
 func notifyClientsChanged() {
 	websocket.BroadcastInvalidate(websocket.MessageTypeClients)
+}
+
+func loginPanelUser(c *gin.Context) *model.User {
+	if c.GetBool("api_authed") {
+		return nil
+	}
+	var user *model.User
+	func() {
+		defer func() {
+			if recover() != nil {
+				user = nil
+			}
+		}()
+		user = session.GetLoginUser(c)
+	}()
+	return user
+}
+
+func (a *ClientController) clientScope(c *gin.Context, permission string) service.ClientAccessScope {
+	user := loginPanelUser(c)
+	if user == nil && gin.Mode() == gin.TestMode {
+		return service.ClientAccessScope{Mode: service.ClientAccessAll}
+	}
+	if user == nil {
+		return service.ClientAccessScope{Mode: service.ClientAccessNone}
+	}
+	return a.clientService.ClientAccessScopeForAdmin(user, permission)
 }
 
 func parseInboundIdsQuery(raw string) []int {
@@ -120,7 +148,7 @@ func (a *ClientController) listPaged(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	resp, err := a.clientService.ListPaged(&a.inboundService, &a.settingService, params)
+	resp, err := a.clientService.ListPaged(&a.inboundService, &a.settingService, params, a.clientScope(c, "read"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -161,7 +189,7 @@ func (a *ClientController) buildClientPayload(rec *model.ClientRecord) (gin.H, e
 
 func (a *ClientController) get(c *gin.Context) {
 	email := c.Param("email")
-	rec, err := a.clientService.GetRecordByEmail(nil, email)
+	rec, err := a.clientService.RequireClientForScopeByEmail(a.clientScope(c, "read"), email)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -225,7 +253,7 @@ func (a *ClientController) create(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
-	needRestart, err := a.clientService.Create(&a.inboundService, &payload)
+	needRestart, err := a.clientService.CreateForAdmin(&a.inboundService, &payload, loginPanelUser(c))
 	// Flagged before the error check: a partly-applied create leaves clients
 	// committed on the inbounds that succeeded, and those still need the restart.
 	if needRestart {
@@ -245,6 +273,10 @@ func (a *ClientController) create(c *gin.Context) {
 
 func (a *ClientController) update(c *gin.Context) {
 	email := c.Param("email")
+	if _, err := a.clientService.RequireClientForScopeByEmail(a.clientScope(c, "update"), email); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
 	var req struct {
 		model.Client
 		LimitHwid int `json:"limitHwid"`
@@ -274,6 +306,10 @@ func (a *ClientController) update(c *gin.Context) {
 
 func (a *ClientController) delete(c *gin.Context) {
 	email := c.Param("email")
+	if _, err := a.clientService.RequireClientForScopeByEmail(a.clientScope(c, "delete"), email); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
 	keepTraffic := c.Query("keepTraffic") == "1"
 	needRestart, err := a.clientService.DeleteByEmail(&a.inboundService, email, keepTraffic)
 	// Flagged before the error check: a partly-applied delete already removed

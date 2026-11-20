@@ -1694,6 +1694,86 @@ export const sections: readonly Section[] = [
   },
 
   {
+    id: 'admins',
+    title: 'Panel Admins',
+    auth: 'cookie-only',
+    description:
+      'Manage panel administrator accounts. Requires owner role or admins.* permission on the signed-in role. Password hashes are never returned.',
+    endpoints: [
+      {
+        method: 'GET',
+        path: '/panel/api/admins/current',
+        summary: 'Return the logged-in administrator with role permissions and limits JSON.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/list',
+        summary: 'List administrators with role metadata, limits, and live used bytes.',
+      },
+      {
+        method: 'GET',
+        path: '/panel/api/admins/get/:id',
+        summary: 'Fetch one administrator by ID.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/add',
+        summary: 'Create a non-owner administrator.',
+        params: [
+          { name: 'username', in: 'body (json)', type: 'string', desc: 'Unique username.' },
+          { name: 'password', in: 'body (json)', type: 'string', desc: 'Plaintext password.' },
+          { name: 'roleId', in: 'body (json)', type: 'integer', desc: 'Non-owner role ID.' },
+          {
+            name: 'status',
+            in: 'body (json)',
+            type: 'string',
+            desc: 'active or disabled.',
+            optional: true,
+          },
+          {
+            name: 'dataLimit',
+            in: 'body (json)',
+            type: 'number',
+            desc: 'Bytes quota for owned clients. 0 means unlimited.',
+            optional: true,
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/update/:id',
+        summary: 'Update a non-owner administrator.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/del/:id',
+        summary: 'Delete a non-owner administrator with no owned clients.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/enable/:id',
+        summary: 'Enable an administrator account.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/disable/:id',
+        summary: 'Disable an administrator account and invalidate sessions.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+      {
+        method: 'POST',
+        path: '/panel/api/admins/resetUsage/:id',
+        summary: 'Reset traffic for all clients owned by the administrator and resync used bytes.',
+        params: [{ name: 'id', in: 'path', type: 'number', desc: 'Administrator ID.' }],
+      },
+    ],
+  },
+
+  {
     id: 'nodes',
     title: 'Nodes',
     description:

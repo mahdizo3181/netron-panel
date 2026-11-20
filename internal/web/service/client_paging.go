@@ -169,6 +169,7 @@ type clientQuery struct {
 	nowMs            int64
 	expireDiffMs     int64
 	trafficDiffBytes int64
+	scope            ClientAccessScope
 }
 
 type clientQueryJoin struct {
@@ -176,12 +177,13 @@ type clientQueryJoin struct {
 	args []any
 }
 
-func newClientQuery(db *gorm.DB, nowMs, expireDiffMs, trafficDiffBytes int64) clientQuery {
+func newClientQuery(db *gorm.DB, nowMs, expireDiffMs, trafficDiffBytes int64, scope ClientAccessScope) clientQuery {
 	q := clientQuery{
 		db:               db,
 		nowMs:            nowMs,
 		expireDiffMs:     expireDiffMs,
 		trafficDiffBytes: trafficDiffBytes,
+		scope:            normalizeClientAccessScope(scope),
 		joins:            []clientQueryJoin{{sql: "LEFT JOIN client_traffics ct ON ct.email = c.email"}},
 		usedExpr:         "(COALESCE(ct.up, 0) + COALESCE(ct.down, 0))",
 	}
@@ -206,7 +208,7 @@ func newClientQuery(db *gorm.DB, nowMs, expireDiffMs, trafficDiffBytes int64) cl
 }
 
 func (q clientQuery) from() *gorm.DB {
-	tx := q.db.Table("clients AS c")
+	tx := applyClientAccessScope(q.db.Table("clients AS c"), q.scope)
 	for _, j := range q.joins {
 		tx = tx.Joins(j.sql, j.args...)
 	}
@@ -370,8 +372,13 @@ func (q clientQuery) applyOrder(tx *gorm.DB, sortKey, order string) *gorm.DB {
 // ListPaged returns one page of clients together with the counts the clients
 // page header needs. Every predicate runs in SQL, so the cost tracks the page
 // size rather than the number of clients on the panel.
-func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *SettingService, params ClientPageParams) (*ClientPageResponse, error) {
+func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *SettingService, params ClientPageParams, scope ...ClientAccessScope) (*ClientPageResponse, error) {
 	db := database.GetDB()
+	access := ClientAccessScope{Mode: ClientAccessAll}
+	if len(scope) > 0 {
+		access = scope[0]
+	}
+	access = normalizeClientAccessScope(access)
 
 	pageSize := params.PageSize
 	if pageSize <= 0 {
@@ -396,10 +403,10 @@ func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *Settin
 	}
 
 	onlines := inboundSvc.GetOnlineClients()
-	q := newClientQuery(db, time.Now().UnixMilli(), expireDiffMs, trafficDiffBytes)
+	q := newClientQuery(db, time.Now().UnixMilli(), expireDiffMs, trafficDiffBytes, access)
 
 	var total int64
-	if err := db.Model(&model.ClientRecord{}).Count(&total).Error; err != nil {
+	if err := applyClientAccessScope(db.Model(&model.ClientRecord{}), access).Count(&total).Error; err != nil {
 		return nil, err
 	}
 

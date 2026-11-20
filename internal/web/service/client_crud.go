@@ -1269,6 +1269,9 @@ func (s *ClientService) DeleteByEmail(inboundSvc *InboundService, email string, 
 		if err := db.Where("email = ?", email).Delete(&model.NodeClientTraffic{}).Error; err != nil {
 			return needRestart, err
 		}
+		if _, syncErr := inboundSvc.SyncAdminUsedBytes(); syncErr != nil {
+			return needRestart, syncErr
+		}
 	}
 	return needRestart, nil
 }
