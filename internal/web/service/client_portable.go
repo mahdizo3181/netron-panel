@@ -23,12 +23,14 @@ type ClientPortableTraffic struct {
 	LastSubFetch int64 `json:"lastSubFetch,omitempty"`
 }
 
-// ExportAll returns every client as {client, inboundIds[, traffic]} for round-trip
-// import; orphan clients keep empty inboundIds, and traffic preserves usage (#5858).
-func (s *ClientService) ExportAll() ([]ClientCreatePayload, error) {
+// ExportAll returns clients visible to scope as {client, inboundIds[, traffic]}
+// for round-trip import; orphan clients keep empty inboundIds (#5858).
+func (s *ClientService) ExportAll(scope ClientAccessScope) ([]ClientCreatePayload, error) {
+	scope = normalizeClientAccessScope(scope)
 	db := database.GetDB()
 	var rows []model.ClientRecord
-	if err := db.Order("id ASC").Find(&rows).Error; err != nil {
+	q := applyClientAccessScope(db.Model(&model.ClientRecord{}), scope)
+	if err := q.Order("id ASC").Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	out := make([]ClientCreatePayload, 0, len(rows))

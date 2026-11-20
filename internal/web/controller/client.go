@@ -127,7 +127,7 @@ func (a *ClientController) initRouter(g *gin.RouterGroup) {
 }
 
 func (a *ClientController) list(c *gin.Context) {
-	rows, err := a.clientService.List()
+	rows, err := a.clientService.List(a.clientScope(c, "read"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -574,7 +574,7 @@ func (a *ClientController) delDepleted(c *gin.Context) {
 // envelope. The frontend renders it in a read-only CodeMirror viewer (Copy /
 // Download), so this hands back data rather than streaming a file attachment.
 func (a *ClientController) export(c *gin.Context) {
-	items, err := a.clientService.ExportAll()
+	items, err := a.clientService.ExportAll(a.clientScope(c, "read"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return

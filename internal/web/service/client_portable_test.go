@@ -37,7 +37,7 @@ func TestExportImportPreservesDisabledEnable(t *testing.T) {
 	}
 	assertEnableEverywhere(t, svc, inboundSvc, ib.Id, email, false)
 
-	exported, err := svc.ExportAll()
+	exported, err := svc.ExportAll(ClientAccessScope{Mode: ClientAccessAll})
 	if err != nil {
 		t.Fatalf("ExportAll: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestExportImportPreservesTrafficCounters(t *testing.T) {
 		t.Fatalf("seed traffic: %v", err)
 	}
 
-	exported, err := svc.ExportAll()
+	exported, err := svc.ExportAll(ClientAccessScope{Mode: ClientAccessAll})
 	if err != nil {
 		t.Fatalf("ExportAll: %v", err)
 	}
@@ -372,7 +372,7 @@ func TestImportClientsTrafficLeavesGroupTotalUnchanged(t *testing.T) {
 			Updates(map[string]any{"up": 100, "down": 200}).Error; err != nil {
 			t.Fatalf("seed traffic: %v", err)
 		}
-		exported, err := svc.ExportAll()
+		exported, err := svc.ExportAll(ClientAccessScope{Mode: ClientAccessAll})
 		if err != nil {
 			t.Fatalf("ExportAll: %v", err)
 		}

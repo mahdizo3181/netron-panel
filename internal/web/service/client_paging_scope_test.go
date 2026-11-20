@@ -68,3 +68,44 @@ func TestListPagedOwnerFilterNarrowsRows(t *testing.T) {
 		t.Fatalf("filtered=%d items=%+v, want c-a@x only", resp.Filtered, resp.Items)
 	}
 }
+
+func TestListScopesByOwnerAdmin(t *testing.T) {
+	db := initTrafficTestDB(t)
+	svc := &ClientService{}
+
+	adminA := model.User{Username: "a", Status: model.AdminStatusActive}
+	adminB := model.User{Username: "b", Status: model.AdminStatusActive}
+	if err := db.Create(&adminA).Error; err != nil {
+		t.Fatalf("admin A: %v", err)
+	}
+	if err := db.Create(&adminB).Error; err != nil {
+		t.Fatalf("admin B: %v", err)
+	}
+	if err := db.Create(&model.ClientRecord{Email: "own-a@x", OwnerAdminId: adminA.Id}).Error; err != nil {
+		t.Fatalf("client A: %v", err)
+	}
+	if err := db.Create(&model.ClientRecord{Email: "own-b@x", OwnerAdminId: adminB.Id}).Error; err != nil {
+		t.Fatalf("client B: %v", err)
+	}
+
+	listA, err := svc.List(ClientAccessScope{AdminID: adminA.Id, Mode: ClientAccessOwn})
+	if err != nil {
+		t.Fatalf("list A: %v", err)
+	}
+	if len(listA) != 1 || listA[0].Email != "own-a@x" {
+		t.Fatalf("admin A list = %+v, want only own-a@x", listA)
+	}
+	for _, row := range listA {
+		if row.Email == "own-b@x" {
+			t.Fatalf("admin A must not see own-b@x")
+		}
+	}
+
+	listAll, err := svc.List(ClientAccessScope{Mode: ClientAccessAll})
+	if err != nil {
+		t.Fatalf("list all: %v", err)
+	}
+	if len(listAll) != 2 {
+		t.Fatalf("owner list len=%d, want 2", len(listAll))
+	}
+}
