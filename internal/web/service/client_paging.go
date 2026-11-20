@@ -19,8 +19,10 @@ import (
 // so the list payload stays compact even when the panel manages thousands
 // of clients. Modals that need the full record still call /get/:email.
 type ClientSlim struct {
-	Email        string              `json:"email" example:"alice@example.com"`
-	SubID        string              `json:"subId" example:"abcd1234"`
+	Email             string              `json:"email" example:"alice@example.com"`
+	SubID             string              `json:"subId" example:"abcd1234"`
+	OwnerAdminId      int                 `json:"ownerAdminId" example:"2"`
+	OwnerAdminUsername string             `json:"ownerAdminUsername" example:"reseller1"`
 	Enable       bool                `json:"enable" example:"true"`
 	TotalGB      int64               `json:"totalGB" example:"53687091200"`
 	ExpiryTime   int64               `json:"expiryTime" example:"1735689600000"`
@@ -63,6 +65,10 @@ type ClientPageParams struct {
 	HasTgID    string `form:"hasTgId"`
 	HasComment string `form:"hasComment"`
 	Group      string `form:"group"`
+	Owner      string `form:"owner"`
+
+	CurrentAdminID   int  `form:"-" json:"-"`
+	AllowOwnerFilter bool `form:"-" json:"-"`
 }
 
 // ClientPageResponse is the shape returned by ListPaged. `Total` is the
@@ -94,7 +100,12 @@ type ClientsSummary struct {
 	Online        []string `json:"online" example:"[\"alice@example.com\"]"`
 	Depleted      []string `json:"depleted" example:"[]"`
 	Expiring      []string `json:"expiring" example:"[]"`
-	Deactive      []string `json:"deactive" example:"[\"bob@example.com\"]"`
+	Deactive          []string `json:"deactive" example:"[\"bob@example.com\"]"`
+	TrafficUp         int64    `json:"trafficUp" example:"1048576"`
+	TrafficDown       int64    `json:"trafficDown" example:"2097152"`
+	TrafficUsed       int64    `json:"trafficUsed" example:"3145728"`
+	TrafficTotal      int64    `json:"trafficTotal" example:"10737418240"`
+	TrafficRemaining  int64    `json:"trafficRemaining" example:"10734272512"`
 }
 
 const (
@@ -207,6 +218,14 @@ func newClientQuery(db *gorm.DB, nowMs, expireDiffMs, trafficDiffBytes int64, sc
 	return q
 }
 
+func (q clientQuery) trafficUpDownExprs() (up, down string) {
+	if len(q.joins) > 1 {
+		return "(CASE WHEN COALESCE(g.up, 0) > COALESCE(ct.up, 0) THEN COALESCE(g.up, 0) ELSE COALESCE(ct.up, 0) END)",
+			"(CASE WHEN COALESCE(g.down, 0) > COALESCE(ct.down, 0) THEN COALESCE(g.down, 0) ELSE COALESCE(ct.down, 0) END)"
+	}
+	return "COALESCE(ct.up, 0)", "COALESCE(ct.down, 0)"
+}
+
 func (q clientQuery) from() *gorm.DB {
 	tx := applyClientAccessScope(q.db.Table("clients AS c"), q.scope)
 	for _, j := range q.joins {
@@ -304,7 +323,93 @@ func (q clientQuery) applyParams(tx *gorm.DB, params ClientPageParams, onlines [
 		// The raw names cover non-ASCII capitals, which SQLite's LOWER() leaves alone.
 		where("(LOWER(TRIM(COALESCE(c.group_name, ''))) IN ? OR TRIM(COALESCE(c.group_name, '')) IN ?)", groups, groupVariants(params.Group))
 	}
+	if ownerID, ok := resolveOwnerAdminIDForFilter(params); ok {
+		where("c.owner_admin_id = ?", ownerID)
+	}
 	return tx, narrowed
+}
+
+func resolveOwnerAdminIDForFilter(params ClientPageParams) (int, bool) {
+	if !params.AllowOwnerFilter {
+		return 0, false
+	}
+	raw := strings.TrimSpace(strings.ToLower(params.Owner))
+	if raw == "" || raw == "all" {
+		return 0, false
+	}
+	if raw == "me" {
+		return params.CurrentAdminID, params.CurrentAdminID > 0
+	}
+	id, err := strconv.Atoi(raw)
+	return id, err == nil && id > 0
+}
+
+func summaryQuotaAdminID(access ClientAccessScope, params ClientPageParams) (int, bool) {
+	access = normalizeClientAccessScope(access)
+	if access.Mode == ClientAccessOwn && access.AdminID > 0 {
+		return access.AdminID, true
+	}
+	return resolveOwnerAdminIDForFilter(params)
+}
+
+func (s *ClientService) summaryAdminDataQuota(adminID int) (int64, int64, bool) {
+	if adminID <= 0 {
+		return 0, 0, false
+	}
+	db := database.GetDB()
+	if db == nil {
+		return 0, 0, false
+	}
+	var user model.User
+	if err := db.Model(&model.User{}).Select("data_limit", "used_bytes").Where("id = ?", adminID).First(&user).Error; err != nil {
+		return 0, 0, false
+	}
+	if user.DataLimit <= 0 {
+		return 0, 0, false
+	}
+	used := user.UsedBytes
+	if used < 0 {
+		used = 0
+	}
+	return user.DataLimit, used, true
+}
+
+func applyAdminTrafficQuota(summary *ClientsSummary, dataLimit, usedBytes int64) {
+	if summary == nil || dataLimit <= 0 {
+		return
+	}
+	summary.TrafficTotal = dataLimit
+	summary.TrafficUsed = usedBytes
+	remaining := dataLimit - usedBytes
+	if remaining < 0 {
+		remaining = 0
+	}
+	summary.TrafficRemaining = remaining
+}
+
+func loadAdminUsernames(db *gorm.DB, ownerIDs map[int]struct{}) map[int]string {
+	out := map[int]string{}
+	if db == nil || len(ownerIDs) == 0 {
+		return out
+	}
+	ids := make([]int, 0, len(ownerIDs))
+	for id := range ownerIDs {
+		ids = append(ids, id)
+	}
+	type row struct {
+		ID       int    `gorm:"column:id"`
+		Username string `gorm:"column:username"`
+	}
+	var rows []row
+	if err := db.Table("users").Select("id", "username").Where("id IN ?", ids).Scan(&rows).Error; err != nil {
+		return out
+	}
+	for _, r := range rows {
+		if r.ID > 0 && r.Username != "" {
+			out[r.ID] = r.Username
+		}
+	}
+	return out
 }
 
 func (q clientQuery) bucketCond(buckets, onlines []string) (string, []any) {
@@ -410,9 +515,14 @@ func (s *ClientService) ListPaged(inboundSvc *InboundService, settingSvc *Settin
 		return nil, err
 	}
 
-	summary, err := q.summary(onlines, int(total))
+	summary, err := q.summary(onlines, int(total), params)
 	if err != nil {
 		return nil, err
+	}
+	if adminID, ok := summaryQuotaAdminID(access, params); ok {
+		if dataLimit, used, ok2 := s.summaryAdminDataQuota(adminID); ok2 {
+			applyAdminTrafficQuota(&summary, dataLimit, used)
+		}
 	}
 
 	filtered := total
@@ -497,6 +607,14 @@ func (q clientQuery) pageRows(params ClientPageParams, onlines []string, offset,
 		}
 	}
 
+	ownerIDs := map[int]struct{}{}
+	for _, rec := range records {
+		if rec.OwnerAdminId > 0 {
+			ownerIDs[rec.OwnerAdminId] = struct{}{}
+		}
+	}
+	ownerNames := loadAdminUsernames(q.db, ownerIDs)
+
 	items := make([]ClientSlim, 0, len(ids))
 	for _, id := range ids {
 		rec := byId[id]
@@ -507,12 +625,20 @@ func (q clientQuery) pageRows(params ClientPageParams, onlines []string, offset,
 			ClientRecord: *rec,
 			InboundIds:   attachments[rec.Id],
 			Traffic:      trafficByEmail[rec.Email],
-		}))
+		}, ownerNames))
 	}
 	return items, nil
 }
 
-func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error) {
+func (q clientQuery) summaryBase(params ClientPageParams) *gorm.DB {
+	base := q.from()
+	if ownerID, ok := resolveOwnerAdminIDForFilter(params); ok {
+		base = base.Where("c.owner_admin_id = ?", ownerID)
+	}
+	return base
+}
+
+func (q clientQuery) summary(onlines []string, total int, params ClientPageParams) (ClientsSummary, error) {
 	s := ClientsSummary{
 		Total:    total,
 		Online:   []string{},
@@ -527,9 +653,11 @@ func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error
 		Expiring int64
 		Deactive int64
 	}
+	base := q.summaryBase(params)
+
 	// SUM over an empty table yields NULL, which not every driver scans into an
 	// int; COALESCE keeps a panel with no clients from erroring out.
-	if err := q.from().Select(
+	if err := base.Select(
 		"COALESCE(SUM(CASE WHEN " + q.activeExpr() + " THEN 1 ELSE 0 END), 0) AS active," +
 			" COALESCE(SUM(CASE WHEN " + q.depletedExpr() + " THEN 1 ELSE 0 END), 0) AS depleted," +
 			" COALESCE(SUM(CASE WHEN " + q.expiringExpr() + " THEN 1 ELSE 0 END), 0) AS expiring," +
@@ -558,7 +686,7 @@ func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error
 			continue
 		}
 		var emails []string
-		if err := q.from().Where(b.cond).
+		if err := q.summaryBase(params).Where(b.cond).
 			Order("c.id ASC").Limit(clientSummaryEmailCap).
 			Pluck("c.email", &emails).Error; err != nil {
 			return s, err
@@ -574,6 +702,22 @@ func (q clientQuery) summary(onlines []string, total int) (ClientsSummary, error
 	}
 	s.Online = online
 	s.OnlineCount = onlineCount
+
+	var traffic struct {
+		Up   int64 `gorm:"column:up"`
+		Down int64 `gorm:"column:down"`
+	}
+	upExpr, downExpr := q.trafficUpDownExprs()
+	if err := q.summaryBase(params).Select(
+		"COALESCE(SUM("+upExpr+"), 0) AS up,"+
+			" COALESCE(SUM("+downExpr+"), 0) AS down",
+	).Scan(&traffic).Error; err != nil {
+		return s, err
+	}
+	s.TrafficUp = traffic.Up
+	s.TrafficDown = traffic.Down
+	s.TrafficUsed = traffic.Up + traffic.Down
+
 	return s, nil
 }
 
@@ -640,10 +784,12 @@ func sqlInt(v int64) string {
 	return strconv.FormatInt(v, 10)
 }
 
-func toClientSlim(c ClientWithAttachments) ClientSlim {
+func toClientSlim(c ClientWithAttachments, ownerNames map[int]string) ClientSlim {
 	return ClientSlim{
-		Email:        c.Email,
-		SubID:        c.SubID,
+		Email:              c.Email,
+		SubID:              c.SubID,
+		OwnerAdminId:       c.OwnerAdminId,
+		OwnerAdminUsername: ownerNames[c.OwnerAdminId],
 		Enable:       c.Enable,
 		TotalGB:      c.TotalGB,
 		ExpiryTime:   c.ExpiryTime,

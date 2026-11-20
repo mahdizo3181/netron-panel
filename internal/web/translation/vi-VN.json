@@ -828,6 +828,11 @@
       "renewDays": "Tự động gia hạn (ngày)",
       "searchPlaceholder": "Tìm email, ghi chú, sub ID, UUID, mật khẩu, auth, Telegram ID…",
       "filterTitle": "Lọc client",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Xóa tất cả",
       "filters": {
         "nodes": "Nút",

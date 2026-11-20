@@ -828,6 +828,11 @@
       "renewDays": "Automatické obnovenie (dni)",
       "searchPlaceholder": "Hľadať podľa názvu, poznámky, ID odberu, UUID, hesla, overenia, Telegram ID…",
       "filterTitle": "Filtrovať klientov",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Vyčistiť filtre",
       "filters": {
         "nodes": "Servery",

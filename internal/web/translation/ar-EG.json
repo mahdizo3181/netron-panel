@@ -828,6 +828,11 @@
       "renewDays": "تجديد تلقائي (أيام)",
       "searchPlaceholder": "ابحث بالبريد، التعليق، sub ID، UUID، كلمة المرور، auth، Telegram ID…",
       "filterTitle": "تصفية العملاء",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "مسح الكل",
       "filters": {
         "nodes": "النودز",

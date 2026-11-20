@@ -828,6 +828,11 @@
       "renewDays": "Авто-продовження (днів)",
       "searchPlaceholder": "Пошук email, коментаря, sub ID, UUID, паролю, auth, Telegram ID…",
       "filterTitle": "Фільтр клієнтів",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Очистити все",
       "filters": {
         "nodes": "Вузли",

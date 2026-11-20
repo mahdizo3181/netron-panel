@@ -828,6 +828,11 @@
       "renewDays": "Renovación automática (días)",
       "searchPlaceholder": "Buscar email, comentario, sub ID, UUID, contraseña, auth, Telegram ID…",
       "filterTitle": "Filtrar clientes",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Limpiar todo",
       "filters": {
         "nodes": "Nodos",

@@ -2295,6 +2295,14 @@ export const SCHEMAS: Record<string, unknown> = {
         "example": 0,
         "type": "integer"
       },
+      "ownerAdminId": {
+        "example": 2,
+        "type": "integer"
+      },
+      "ownerAdminUsername": {
+        "example": "reseller1",
+        "type": "string"
+      },
       "reset": {
         "example": 0,
         "type": "integer"
@@ -2342,6 +2350,8 @@ export const SCHEMAS: Record<string, unknown> = {
       "inboundIds",
       "limitHwid",
       "limitIp",
+      "ownerAdminId",
+      "ownerAdminUsername",
       "reset",
       "resetDay",
       "resetMax",
@@ -2513,6 +2523,31 @@ export const SCHEMAS: Record<string, unknown> = {
       "total": {
         "example": 2000,
         "type": "integer"
+      },
+      "trafficDown": {
+        "example": 2097152,
+        "format": "int64",
+        "type": "integer"
+      },
+      "trafficRemaining": {
+        "example": 10734272512,
+        "format": "int64",
+        "type": "integer"
+      },
+      "trafficTotal": {
+        "example": 10737418240,
+        "format": "int64",
+        "type": "integer"
+      },
+      "trafficUp": {
+        "example": 1048576,
+        "format": "int64",
+        "type": "integer"
+      },
+      "trafficUsed": {
+        "example": 3145728,
+        "format": "int64",
+        "type": "integer"
       }
     },
     "required": [
@@ -2525,7 +2560,12 @@ export const SCHEMAS: Record<string, unknown> = {
       "expiringCount",
       "online",
       "onlineCount",
-      "total"
+      "total",
+      "trafficDown",
+      "trafficRemaining",
+      "trafficTotal",
+      "trafficUp",
+      "trafficUsed"
     ],
     "type": "object"
   },

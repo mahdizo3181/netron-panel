@@ -828,6 +828,11 @@
       "renewDays": "Otomatik Yenileme (gün)",
       "searchPlaceholder": "E-posta, yorum, sub ID, UUID, parola, auth, Telegram ID ara…",
       "filterTitle": "Kullanıcıları Filtrele",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Tümünü Temizle",
       "filters": {
         "nodes": "Düğümler",

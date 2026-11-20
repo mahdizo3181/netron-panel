@@ -828,6 +828,11 @@
       "renewDays": "自動續期 (天)",
       "searchPlaceholder": "搜尋電子郵件、備註、sub ID、UUID、密碼、auth、Telegram ID…",
       "filterTitle": "篩選客戶端",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "清除全部",
       "filters": {
         "nodes": "節點",

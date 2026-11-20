@@ -828,6 +828,11 @@
       "renewDays": "自動更新 (日)",
       "searchPlaceholder": "メール、コメント、sub ID、UUID、パスワード、auth、Telegram ID を検索…",
       "filterTitle": "クライアントをフィルタ",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "すべてクリア",
       "filters": {
         "nodes": "ノード",

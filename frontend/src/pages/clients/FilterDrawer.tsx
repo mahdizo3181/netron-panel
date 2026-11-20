@@ -31,6 +31,7 @@ interface FilterDrawerProps {
   protocols: string[];
   groups: string[];
   nodes: NodeRecord[];
+  ownerOptions?: Array<{ value: string; label: string }>;
 }
 
 const BUCKET_KEYS = ['active', 'expiring', 'depleted', 'deactive', 'online'] as const;
@@ -44,6 +45,7 @@ export default function FilterDrawer({
   protocols,
   groups,
   nodes,
+  ownerOptions = [],
 }: FilterDrawerProps) {
   const { t } = useTranslation();
   const uid = useId();
@@ -113,6 +115,19 @@ export default function FilterDrawer({
             </Space>
           </Checkbox.Group>
         </Form.Item>
+
+        {ownerOptions.length > 0 && (
+          <Form.Item label={t('pages.clients.ownerFilter')} htmlFor={`${uid}-owner`}>
+            <Select
+              id={`${uid}-owner`}
+              value={filters.owner || undefined}
+              onChange={(v) => patch('owner', (v || '') as string)}
+              options={ownerOptions}
+              placeholder={t('pages.clients.ownerFilterAll')}
+              allowClear
+            />
+          </Form.Item>
+        )}
 
         <Form.Item label={t('pages.inbounds.protocol')} htmlFor={`${uid}-protocols`}>
           <Select

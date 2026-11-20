@@ -225,7 +225,14 @@ func (s *ClientService) EnsureAdminMayCreateOrEnable(user *model.User, additiona
 	if err := db.Select("used_bytes", "data_limit").Where("id = ?", user.Id).First(&fresh).Error; err != nil {
 		return err
 	}
-	projected := fresh.UsedBytes + additionalBytes
+	used := fresh.UsedBytes
+	if used < 0 {
+		used = 0
+	}
+	if used >= fresh.DataLimit {
+		return fmt.Errorf("admin data quota exceeded (%d/%d bytes)", used, fresh.DataLimit)
+	}
+	projected := used + additionalBytes
 	if projected > fresh.DataLimit {
 		return fmt.Errorf("admin data quota exceeded (%d/%d bytes)", projected, fresh.DataLimit)
 	}

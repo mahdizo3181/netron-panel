@@ -828,6 +828,11 @@
       "renewDays": "Автопродление (дней)",
       "searchPlaceholder": "Поиск email, комментария, sub ID, UUID, пароля, auth, Telegram ID…",
       "filterTitle": "Фильтр клиентов",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Очистить все",
       "filters": {
         "nodes": "Узлы",

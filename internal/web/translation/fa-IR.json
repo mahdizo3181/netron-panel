@@ -828,6 +828,11 @@
       "renewDays": "تمدید خودکار (روز)",
       "searchPlaceholder": "جستجوی ایمیل، توضیح، Sub ID، UUID، رمز، احراز، Telegram ID...",
       "filterTitle": "فیلتر کاربران",
+      "owner": "مالک",
+      "ownerFilter": "نماینده",
+      "ownerFilterAll": "همه نمایندگان",
+      "ownerFilterMe": "من",
+      "myQuotaUsage": "مصرف من / سقف من",
       "clearAllFilters": "پاک کردن همه",
       "filters": {
         "nodes": "نودها",

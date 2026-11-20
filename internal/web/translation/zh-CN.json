@@ -828,6 +828,11 @@
       "renewDays": "自动续期 (天)",
       "searchPlaceholder": "搜索邮箱、备注、sub ID、UUID、密码、auth、Telegram ID…",
       "filterTitle": "筛选客户端",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "清除全部",
       "filters": {
         "nodes": "节点",

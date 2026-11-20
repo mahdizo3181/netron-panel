@@ -579,6 +579,8 @@ export const ClientSlimSchema = z.object({
   inboundIds: z.array(z.number().int()),
   limitHwid: z.number().int(),
   limitIp: z.number().int(),
+  ownerAdminId: z.number().int(),
+  ownerAdminUsername: z.string(),
   reset: z.number().int(),
   resetDay: z.number().int(),
   resetMax: z.number().int(),
@@ -622,6 +624,11 @@ export const ClientsSummarySchema = z.object({
   online: z.array(z.string()),
   onlineCount: z.number().int(),
   total: z.number().int(),
+  trafficDown: z.number().int(),
+  trafficRemaining: z.number().int(),
+  trafficTotal: z.number().int(),
+  trafficUp: z.number().int(),
+  trafficUsed: z.number().int(),
 });
 export type ClientsSummary = z.infer<typeof ClientsSummarySchema>;
 

@@ -18,6 +18,7 @@ import {
   Result,
   Row,
   Select,
+  Progress,
   Spin,
   Statistic,
   Switch,
@@ -59,6 +60,8 @@ import { formatInboundLabel } from '@/lib/inbounds/label';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useClients } from '@/hooks/useClients';
+import { useCurrentAdmin } from '@/hooks/useCurrentAdmin';
+import { HttpUtil } from '@/utils';
 import { useNodesQuery } from '@/api/queries/useNodesQuery';
 import { useHostsQuery } from '@/api/queries/useHostsQuery';
 import { useDatepicker } from '@/hooks/useDatepicker';
@@ -234,6 +237,7 @@ function readFilterState(): PersistedFilterState {
         inboundIds: Array.isArray(fromRaw.inboundIds) ? fromRaw.inboundIds : [],
         nodeIds: Array.isArray(fromRaw.nodeIds) ? fromRaw.nodeIds : [],
         groups: Array.isArray(fromRaw.groups) ? fromRaw.groups : [],
+        owner: typeof fromRaw.owner === 'string' ? fromRaw.owner : '',
       },
       sort: typeof raw.sort === 'string' ? raw.sort : '',
       pageSize: typeof raw.pageSize === 'number' && raw.pageSize > 0 ? raw.pageSize : null,
@@ -327,6 +331,42 @@ export default function ClientsPage() {
   useEffect(() => {
     setMessageInstance(messageApi);
   }, [messageApi]);
+
+  const { admin: currentAdmin, isOwner, hasPermission } = useCurrentAdmin();
+  const canFilterClientOwners = isOwner || hasPermission('admins', 'read');
+  const [ownerAdmins, setOwnerAdmins] = useState<Array<{ id: number; username: string }>>([]);
+
+  useEffect(() => {
+    if (!canFilterClientOwners) {
+      setOwnerAdmins([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const msg = (await HttpUtil.get('/panel/api/admins/list', undefined, {
+          silent: true,
+        })) as { success?: boolean; obj?: unknown };
+        if (cancelled) return;
+        const rows = Array.isArray(msg?.obj) ? msg.obj : [];
+        const admins = rows
+          .map((row) => {
+            const r = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
+            const id = Number(r.id || 0);
+            const username = typeof r.username === 'string' ? r.username : String(r.username || '');
+            return { id, username };
+          })
+          .filter((row) => row.id > 0)
+          .sort((a, b) => a.username.localeCompare(b.username));
+        setOwnerAdmins(admins);
+      } catch {
+        if (!cancelled) setOwnerAdmins([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [canFilterClientOwners]);
 
   const {
     clients,
@@ -439,6 +479,12 @@ export default function ClientsPage() {
   const [filters, setFilters] = useState<ClientFilters>(initial.filters);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
+  useEffect(() => {
+    if (!canFilterClientOwners && filters.owner) {
+      setFilters((prev) => (prev.owner ? { ...prev, owner: '' } : prev));
+    }
+  }, [canFilterClientOwners, filters.owner]);
+
   const initialSort = SORT_OPTIONS.find((o) => o.value === initial.sort) ?? DEFAULT_SORT;
   const [sortColumn, setSortColumn] = useState<string | null>(initialSort.column);
   const [sortOrder, setSortOrder] = useState<'ascend' | 'descend' | null>(initialSort.order);
@@ -527,6 +573,10 @@ export default function ClientsPage() {
       hasTgId: filters.hasTgId || undefined,
       hasComment: filters.hasComment || undefined,
       group: filters.groups.join(',') || undefined,
+      owner:
+        canFilterClientOwners && filters.owner && filters.owner !== 'all'
+          ? filters.owner
+          : undefined,
       sort: sortColumn || undefined,
       order: sortOrder || undefined,
     });
@@ -540,6 +590,7 @@ export default function ClientsPage() {
     effectiveInboundCsv,
     sortColumn,
     sortOrder,
+    canFilterClientOwners,
   ]);
 
   const activeCount = activeFilterCount(filters);
@@ -575,6 +626,41 @@ export default function ClientsPage() {
     for (const g of filters.groups) values.add(g);
     return [...values].sort((a, b) => a.localeCompare(b));
   }, [allGroups, filters.groups]);
+
+  const ownerOptions = useMemo(() => {
+    if (!canFilterClientOwners) return [];
+
+    const currentAdminID = Number(currentAdmin?.id || 0);
+    const seen = new Set<string>();
+    const options: Array<{ value: string; label: string }> = [];
+
+    const add = (value: string, label: string) => {
+      if (seen.has(value)) return;
+      seen.add(value);
+      options.push({ value, label });
+    };
+
+    add('all', t('pages.clients.ownerFilterAll'));
+    if (currentAdminID > 0) {
+      add('me', t('pages.clients.ownerFilterMe'));
+    }
+    for (const admin of ownerAdmins) {
+      if (currentAdminID > 0 && admin.id === currentAdminID) continue;
+      add(String(admin.id), admin.username || `#${admin.id}`);
+    }
+    return options;
+  }, [canFilterClientOwners, currentAdmin?.id, ownerAdmins, t]);
+
+  const ownerLabelByValue = useMemo(() => {
+    const labels = new Map<string, string>();
+    for (const option of ownerOptions) labels.set(option.value, option.label);
+    return labels;
+  }, [ownerOptions]);
+
+  const showOperatorQuotaBar = !isOwner && (summary.trafficTotal ?? 0) > 0;
+  const operatorQuotaPercent = showOperatorQuotaBar
+    ? Math.min(100, Math.round(((summary.trafficUsed ?? 0) / summary.trafficTotal!) * 100))
+    : 0;
 
   const isOnline = useCallback((email: string) => !!email && onlineSet.has(email), [onlineSet]);
 
@@ -1134,6 +1220,17 @@ export default function ClientsPage() {
         ),
       },
       {
+        title: t('pages.clients.owner'),
+        key: 'owner',
+        width: 120,
+        hidden: !canFilterClientOwners,
+        render: (_v, record) => {
+          const label =
+            record.ownerAdminUsername || (record.ownerAdminId ? `#${record.ownerAdminId}` : '');
+          return label ? <Tag>{label}</Tag> : <Typography.Text type="secondary">—</Typography.Text>;
+        },
+      },
+      {
         title: t('pages.clients.group'),
         key: 'group',
         width: 130,
@@ -1238,6 +1335,7 @@ export default function ClientsPage() {
       datepicker,
       trafficDiff,
       clientSpeed,
+      canFilterClientOwners,
     ],
   );
 
@@ -1535,6 +1633,22 @@ export default function ClientsPage() {
                         </div>
                       }
                     >
+                      {showOperatorQuotaBar && (
+                        <div style={{ marginBottom: 12 }}>
+                          <Typography.Text type="secondary">
+                            {t('pages.clients.myQuotaUsage')}:{' '}
+                            {SizeFormatter.sizeFormat(summary.trafficUsed ?? 0)} /{' '}
+                            {SizeFormatter.sizeFormat(summary.trafficTotal ?? 0)}
+                          </Typography.Text>
+                          <Progress
+                            percent={operatorQuotaPercent}
+                            status={operatorQuotaPercent >= 100 ? 'exception' : 'active'}
+                            size="small"
+                            showInfo={false}
+                            style={{ marginTop: 4 }}
+                          />
+                        </div>
+                      )}
                       <div className={isMobile ? 'filter-bar mobile' : 'filter-bar'}>
                         <Input
                           value={searchKey}
@@ -1649,6 +1763,12 @@ export default function ClientsPage() {
                               {t('pages.clients.group')}: {g}
                             </Tag>
                           ))}
+                          {canFilterClientOwners && filters.owner && filters.owner !== 'all' && (
+                            <Tag closable color="cyan" onClose={() => clearOneFilter('owner')}>
+                              {t('pages.clients.ownerFilter')}:{' '}
+                              {ownerLabelByValue.get(filters.owner) ?? filters.owner}
+                            </Tag>
+                          )}
                           {(filters.expiryFrom || filters.expiryTo) && (
                             <Tag
                               closable
@@ -2036,6 +2156,7 @@ export default function ClientsPage() {
             protocols={protocolOptions}
             groups={groupOptions}
             nodes={nodes}
+            ownerOptions={ownerOptions}
           />
         </LazyMount>
         <LazyMount when={textOpen}>

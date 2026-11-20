@@ -29,6 +29,11 @@ const emptyPage = {
     depleted: [],
     expiring: [],
     deactive: [],
+    trafficUp: 0,
+    trafficDown: 0,
+    trafficUsed: 0,
+    trafficTotal: 0,
+    trafficRemaining: 0,
   },
 };
 

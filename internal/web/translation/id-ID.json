@@ -828,6 +828,11 @@
       "renewDays": "Perpanjangan otomatis (hari)",
       "searchPlaceholder": "Cari email, komentar, sub ID, UUID, kata sandi, auth, Telegram ID…",
       "filterTitle": "Filter klien",
+      "owner": "Owner",
+      "ownerFilter": "Administrator",
+      "ownerFilterAll": "All administrators",
+      "ownerFilterMe": "Me",
+      "myQuotaUsage": "My usage / quota",
       "clearAllFilters": "Hapus semua",
       "filters": {
         "nodes": "Node",

@@ -484,6 +484,8 @@ export const EXAMPLES: Record<string, unknown> = {
         ],
         "limitHwid": 0,
         "limitIp": 0,
+        "ownerAdminId": 2,
+        "ownerAdminUsername": "reseller1",
         "reset": 0,
         "resetDay": 0,
         "resetMax": 0,
@@ -510,7 +512,12 @@ export const EXAMPLES: Record<string, unknown> = {
         "alice@example.com"
       ],
       "onlineCount": 1,
-      "total": 2000
+      "total": 2000,
+      "trafficDown": 2097152,
+      "trafficRemaining": 10734272512,
+      "trafficTotal": 10737418240,
+      "trafficUp": 1048576,
+      "trafficUsed": 3145728
     },
     "total": 2000
   },
@@ -590,6 +597,8 @@ export const EXAMPLES: Record<string, unknown> = {
     ],
     "limitHwid": 0,
     "limitIp": 0,
+    "ownerAdminId": 2,
+    "ownerAdminUsername": "reseller1",
     "reset": 0,
     "resetDay": 0,
     "resetMax": 0,
@@ -632,7 +641,12 @@ export const EXAMPLES: Record<string, unknown> = {
       "alice@example.com"
     ],
     "onlineCount": 1,
-    "total": 2000
+    "total": 2000,
+    "trafficDown": 2097152,
+    "trafficRemaining": 10734272512,
+    "trafficTotal": 10737418240,
+    "trafficUp": 1048576,
+    "trafficUsed": 3145728
   },
   "FallbackParentInfo": {
     "masterId": 0,

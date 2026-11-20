@@ -151,6 +151,12 @@ func (a *ClientController) listPaged(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
+	if user, role, ok := loginActiveAdminRole(c); ok && user != nil && role != nil {
+		params.CurrentAdminID = user.Id
+		if role.OwnerRole || roleAllowsPermission(role, "admins", "read") {
+			params.AllowOwnerFilter = true
+		}
+	}
 	resp, err := a.clientService.ListPaged(&a.inboundService, &a.settingService, params, a.clientScope(c, "read"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
@@ -214,8 +220,23 @@ func (a *ClientController) getBySubId(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	results := make([]gin.H, 0, len(records))
+	readScope := a.clientScope(c, "read")
+	visible := make([]*model.ClientRecord, 0, len(records))
 	for _, rec := range records {
+		if rec == nil {
+			continue
+		}
+		if _, scopeErr := a.clientService.RequireClientForScopeByEmail(readScope, rec.Email); scopeErr != nil {
+			continue
+		}
+		visible = append(visible, rec)
+	}
+	if len(visible) == 0 {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), gorm.ErrRecordNotFound)
+		return
+	}
+	results := make([]gin.H, 0, len(visible))
+	for _, rec := range visible {
 		payload, err := a.buildClientPayload(rec)
 		if err != nil {
 			jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
@@ -713,7 +734,27 @@ func (a *ClientController) getTrafficByEmail(c *gin.Context) {
 }
 
 func (a *ClientController) getSubLinks(c *gin.Context) {
-	links, err := a.inboundService.GetSubLinks(resolveHost(c), c.Param("subId"))
+	subID := c.Param("subId")
+	records, recErr := a.clientService.GetRecordsBySubID(subID)
+	if recErr != nil {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), recErr)
+		return
+	}
+	readScope := a.clientScope(c, "read")
+	allowed := false
+	for _, rec := range records {
+		if rec != nil {
+			if _, err := a.clientService.RequireClientForScopeByEmail(readScope, rec.Email); err == nil {
+				allowed = true
+				break
+			}
+		}
+	}
+	if !allowed {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), gorm.ErrRecordNotFound)
+		return
+	}
+	links, err := a.inboundService.GetSubLinks(resolveHost(c), subID)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -722,7 +763,12 @@ func (a *ClientController) getSubLinks(c *gin.Context) {
 }
 
 func (a *ClientController) getClientLinks(c *gin.Context) {
-	links, err := a.inboundService.GetAllClientLinks(resolveHost(c), c.Param("email"))
+	email := c.Param("email")
+	if _, err := a.clientService.RequireClientForScopeByEmail(a.clientScope(c, "read"), email); err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+	links, err := a.inboundService.GetAllClientLinks(resolveHost(c), email)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return

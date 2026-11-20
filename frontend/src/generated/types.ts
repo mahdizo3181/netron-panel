@@ -546,6 +546,8 @@ export interface ClientSlim {
   inboundIds: number[];
   limitHwid: number;
   limitIp: number;
+  ownerAdminId: number;
+  ownerAdminUsername: string;
   reset: number;
   resetDay: number;
   resetMax: number;
@@ -587,6 +589,11 @@ export interface ClientsSummary {
   online: string[];
   onlineCount: number;
   total: number;
+  trafficDown: number;
+  trafficRemaining: number;
+  trafficTotal: number;
+  trafficUp: number;
+  trafficUsed: number;
 }
 
 export interface FallbackParentInfo {

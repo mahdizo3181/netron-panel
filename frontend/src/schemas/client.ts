@@ -61,6 +61,8 @@ export const ClientRecordSchema = z
     adTag: z.string().optional(),
     createdAt: z.number().optional(),
     updatedAt: z.number().optional(),
+    ownerAdminId: z.number().optional(),
+    ownerAdminUsername: z.string().optional(),
   })
   .loose();
 
@@ -166,6 +168,11 @@ export const ClientsSummarySchema = z.object({
   depleted: nullableStringArray,
   expiring: nullableStringArray,
   deactive: nullableStringArray,
+  trafficUp: z.number().optional().default(0),
+  trafficDown: z.number().optional().default(0),
+  trafficUsed: z.number().optional().default(0),
+  trafficTotal: z.number().optional().default(0),
+  trafficRemaining: z.number().optional().default(0),
 });
 
 const nullableClientArray = z
